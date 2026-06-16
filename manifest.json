@@ -1,8 +1,220 @@
+```json
 {
-  "name": "Meu PWA Incrivel",
-  "short_name": "MeuApp",
-  "start_url": "index.html",
-  "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#bb86fc"
+  "app_name": "Finanças Direto ao Ponto",
+  "version": "1.0.0",
+  "settings": {
+    "storage_strategy": "Offline First (Local database with silent cloud sync)",
+    "localization": "Auto-detect system currency and locale (e.g., pt-BR, R$)",
+    "security": {
+      "privacy_mode": {
+        "toggle_component": "IconButton (Eye Icon)",
+        "behavior": "Mask numbers with '***' when active"
+      }
+    }
+  },
+  "architecture": {
+    "screens": [
+      {
+        "id": "main_screen",
+        "title": "Central de Lançamento",
+        "components": {
+          "top_bar": {
+            "components": ["MenuButton", "PrivacyModeToggle", "CurrentMonthSelector"]
+          },
+          "quick_entry_panel": {
+            "input_field": {
+              "id": "amount_input",
+              "type": "numeric_currency",
+              "auto_focus": true,
+              "formatting": {
+                "type": "dynamic_cents_shifting",
+                "examples": ["5 -> 0.05", "50 -> 0.50", "5000 -> 50.00"]
+              }
+            },
+            "custom_keyboard": {
+              "type": "integrated_numeric_pad",
+              "keys": ["0-9", "Backspace", "Clear (C)"]
+            }
+          },
+          "metadata_panel": {
+            "description_input": {
+              "id": "tx_description",
+              "type": "text",
+              "placeholder": "Ex: Supermercado",
+              "smart_tags": {
+                "source": "top_4_frequent_user_descriptions_last_month",
+                "action": "onClick -> fill(tx_description)"
+              }
+            },
+            "recurring_checkbox": {
+              "id": "is_fixed",
+              "label": "Repetir todo mês",
+              "conditional_fields": {
+                "visible_when": "checked",
+                "fields": [
+                  {
+                    "id": "due_day",
+                    "type": "integer_picker",
+                    "range": [1, 31],
+                    "default": "current_day"
+                  },
+                  {
+                    "id": "end_condition",
+                    "type": "select",
+                    "options": ["Infinite", "Until specific month"]
+                  }
+                ]
+              }
+            }
+          },
+          "action_buttons": [
+            {
+              "id": "btn_income",
+              "label": "Ganhei",
+              "color_hex": "#00C853",
+              "validation": "amount_input > 0",
+              "on_click": "saveTransaction(type: 'income') -> triggerSuccessAnimation() -> resetForm()"
+            },
+            {
+              "id": "btn_expense",
+              "label": "Gastei",
+              "color_hex": "#D50000",
+              "validation": "amount_input > 0",
+              "on_click": "saveTransaction(type: 'expense_cash') -> triggerSuccessAnimation() -> resetForm()"
+            },
+            {
+              "id": "btn_credit_card",
+              "label": "Cartão de Crédito",
+              "color_hex": "#2962FF",
+              "validation": "amount_input > 0",
+              "on_click": "openModal(credit_card_flow_modal)"
+            }
+          ],
+          "monthly_summary_widget": {
+            "id": "balance_thermometer",
+            "navigation": {
+              "type": "horizontal_swipe_or_arrows",
+              "state": "selected_month_year"
+            },
+            "metrics": {
+              "total_income": {
+                "label": "Ganhos",
+                "color_hex": "#00C853",
+                "formula": "sum(income_avulsa WHERE month=selected) + sum(fixed_income WHERE month=selected)"
+              },
+              "total_expense": {
+                "label": "Gastos",
+                "color_hex": "#D50000",
+                "formula": "sum(expense_cash WHERE month=selected) + sum(credit_installments WHERE month=selected) + sum(fixed_expenses WHERE month=selected)"
+              },
+              "net_balance": {
+                "label": "Sobrou",
+                "formula": "total_income - total_expense",
+                "conditional_ui": [
+                  { "condition": "net_balance >= 0", "text_color": "#2962FF" },
+                  { "condition": "net_balance < 0", "text_color": "#D50000", "border_animation": "alert_blink" }
+                ]
+              }
+            }
+          },
+          "history_list": {
+            "title": "Extrato do Mês",
+            "sorting": "chronological_descending",
+            "row_template": {
+              "components": ["CategoryIcon", "DescriptionText", "DateText", "ValueText"]
+            },
+            "interactions": {
+              "swipe_right_to_left": {
+                "action": "show_delete_button",
+                "button_color": "#D50000",
+                "on_confirm": "deleteTransaction(id)"
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "management_screen",
+        "title": "Agendamentos",
+        "navigation_trigger": "Swipe right-to-left on Main Screen or Click Menu",
+        "components": {
+          "tabs": [
+            {
+              "id": "tab_fixed_income",
+              "label": "Receitas Fixas",
+              "list_source": "database.fixed_transactions.filter(type='income')"
+            },
+            {
+              "id": "tab_fixed_expense",
+              "label": "Despesas Fixas",
+              "list_source": "database.fixed_transactions.filter(type='expense')",
+              "interactions": {
+                "on_delete": {
+                  "prompt": {
+                    "title": "Excluir Despesa Fixa",
+                    "message": "Deseja excluir apenas para os meses futuros ou apagar o histórico passado também?",
+                    "options": [
+                      { "label": "Apenas futuros", "action": "delete_future_only()" },
+                      { "label": "Apagar histórico", "action": "delete_all_cascade()" }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "modals": [
+      {
+        "id": "credit_card_flow_modal",
+        "title": "Detalhes do Cartão",
+        "pre_requisite": {
+          "check": "has_card_setup",
+          "if_false_redirect_to": "card_setup_wizard"
+        },
+        "options": [
+          {
+            "id": "opt_single_payment",
+            "label": "Compra à Vista no Cartão",
+            "calculation_rule": "IF transaction_date >= card.closing_date THEN assign_to_month(selected_month + 1) ELSE assign_to_month(selected_month)"
+          },
+          {
+            "id": "opt_installments",
+            "label": "Compra Parcelada",
+            "input": {
+              "type": "wheel_scroll_picker",
+              "range": [2, 48]
+            },
+            "math_engine": {
+              "split_logic": "total_amount / installment_count",
+              "rounding_fix": "IF division_has_remainder THEN apply_floored_values_to_early_installments() AND apply_remainder_to_last_installment()",
+              "meta_tagging": "append_string_to_description(' (XX/YY)')"
+            }
+          }
+        ]
+      },
+      {
+        "id": "card_setup_wizard",
+        "title": "Configuração Inicial do Cartão",
+        "inputs": [
+          {
+            "id": "due_date_input",
+            "label": "Dia de Vencimento da Fatura",
+            "type": "integer_picker",
+            "range": [1, 31]
+          },
+          {
+            "id": "closing_date_input",
+            "label": "Melhor Dia de Compra (Fechamento)",
+            "type": "integer_picker",
+            "range": [1, 31],
+            "helper_text": "Geralmente 10 dias antes do vencimento"
+          }
+        ]
+      }
+    ]
+  }
 }
+
+```
