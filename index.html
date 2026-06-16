@@ -24,8 +24,7 @@
             color: var(--text);
             margin: 0;
             padding: 0;
-            user-select: none;
-            overflow-x: hidden;
+            overflow-x: hidden; /* CORRIGIDO: user-select removido daqui para liberar os cliques */
         }
 
         .app-container {
@@ -110,6 +109,8 @@
             font-weight: bold;
             border-radius: 10px;
             cursor: pointer;
+            pointer-events: auto; /* CORRIGIDO: Força o navegador a aceitar os toques na tela */
+            user-select: none; /* Deixa o bloqueio de cópia de texto apenas nas teclas */
         }
 
         .key:active { background: #444; }
@@ -132,106 +133,5 @@
         .tag { background: #2d2d2d; border: 1px solid #444; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; }
 
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
-        .conditional-box { background: #181818; padding: 15px; border-radius: 8px; margin-top: 10px; display: none; border-left: 3px solid var(--primary); }
+        .conditional-box { background: #181818; padding: 15px; border-radius: 8px; margin-top: 1
 
-        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px; }
-        .btn-action { border: none; padding: 15px 5px; font-weight: bold; border-radius: 10px; color: #000; font-size: 13px; cursor: pointer; text-align: center; }
-
-        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; margin-top: 10px; }
-        .metric-box h4 { margin: 0 0 5px 0; font-size: 12px; color: var(--text-muted); }
-        .metric-box p { margin: 0; font-size: 14px; font-weight: bold; }
-
-        @keyframes blink { 0%, 100% { border: 1px solid var(--danger); } 50% { border: 1px solid transparent; } }
-        .alert-blink { animation: blink 1s infinite; background: rgba(213, 0, 0, 0.1); border-radius: 8px; padding: 5px; }
-
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #2d2d2d; }
-        .history-info { display: flex; flex-direction: column; }
-        .history-desc { font-weight: 500; font-size: 15px; }
-        .history-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-        .history-val { font-weight: bold; font-size: 15px; }
-
-        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; padding: 20px; }
-        .modal-content { background: var(--bg-card); width: 100%; max-width: 360px; padding: 25px; border-radius: 16px; box-sizing: border-box; }
-        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
-        .modal-btn { width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 10px; font-weight: 500; text-align: left; cursor: pointer; }
-
-        .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--success); color: #000; padding: 10px 25px; border-radius: 20px; font-weight: bold; z-index: 2000; display: none; }
-    </style>
-</head>
-<body>
-
-    <div class="success-banner" id="successBanner">Lançamento Salvo! ✓</div>
-
-    <div class="app-container">
-        <!-- Top Bar com Seleção de Mês -->
-        <div class="top-bar">
-            <h2>Finanças Direto ao Ponto</h2>
-            <div class="top-actions">
-                <button class="icon-btn" onclick="togglePrivacyMode()">👁️</button>
-                <select class="month-select" id="monthSelector" onchange="loadData()">
-                    <option value="06-2026">Junho 2026</option>
-                    <option value="07-2026">Julho 2026</option>
-                    <option value="08-2026">Agosto 2026</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Painel de Entrada Numérica Integrada -->
-        <div class="card">
-            <div class="display-amount" id="amountDisplay">R$ 0,00</div>
-            <div class="keyboard-grid">
-                <button class="key" onclick="pressKey('1')">1</button>
-                <button class="key" onclick="pressKey('2')">2</button>
-                <button class="key" onclick="pressKey('3')">3</button>
-                <button class="key" onclick="pressKey('4')">4</button>
-                <button class="key" onclick="pressKey('5')">5</button>
-                <button class="key" onclick="pressKey('6')">6</button>
-                <button class="key" onclick="pressKey('7')">7</button>
-                <button class="key" onclick="pressKey('8')">8</button>
-                <button class="key" onclick="pressKey('9')">9</button>
-                <button class="key" onclick="pressKey('C')" style="color:var(--danger)">C</button>
-                <button class="key" onclick="pressKey('0')">0</button>
-                <button class="key" onclick="pressKey('back')">⌫</button>
-            </div>
-        </div>
-
-        <!-- Detalhes do Lançamento e Calendário Manual -->
-        <div class="card">
-            <div class="input-group">
-                <label for="tx_description">Descrição</label>
-                <input type="text" id="tx_description" class="text-input" placeholder="Ex: Supermercado">
-                <div class="tags-container">
-                    <div class="tag" onclick="fillDescription('Supermercado')">🛒 Supermercado</div>
-                    <div class="tag" onclick="fillDescription('Salário')">💰 Salário</div>
-                    <div class="tag" onclick="fillDescription('Restaurante')">🍔 Restaurante</div>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label for="tx_date">Data do Lançamento</label>
-                <input type="date" id="tx_date" class="text-input">
-            </div>
-
-            <div class="checkbox-group">
-                <input type="checkbox" id="is_fixed" onchange="toggleConditionalFields()">
-                <label for="is_fixed" style="color: var(--text)">Repetir todo mês (Fixo)</label>
-            </div>
-
-            <div class="conditional-box" id="conditionalFields">
-                <div class="input-group">
-                    <label>Dia padrão de cobrança</label>
-                    <input type="number" id="due_day" class="text-input" min="1" max="31" value="10">
-                </div>
-            </div>
-        </div>
-
-        <!-- Ações: Ganhos, Gastos à vista ou Cartão -->
-        <div class="action-grid">
-            <button class="btn-action" style="background: var(--success);" onclick="saveTransaction('income')">Ganhei</button>
-            <button class="btn-action" style="background: var(--danger); color: #fff;" onclick="saveTransaction('expense_cash')">Gastei</button>
-            <button class="btn-action" style="background: var(--accent); color: #fff;" onclick="openCreditModal()">Cartão</button>
-        </div>
-
-        <!-- Resumo do Mês Selecionado -->
-        <div class="card">
-            <div class="summary-grid">
