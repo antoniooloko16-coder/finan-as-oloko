@@ -79,7 +79,7 @@
         /* NAVEGAÇÃO ENTRE PÁGINAS (TABS) */
         .tab-navigation {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             background: var(--bg-card);
             border-bottom: 1px solid #2d2d2d;
         }
@@ -88,9 +88,9 @@
             background: none;
             border: none;
             color: var(--text-muted);
-            padding: 15px;
+            padding: 12px 5px;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 12px;
             cursor: pointer;
             text-align: center;
             transition: all 0.2s;
@@ -182,30 +182,23 @@
 
         .history-list { margin-top: 15px; }
         .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #2d2d2d; }
-        .history-info { display: flex; flex-direction: column; }
+        .history-info { display: flex; flex-direction: column; flex-grow: 1; }
         .history-desc { font-weight: 500; font-size: 15px; }
         .history-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .history-right { display: flex; align-items: center; gap: 12px; }
         .history-val { font-weight: bold; font-size: 15px; }
+        
+        .btn-delete-item { background: none; border: none; color: var(--danger); font-size: 16px; cursor: pointer; padding: 5px; }
 
-        /* LISTA GERENCIÁVEL DE CATEGORIAS */
-        .category-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--bg-input);
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            border: 1px solid #333;
-        }
-        .btn-delete-cat {
-            background: none;
-            border: none;
-            color: var(--danger);
-            font-size: 16px;
-            cursor: pointer;
-            padding: 5px;
-        }
+        .category-item { display: flex; justify-content: space-between; align-items: center; background: var(--bg-input); padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #333; }
+        .btn-delete-cat { background: none; border: none; color: var(--danger); font-size: 16px; cursor: pointer; padding: 5px; }
+
+        /* ESTILOS DA TABELA DE ANÁLISE ANUAL */
+        .annual-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        .annual-table th { text-align: left; padding: 10px 5px; color: var(--text-muted); border-bottom: 1px solid #333; font-weight: 600; text-transform: uppercase; font-size: 11px; }
+        .annual-table td { padding: 12px 5px; border-bottom: 1px solid #222; }
+        .annual-table tr.total-row { background: rgba(187, 134, 252, 0.1); font-weight: bold; }
+        .annual-table tr.total-row td { border-top: 2px solid var(--primary); border-bottom: none; color: #fff; }
 
         .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; padding: 20px; }
         .modal-content { background: var(--bg-card); width: 100%; max-width: 360px; padding: 25px; border-radius: 16px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
@@ -221,7 +214,6 @@
     <div class="success-banner" id="successBanner">Lançamento Salvo! ✓</div>
 
     <div class="app-container">
-        <!-- Top Bar com Seleção Expandida de Meses -->
         <div class="top-bar">
             <h2>Finanças Direto ao Ponto</h2>
             <div class="top-actions">
@@ -243,15 +235,13 @@
             </div>
         </div>
 
-        <!-- ABAS DE NAVEGAÇÃO -->
         <div class="tab-navigation">
             <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">Lançamentos</button>
-            <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Nomes de Gastos</button>
+            <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Nomes</button>
+            <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Balanço Anual</button>
         </div>
 
-        <!-- ================= PÁGINA 1: LANÇAMENTOS (PRINCIPAL) ================= -->
         <div id="page-lançamentos" class="page-content active">
-            <!-- Painel de Entrada Numérica Integrada -->
             <div class="card">
                 <div class="display-amount" id="amountDisplay">R$ 0,00</div>
                 <div class="keyboard-grid">
@@ -270,12 +260,10 @@
                 </div>
             </div>
 
-            <!-- Detalhes do Lançamento -->
             <div class="card">
                 <div class="input-group">
                     <label for="tx_description">Descrição do Gasto / Receita</label>
                     <input type="text" id="tx_description" class="text-input" placeholder="Selecione abaixo ou digite...">
-                    <!-- Tags de atalhos injetadas dinamicamente via JS -->
                     <div class="tags-container" id="tagsContainer"></div>
                 </div>
 
@@ -297,14 +285,12 @@
                 </div>
             </div>
 
-            <!-- Ações: Ganhos, Gastos à vista ou Cartão -->
             <div class="action-grid">
                 <button class="btn-action" style="background: var(--success);" onclick="saveTransaction('income')">Ganhei</button>
                 <button class="btn-action" style="background: var(--danger); color: #fff;" onclick="saveTransaction('expense_cash')">Gastei</button>
                 <button class="btn-action" style="background: var(--accent); color: #fff;" onclick="openCreditModal()">Cartão</button>
             </div>
 
-            <!-- Resumo do Mês Selecionado -->
             <div class="card" id="summaryCard">
                 <div class="summary-grid">
                     <div class="metric-box">
@@ -322,14 +308,12 @@
                 </div>
             </div>
 
-            <!-- Lista do Extrato Histórico -->
             <div class="card">
                 <label style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Extrato do Mês Selecionado</label>
                 <div class="history-list" id="historyContainer"></div>
             </div>
         </div>
 
-        <!-- ================= PÁGINA 2: GERENCIAR NOMES DE GASTOS (NOVA) ================= -->
         <div id="page-categorias" class="page-content">
             <div class="card">
                 <h3 style="margin-top:0; color: var(--primary); font-size: 16px;">Adicionar Novo Nome de Gasto</h3>
@@ -342,14 +326,31 @@
 
             <div class="card">
                 <h3 style="margin-top:0; color: var(--text-muted); font-size: 14px; text-transform: uppercase;">Meus Nomes Cadastrados</h3>
-                <div id="categoryListContainer">
-                    <!-- Injetado dinamicamente -->
-                </div>
+                <div id="categoryListContainer"></div>
+            </div>
+        </div>
+
+        <div id="page-anual" class="page-content">
+            <div class="card">
+                <h3 style="margin-top:0; color: var(--primary); font-size: 16px; margin-bottom: 5px;">📊 Resumo Acumulado 2026</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 15px 0;">Veja os saldos, sobras e faltas de todos os meses do ano.</p>
+                
+                <table class="annual-table">
+                    <thead>
+                        <tr>
+                            <th>Mês</th>
+                            <th>Ganhos</th>
+                            <th>Gastos</th>
+                            <th>Sobra/Falta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="annualTableBody">
+                        </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- Modal Dinâmico de Parcelamento do Cartão -->
     <div class="modal" id="creditModal">
         <div class="modal-content">
             <div class="modal-title">Escolha as Parcelas do Cartão</div>
@@ -378,12 +379,17 @@
         let rawDigits = "0";
         let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
         let privacyMode = false;
-        
-        // Categorias Padrão Iniciais (se o usuário não tiver nenhuma salva)
         let categories = JSON.parse(localStorage.getItem('custom_categories')) || ["🛒 Supermercado", "💰 Salário", "🍔 Restaurante", "💸 Outros Gastos"];
 
         // Inicializar a data padrão com a data de hoje
         document.getElementById('tx_date').valueAsDate = new Date();
+
+        // Nomes amigáveis para a tabela anual
+        const monthNames = {
+            "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril",
+            "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto",
+            "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro"
+        };
 
         // --- SISTEMA DE ABAS (PÁGINAS) ---
         function switchPage(pageId) {
@@ -394,10 +400,75 @@
             document.getElementById(`tab-${pageId}`).classList.add('active');
             
             if(pageId === 'lançamentos') {
-                loadData(); // Garante que a listagem atualize ao voltar
-            } else {
+                loadData();
+            } else if (pageId === 'categorias') {
                 renderCategoryManagement();
+            } else if (pageId === 'anual') {
+                renderAnnualBalance();
             }
+        }
+
+        // --- EXCLUSÃO DE LANÇAMENTOS DO EXTRATO ---
+        function deleteTransaction(id) {
+            if(confirm("Tem certeza que deseja excluir permanentemente este valor?")) {
+                transactions = transactions.filter(t => t.id !== id);
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+                loadData();
+            }
+        }
+
+        // --- PROCESSAMENTO E RENDERIZAÇÃO DO BALANÇO ANUAL ---
+        function renderAnnualBalance() {
+            const tbody = document.getElementById('annualTableBody');
+            tbody.innerHTML = '';
+
+            let grandTotalIncome = 0;
+            let grandTotalExpense = 0;
+
+            // Percorrer os 12 meses do ano de 2026
+            for (let m = 1; m <= 12; m++) {
+                let monthStr = String(m).padStart(2, '0');
+                let targetYearMonth = `2026-${monthStr}`;
+
+                let monthlyIncome = 0;
+                let monthlyExpense = 0;
+
+                transactions.forEach(t => {
+                    if (t.date.substring(0, 7) === targetYearMonth) {
+                        if (t.type === 'income') monthlyIncome += t.amount;
+                        if (t.type === 'expense_cash') monthlyExpense += t.amount;
+                    }
+                });
+
+                grandTotalIncome += monthlyIncome;
+                grandTotalExpense += monthlyExpense;
+                let monthlyBalance = monthlyIncome - monthlyExpense;
+
+                let balanceColor = monthlyBalance >= 0 ? 'var(--success)' : 'var(--danger)';
+
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight:500;">${monthNames[monthStr]}</td>
+                    <td style="color: var(--success);">${formatCurrency(monthlyIncome)}</td>
+                    <td style="color: var(--danger);">${formatCurrency(monthlyExpense)}</td>
+                    <td style="color: ${balanceColor}; font-weight: bold;">${formatCurrency(monthlyBalance)}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            // Inserir a linha final com a soma acumulada de todo o ano
+            let yearBalance = grandTotalIncome - grandTotalExpense;
+            let totalBalanceColor = yearBalance >= 0 ? 'var(--success)' : 'var(--danger)';
+
+            let totalTr = document.createElement('tr');
+            totalTr.className = 'total-row';
+            totalTr.innerHTML = `
+                <td>TOTAL ANO</td>
+                <td>${formatCurrency(grandTotalIncome)}</td>
+                <td>${formatCurrency(grandTotalExpense)}</td>
+                <td style="color: ${totalBalanceColor}; text-shadow: 0 0 5px rgba(0,0,0,0.5);">${formatCurrency(yearBalance)}</td>
+            `;
+            tbody.appendChild(totalTr);
         }
 
         // --- GERENCIAMENTO DE CATEGORIAS DINÂMICAS ---
@@ -432,12 +503,9 @@
             let input = document.getElementById('new_category_name');
             let name = input.value.trim();
             if(!name) return alert('Por favor, digite um nome válido!');
-            
-            // Adiciona uma tag visual de moeda/gasto por padrão se o usuário não colocar emoji
             if(!name.match(/[\u1F600-\u1F64F]/)) {
                 name = "🔹 " + name;
             }
-            
             categories.push(name);
             localStorage.setItem('custom_categories', JSON.stringify(categories));
             input.value = '';
@@ -446,8 +514,9 @@
             alert('Novo nome cadastrado com sucesso!');
         }
 
+        style="color: var(--danger);"
         function deleteCategory(index) {
-            if(confirm(`Deseja mesmo excluir o nome "${categories[index]}" dos atalhos?`)) {
+            if(confirm(`Deseja mesmo excluir o nome "${categories[index]}"?`)) {
                 categories.splice(index, 1);
                 localStorage.setItem('custom_categories', JSON.stringify(categories));
                 renderCategoryManagement();
@@ -494,6 +563,7 @@
             privacyMode = !privacyMode;
             document.getElementById('btnCortina').innerText = privacyMode ? '🙈' : '👁️';
             loadData();
+            if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
         }
 
         function showBanner() {
@@ -639,7 +709,10 @@
                             <span class="history-desc">${t.description}</span>
                             <span class="history-date">${dateFormatted}</span>
                         </div>
-                        <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
+                        <div class="history-right">
+                            <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
+                            <button class="btn-delete-item" onclick="deleteTransaction('${t.id}')">🗑️</button>
+                        </div>
                     `;
                     container.appendChild(item);
                 }
