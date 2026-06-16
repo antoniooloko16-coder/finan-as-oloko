@@ -35,25 +35,29 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            padding-top: 65px; /* Espaço para o topo fixo */
-            padding-bottom: 80px; /* Espaço para o menu inferior fixo */
+            padding-top: 115px; /* Ajustado para dar espaço ao Topo + Menu de Abas fixos */
+            padding-bottom: 20px;
         }
 
-        /* TOPO FIXO */
-        .top-bar {
+        /* CONTAINER DO TOPO FIXO (Garante que tudo no cabeçalho fique junto) */
+        .header-fixed-container {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             max-width: 480px;
             margin: 0 auto;
+            z-index: 999;
+            background: var(--bg-card);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 12px 20px;
-            background: var(--bg-card);
             border-bottom: 1px solid #2d2d2d;
-            z-index: 999;
             box-sizing: border-box;
         }
 
@@ -87,39 +91,30 @@
             font-size: 13px;
         }
 
-        /* MENU INFERIOR FIXO (TABS estilo App) */
+        /* MENU DE SELEÇÃO NA PARTE DE CIMA */
         .tab-navigation {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            max-width: 480px;
-            margin: 0 auto;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             background: var(--bg-card);
-            border-top: 1px solid #2d2d2d;
-            z-index: 999;
             box-sizing: border-box;
-            box-shadow: 0 -4px 10px rgba(0,0,0,0.3);
         }
 
         .tab-btn {
             background: none;
             border: none;
             color: var(--text-muted);
-            padding: 15px 5px;
+            padding: 12px 5px;
             font-weight: bold;
             font-size: 12px;
             cursor: pointer;
             text-align: center;
             transition: all 0.2s;
-            border-top: 3px solid transparent;
+            border-bottom: 3px solid transparent;
         }
 
         .tab-btn.active {
             color: var(--primary);
-            border-top-color: var(--primary);
+            border-bottom-color: var(--primary);
             background: rgba(187, 134, 252, 0.05);
         }
 
@@ -248,24 +243,32 @@
 
     <div class="success-banner" id="successBanner">Lançamento Salvo! ✓</div>
 
-    <div class="top-bar">
-        <h2>Finanças Direto ao Ponto</h2>
-        <div class="top-actions">
-            <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
-            <select class="month-select" id="monthSelector" onchange="loadData()">
-                <option value="2026-01">Janeiro 2026</option>
-                <option value="2026-02">Fevereiro 2026</option>
-                <option value="2026-03">Março 2026</option>
-                <option value="2026-04">Abril 2026</option>
-                <option value="2026-05">Maio 2026</option>
-                <option value="2026-06" selected>Junho 2026</option>
-                <option value="2026-07">Julho 2026</option>
-                <option value="2026-08">Agosto 2026</option>
-                <option value="2026-09">Setembro 2026</option>
-                <option value="2026-10">Outubro 2026</option>
-                <option value="2026-11">Novembro 2026</option>
-                <option value="2026-12">Dezembro 2026</option>
-            </select>
+    <div class="header-fixed-container">
+        <div class="top-bar">
+            <h2>Finanças Direto ao Ponto</h2>
+            <div class="top-actions">
+                <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
+                <select class="month-select" id="monthSelector" onchange="loadData()">
+                    <option value="2026-01">Janeiro 2026</option>
+                    <option value="2026-02">Fevereiro 2026</option>
+                    <option value="2026-03">Março 2026</option>
+                    <option value="2026-04">Abril 2026</option>
+                    <option value="2026-05">Maio 2026</option>
+                    <option value="2026-06" selected>Junho 2026</option>
+                    <option value="2026-07">Julho 2026</option>
+                    <option value="2026-08">Agosto 2026</option>
+                    <option value="2026-09">Setembro 2026</option>
+                    <option value="2026-10">Outubro 2026</option>
+                    <option value="2026-11">Novembro 2026</option>
+                    <option value="2026-12">Dezembro 2026</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="tab-navigation">
+            <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">Lançamentos</button>
+            <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Nomes / Opções</button>
+            <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Balanço Anual</button>
         </div>
     </div>
 
@@ -418,12 +421,6 @@
         </div>
     </div>
 
-    <div class="tab-navigation">
-        <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">Lançamentos</button>
-        <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Nomes / Opções</button>
-        <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Balanço Anual</button>
-    </div>
-
     <div class="modal" id="creditModal">
         <div class="modal-content">
             <div class="modal-title">Escolha as Parcelas do Cartão</div>
@@ -461,10 +458,16 @@
         let categories = JSON.parse(localStorage.getItem('custom_categories_v2')) || defaultCategories;
 
         let ccConfig = JSON.parse(localStorage.getItem('cc_config')) || { closeDay: 25, dueDay: 5 };
-        document.getElementById('cc_close_day').value = ccConfig.closeDay;
-        document.getElementById('cc_due_day').value = ccConfig.dueDay;
-
-        document.getElementById('tx_date').valueAsDate = new Date();
+        
+        // Garante que os elementos de configuração existem antes de atribuir valor
+        window.addEventListener('DOMContentLoaded', () => {
+            if(document.getElementById('cc_close_day')) document.getElementById('cc_close_day').value = ccConfig.closeDay;
+            if(document.getElementById('cc_due_day')) document.getElementById('cc_due_day').value = ccConfig.dueDay;
+            if(document.getElementById('tx_date')) document.getElementById('tx_date').valueAsDate = new Date();
+            updateAmountDisplay();
+            renderTags();
+            loadData();
+        });
 
         const monthNames = {
             "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril",
@@ -637,6 +640,7 @@
 
         function renderTags() {
             const container = document.getElementById('tagsContainer');
+            if(!container) return;
             container.innerHTML = '';
             categories.forEach(cat => {
                 let cleanedName = cat.name.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, "").trim();
@@ -650,6 +654,7 @@
 
         function renderCategoryManagement() {
             const container = document.getElementById('categoryListContainer');
+            if(!container) return;
             container.innerHTML = '';
             categories.forEach((cat, index) => {
                 let div = document.createElement('div');
@@ -695,10 +700,11 @@
 
         function updateAmountDisplay() {
             let numericValue = parseInt(rawDigits, 10) / 100;
-            document.getElementById('amountDisplay').innerText = formatCurrency(numericValue);
+            if(document.getElementById('amountDisplay')) {
+                document.getElementById('amountDisplay').innerText = formatCurrency(numericValue);
+            }
         }
 
-         Hellenistic Key Press
         function pressKey(key) {
             if (key === 'C') { rawDigits = "0"; } 
             else if (key === 'back') {
@@ -766,7 +772,6 @@
             document.getElementById('creditModal').style.display = 'flex';
         }
 
-        document.getElementById('creditModal').style.display = 'none';
         function closeCreditModal() {
             document.getElementById('creditModal').style.display = 'none';
             document.getElementById('custom_installments').value = '';
@@ -826,6 +831,7 @@
         function loadData() {
             const currentSelectedTarget = document.getElementById('monthSelector').value;
             const container = document.getElementById('historyContainer');
+            if(!container) return;
             container.innerHTML = '';
             let totalIncome = 0;
             let totalExpense = 0;
@@ -878,16 +884,6 @@
                 lblSobrou.style.color = 'var(--danger)';
                 summaryCard.classList.add('alert-blink');
             }
-        }
-
-        updateAmountDisplay();
-        renderTags();
-        loadData();
-
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('Erro SW:', err));
-            });
         }
     </script>
 </body>
