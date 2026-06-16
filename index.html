@@ -35,933 +35,37 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            padding-bottom: 20px;
+            padding-top: 65px; /* Espaço para o topo fixo */
+            padding-bottom: 80px; /* Espaço para o menu inferior fixo */
         }
 
+        /* TOPO FIXO */
         .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background: var(--bg-card);
-            border-bottom: 1px solid #2d2d2d;
-        }
-
-        .top-bar h2 {
-            font-size: 18px;
-            margin: 0;
-            color: var(--primary);
-        }
-
-        .top-actions {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .icon-btn {
-            background: none;
-            border: none;
-            color: var(--text);
-            font-size: 20px;
-            cursor: pointer;
-            padding: 5px;
-        }
-
-        .month-select {
-            background: var(--bg-input);
-            color: var(--text);
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .tab-navigation {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            background: var(--bg-card);
-            border-bottom: 1px solid #2d2d2d;
-        }
-
-        .tab-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            padding: 12px 5px;
-            font-weight: bold;
-            font-size: 12px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s;
-            border-bottom: 3px solid transparent;
-        }
-
-        .tab-btn.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-            background: rgba(187, 134, 252, 0.05);
-        }
-
-        .page-content {
-            display: none;
-        }
-
-        .page-content.active {
-            display: block;
-        }
-
-        .card {
-            background: var(--bg-card);
-            margin: 15px 15px 0 15px;
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-        }
-
-        .display-amount {
-            font-size: 42px;
-            font-weight: bold;
-            text-align: center;
-            margin: 10px 0 20px 0;
-            color: var(--text);
-            letter-spacing: 1px;
-        }
-
-        .keyboard-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .key {
-            background: var(--bg-input);
-            border: none;
-            color: var(--text);
-            padding: 15px;
-            font-size: 20px;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .key:active { background: #444; }
-
-        .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
-        
-        .text-input {
-            width: 100%;
-            padding: 12px;
-            background: var(--bg-input);
-            border: 1px solid #333;
-            border-radius: 8px;
-            color: var(--text);
-            box-sizing: border-box;
-            font-size: 16px;
-        }
-
-        .tags-container { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 5px; }
-        .tag { background: #2d2d2d; border: 1px solid #444; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--text); }
-
-        /* MONITOR DE METAS */
-        .budget-monitor {
-            margin-top: 10px;
-            background: #181818;
-            padding: 12px;
-            border-radius: 8px;
-            display: none;
-        }
-        .budget-info { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
-        .progress-bar-bg { background: #333; height: 8px; border-radius: 4px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; width: 0%; background: var(--success); transition: width 0.3s; }
-
-        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
-        .conditional-box { background: #181818; padding: 15px; border-radius: 8px; margin-top: 10px; display: none; border-left: 3px solid var(--primary); }
-
-        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px; }
-        .btn-action { border: none; padding: 15px 5px; font-weight: bold; border-radius: 10px; color: #000; font-size: 13px; cursor: pointer; text-align: center; }
-
-        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
-        .metric-box h4 { margin: 0 0 5px 0; font-size: 12px; color: var(--text-muted); }
-        .metric-box p { margin: 0; font-size: 14px; font-weight: bold; }
-
-        @keyframes blink { 0%, 100% { border: 2px solid var(--danger); } 50% { border: 2px solid transparent; } }
-        .alert-blink { animation: blink 1s infinite; background: rgba(213, 0, 0, 0.1) !important; border-radius: 16px; }
-
-        .history-list { margin-top: 15px; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #2d2d2d; }
-        .history-info { display: flex; flex-direction: column; flex-grow: 1; }
-        .history-desc { font-weight: 500; font-size: 15px; }
-        .history-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-        .history-right { display: flex; align-items: center; gap: 12px; }
-        .history-val { font-weight: bold; font-size: 15px; }
-        
-        .btn-delete-item { background: none; border: none; color: var(--danger); font-size: 16px; cursor: pointer; padding: 5px; }
-
-        .category-item { background: var(--bg-input); padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #333; }
-        .category-main-info { display: flex; justify-content: space-between; align-items: center; }
-        .category-budget-info { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-        .btn-delete-cat { background: none; border: none; color: var(--danger); font-size: 16px; cursor: pointer; }
-
-        .annual-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-        .annual-table th { text-align: left; padding: 10px 5px; color: var(--text-muted); border-bottom: 1px solid #333; font-size: 11px; }
-        .annual-table td { padding: 12px 5px; border-bottom: 1px solid #222; }
-        .annual-table tr.total-row { background: rgba(187, 134, 252, 0.1); font-weight: bold; }
-        .annual-table tr.total-row td { border-top: 2px solid var(--primary); color: #fff; }
-
-        .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-secondary { background: var(--bg-input); border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; font-size: 13px; }
-
-        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; padding: 20px; }
-        .modal-content { background: var(--bg-card); width: 100%; max-width: 360px; padding: 25px; border-radius: 16px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
-        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
-        .modal-btn { width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 10px; font-weight: 500; text-align: left; cursor: pointer; }
-        
-        .custom-installments-container { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
-        .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--success); color: #000; padding: 10px 25px; border-radius: 20px; font-weight: bold; z-index: 2000; display: none; }
-    </style>
-</head>
-<body>
-
-    <div class="success-banner" id="successBanner">Lançamento Salvo! ✓</div>
-
-    <div class="app-container">
-        <div class="top-bar">
-            <h2>Finanças Direto ao Ponto</h2>
-            <div class="top-actions">
-                <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
-                <select class="month-select" id="monthSelector" onchange="loadData()">
-                    <option value="2026-01">Janeiro 2026</option>
-                    <option value="2026-02">Fevereiro 2026</option>
-                    <option value="2026-03">Março 2026</option>
-                    <option value="2026-04">Abril 2026</option>
-                    <option value="2026-05">Maio 2026</option>
-                    <option value="2026-06" selected>Junho 2026</option>
-                    <option value="2026-07">Julho 2026</option>
-                    <option value="2026-08">Agosto 2026</option>
-                    <option value="2026-09">Setembro 2026</option>
-                    <option value="2026-10">Outubro 2026</option>
-                    <option value="2026-11">Novembro 2026</option>
-                    <option value="2026-12">Dezembro 2026</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="tab-navigation">
-            <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">Lançamentos</button>
-            <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Nomes / Opções</button>
-            <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Balanço Anual</button>
-        </div>
-
-        <div id="page-lançamentos" class="page-content active">
-            <div class="card">
-                <div class="display-amount" id="amountDisplay">R$ 0,00</div>
-                <div class="keyboard-grid">
-                    <button class="key" onclick="pressKey('1')">1</button>
-                    <button class="key" onclick="pressKey('2')">2</button>
-                    <button class="key" onclick="pressKey('3')">3</button>
-                    <button class="key" onclick="pressKey('4')">4</button>
-                    <button class="key" onclick="pressKey('5')">5</button>
-                    <button class="key" onclick="pressKey('6')">6</button>
-                    <button class="key" onclick="pressKey('7')">7</button>
-                    <button class="key" onclick="pressKey('8')">8</button>
-                    <button class="key" onclick="pressKey('9')">9</button>
-                    <button class="key" onclick="pressKey('C')" style="color:var(--danger)">C</button>
-                    <button class="key" onclick="pressKey('0')">0</button>
-                    <button class="key" onclick="pressKey('back')">⌫</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="input-group">
-                    <label for="tx_description">Descrição do Gasto / Receita</label>
-                    <input type="text" id="tx_description" class="text-input" placeholder="Selecione abaixo ou digite..." oninput="checkLiveBudget()">
-                    <div class="tags-container" id="tagsContainer"></div>
-                </div>
-
-                <div class="budget-monitor" id="budgetMonitor">
-                    <div class="budget-info">
-                        <span id="budgetLabelTarget">Categoria</span>
-                        <span id="budgetLabelValues">R$ 0 / R$ 0</span>
-                    </div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" id="budgetBarFill"></div>
-                    </div>
-                </div>
-
-                <div class="input-group" style="margin-top:15px;">
-                    <label for="tx_date">Data do Lançamento</label>
-                    <input type="date" id="tx_date" class="text-input" onchange="checkLiveBudget()">
-                </div>
-
-                <div class="checkbox-group">
-                    <input type="checkbox" id="is_fixed" onchange="toggleConditionalFields()">
-                    <label for="is_fixed" style="color: var(--text)">Repetir todo mês (Fixo)</label>
-                </div>
-
-                <div class="conditional-box" id="conditionalFields">
-                    <div class="input-group">
-                        <label>Dia padrão de cobrança</label>
-                        <input type="number" id="due_day" class="text-input" min="1" max="31" value="10">
-                    </div>
-                </div>
-            </div>
-
-            <div class="action-grid">
-                <button class="btn-action" style="background: var(--success);" onclick="saveTransaction('income')">Ganhei</button>
-                <button class="btn-action" style="background: var(--danger); color: #fff;" onclick="saveTransaction('expense_cash')">Gastei</button>
-                <button class="btn-action" style="background: var(--accent); color: #fff;" onclick="openCreditModal()">Cartão</button>
-            </div>
-
-            <div class="card" id="summaryCard">
-                <div class="summary-grid">
-                    <div class="metric-box">
-                        <h4>Ganhos</h4>
-                        <p style="color: var(--success);" id="lblGanhos">R$ 0,00</p>
-                    </div>
-                    <div class="metric-box">
-                        <h4>Gastos</h4>
-                        <p style="color: var(--danger);" id="lblGastos">R$ 0,00</p>
-                    </div>
-                    <div class="metric-box">
-                        <h4>Sobrou</h4>
-                        <p style="color: var(--primary);" id="lblSobrou">R$ 0,00</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <label style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Extrato do Mês Selecionado</label>
-                <div class="history-list" id="historyContainer"></div>
-            </div>
-        </div>
-
-        <div id="page-categorias" class="page-content">
-            <div class="card">
-                <h3 style="margin-top:0; color: var(--primary); font-size: 16px;">Adicionar Novo Nome de Gasto</h3>
-                <div class="input-group">
-                    <label>Nome do Gasto / Categoria</label>
-                    <input type="text" id="new_category_name" class="text-input" placeholder="Ex: Combustível, Mercado...">
-                </div>
-                <div class="input-group">
-                    <label>Teto de Gasto Mensal (Opcional - 0 para ilimitado)</label>
-                    <input type="number" id="new_category_budget" class="text-input" placeholder="Ex: 500" value="0">
-                </div>
-                <button class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">Adicionar Novo Nome</button>
-            </div>
-
-            <div class="card">
-                <h3 style="margin-top:0; color: var(--accent); font-size: 15px;">💳 Ciclo da Fatura do Cartão</h3>
-                <div class="grid-2col">
-                    <div class="input-group">
-                        <label>Dia Fechamento</label>
-                        <input type="number" id="cc_close_day" class="text-input" min="1" max="31" value="25" onchange="saveCCConfig()">
-                    </div>
-                    <div class="input-group">
-                        <label>Dia Vencimento</label>
-                        <input type="number" id="cc_due_day" class="text-input" min="1" max="31" value="5" onchange="saveCCConfig()">
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3 style="margin-top:0; color: var(--warning); font-size: 15px;">💾 Cópia de Segurança (Backup)</h3>
-                <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Baixe seus dados para não perder nada caso troque ou formate o celular.</p>
-                <div class="grid-2col">
-                    <button class="btn-secondary" onclick="exportBackup()">📤 Exportar</button>
-                    <button class="btn-secondary" onclick="document.getElementById('fileFileInput').click()">📥 Importar</button>
-                </div>
-                <input type="file" id="fileFileInput" style="display:none;" onchange="importBackup(event)">
-            </div>
-
-            <div class="card">
-                <h3 style="margin-top:0; color: var(--text-muted); font-size: 14px; text-transform: uppercase;">Meus Nomes Cadastrados</h3>
-                <div id="categoryListContainer"></div>
-            </div>
-        </div>
-
-        <div id="page-anual" class="page-content">
-            <div class="card">
-                <h3 style="margin-top:0; color: var(--primary); font-size: 16px; margin-bottom: 5px;">📊 Resumo Acumulado 2026</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 15px 0;">Saldos consolidados de janeiro a dezembro.</p>
-                
-                <table class="annual-table">
-                    <thead>
-                        <tr>
-                            <th>Mês</th>
-                            <th>Ganhos</th>
-                            <th>Gastos</th>
-                            <th>Sobra/Falta</th>
-                        </tr>
-                    </thead>
-                    <tbody id="annualTableBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="creditModal">
-        <div class="modal-content">
-            <div class="modal-title">Escolha as Parcelas do Cartão</div>
-            <button class="modal-btn" onclick="saveCreditTransaction(1)">1x (À Vista na Fatura)</button>
-            <button class="modal-btn" onclick="saveCreditTransaction(2)">2 meses seguintes</button>
-            <button class="modal-btn" onclick="saveCreditTransaction(3)">3 meses seguintes</button>
-            <button class="modal-btn" onclick="saveCreditTransaction(4)">4 meses seguintes</button>
-            <button class="modal-btn" onclick="saveCreditTransaction(5)">5 meses seguintes</button>
-            <button class="modal-btn" onclick="saveCreditTransaction(6)">6 meses seguintes</button>
-            <button class="modal-btn" onclick="saveCreditTransaction(10)">10 meses seguintes</button>
-            <button class="modal-btn" onclick="saveCreditTransaction(12)">12 meses seguintes</button>
-            
-            <div style="border-top: 1px solid #444; margin: 15px 0; padding-top: 10px;">
-                <label style="font-size: 12px; color: var(--text-muted); display:block; margin-bottom:5px;">Outra quantidade de vezes:</label>
-                <div class="custom-installments-container">
-                    <input type="number" id="custom_installments" class="text-input" min="1" max="48" placeholder="Ex: 8">
-                    <button class="btn-action" style="background: var(--primary); padding: 0 15px; font-size:14px; width:auto;" onclick="saveCustomCredit()">Aplicar</button>
-                </div>
-            </div>
-            <button class="modal-btn" style="background: #333; text-align: center; margin-top: 10px;" onclick="closeCreditModal()">Cancelar</button>
-        </div>
-    </div>
-
-    <script>
-        // --- ESTADO DO APLICATIVO ---
-        let rawDigits = "0";
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-        let privacyMode = false;
-        
-        // Estrutura de categorias com suporte a limites de gastos
-        let defaultCategories = [
-            { name: "🛒 Supermercado", budget: 0 },
-            { name: "💰 Salário", budget: 0 },
-            { name: "🍔 Restaurante", budget: 0 },
-            { name: "💸 Outros Gastos", budget: 0 }
-        ];
-        let categories = JSON.parse(localStorage.getItem('custom_categories_v2')) || defaultCategories;
-
-        // Configuração do ciclo do cartão de crédito
-        let ccConfig = JSON.parse(localStorage.getItem('cc_config')) || { closeDay: 25, dueDay: 5 };
-        document.getElementById('cc_close_day').value = ccConfig.closeDay;
-        document.getElementById('cc_due_day').value = ccConfig.dueDay;
-
-        document.getElementById('tx_date').valueAsDate = new Date();
-
-        const monthNames = {
-            "01": "Janeiro", "02": "Fevereiro", "03": "Março", "04": "Abril",
-            "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto",
-            "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro"
-        };
-
-        function saveCCConfig() {
-            ccConfig.closeDay = parseInt(document.getElementById('cc_close_day').value, 10) || 25;
-            ccConfig.dueDay = parseInt(document.getElementById('cc_due_day').value, 10) || 5;
-            localStorage.setItem('cc_config', JSON.stringify(ccConfig));
-        }
-
-        // --- SISTEMA DE ABAS ---
-        function switchPage(pageId) {
-            document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            
-            document.getElementById(`page-${pageId}`).classList.add('active');
-            document.getElementById(`tab-${pageId}`).classList.add('active');
-            
-            if(pageId === 'lançamentos') {
-                loadData();
-            } else if (pageId === 'categorias') {
-                renderCategoryManagement();
-            } else if (pageId === 'anual') {
-                renderAnnualBalance();
-            }
-        }
-
-        // --- EXCLUSÃO DE LANÇAMENTOS ---
-        function deleteTransaction(id) {
-            if(confirm("Tem certeza que deseja excluir permanentemente este valor?")) {
-                transactions = transactions.filter(t => t.id !== id);
-                localStorage.setItem('transactions', JSON.stringify(transactions));
-                loadData();
-            }
-        }
-
-        // --- RECURSO: TETO DE GASTOS DINÂMICO ---
-        function checkLiveBudget() {
-            let desc = document.getElementById('tx_description').value.trim().toLowerCase();
-            let dateVal = document.getElementById('tx_date').value;
-            let currentAmount = getNumericValue();
-            
-            if(!desc || !dateVal) {
-                document.getElementById('budgetMonitor').style.display = 'none';
-                return;
-            }
-
-            let targetMonth = dateVal.substring(0, 7);
-            
-            // Procura se a descrição bate com alguma categoria cadastrada
-            let foundCat = categories.find(c => c.name.toLowerCase().includes(desc) || desc.includes(c.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase()));
-
-            if(foundCat && foundCat.budget > 0) {
-                let accumulatedSpent = 0;
-                transactions.forEach(t => {
-                    if(t.date.substring(0, 7) === targetMonth && t.type === 'expense_cash') {
-                        if(t.description.toLowerCase().includes(foundCat.name.toLowerCase()) || foundCat.name.toLowerCase().includes(t.description.toLowerCase())) {
-                            accumulatedSpent += t.amount;
-                        }
-                    }
-                });
-
-                let totalProjected = accumulatedSpent + currentAmount;
-                let percentage = Math.min((totalProjected / foundCat.budget) * 100, 100);
-
-                document.getElementById('budgetMonitor').style.display = 'block';
-                document.getElementById('budgetLabelTarget').innerText = `Meta de ${foundCat.name}`;
-                document.getElementById('budgetLabelValues').innerText = `${formatCurrency(totalProjected)} / ${formatCurrency(foundCat.budget)}`;
-                
-                let fill = document.getElementById('budgetBarFill');
-                fill.style.width = `${percentage}%`;
-
-                if(totalProjected > foundCat.budget) {
-                    fill.style.background = 'var(--danger)';
-                } else if (totalProjected > foundCat.budget * 0.8) {
-                    fill.style.background = 'var(--warning)';
-                } else {
-                    fill.style.background = 'var(--success)';
-                }
-            } else {
-                document.getElementById('budgetMonitor').style.display = 'none';
-            }
-        }
-
-        // --- SISTEMA DE COPIA DE SEGURANÇA (BACKUP) ---
-        function exportBackup() {
-            let backupData = {
-                transactions: transactions,
-                categories: categories,
-                ccConfig: ccConfig
-            };
-            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
-            let downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `Backup_Financas_2026.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-        }
-
-        function importBackup(event) {
-            let file = event.target.files[0];
-            if (!file) return;
-            let reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    let imported = JSON.parse(e.target.result);
-                    if (imported.transactions && imported.categories) {
-                        transactions = imported.transactions;
-                        categories = imported.categories;
-                        if(imported.ccConfig) ccConfig = imported.ccConfig;
-                        
-                        localStorage.setItem('transactions', JSON.stringify(transactions));
-                        localStorage.setItem('custom_categories_v2', JSON.stringify(categories));
-                        localStorage.setItem('cc_config', JSON.stringify(ccConfig));
-                        
-                        alert('Backup restaurado com sucesso completo! 🎉');
-                        window.location.reload();
-                    } else {
-                        alert('Arquivo de backup inválido.');
-                    }
-                } catch (err) {
-                    alert('Erro ao ler arquivo.');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        // --- BALANÇO ANUAL ---
-        function renderAnnualBalance() {
-            const tbody = document.getElementById('annualTableBody');
-            tbody.innerHTML = '';
-
-            let grandTotalIncome = 0;
-            let grandTotalExpense = 0;
-
-            for (let m = 1; m <= 12; m++) {
-                let monthStr = String(m).padStart(2, '0');
-                let targetYearMonth = `2026-${monthStr}`;
-
-                let monthlyIncome = 0;
-                let monthlyExpense = 0;
-
-                transactions.forEach(t => {
-                    if (t.date.substring(0, 7) === targetYearMonth) {
-                        if (t.type === 'income') monthlyIncome += t.amount;
-                        if (t.type === 'expense_cash') monthlyExpense += t.amount;
-                    }
-                });
-
-                grandTotalIncome += monthlyIncome;
-                grandTotalExpense += monthlyExpense;
-                let monthlyBalance = monthlyIncome - monthlyExpense;
-                let balanceColor = monthlyBalance >= 0 ? 'var(--success)' : 'var(--danger)';
-
-                let tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="font-weight:500;">${monthNames[monthStr]}</td>
-                    <td style="color: var(--success);">${formatCurrency(monthlyIncome)}</td>
-                    <td style="color: var(--danger);">${formatCurrency(monthlyExpense)}</td>
-                    <td style="color: ${balanceColor}; font-weight: bold;">${formatCurrency(monthlyBalance)}</td>
-                `;
-                tbody.appendChild(tr);
-            }
-
-            let yearBalance = grandTotalIncome - grandTotalExpense;
-            let totalBalanceColor = yearBalance >= 0 ? 'var(--success)' : 'var(--danger)';
-
-            let totalTr = document.createElement('tr');
-            totalTr.className = 'total-row';
-            totalTr.innerHTML = `
-                <td>TOTAL ANO</td>
-                <td>${formatCurrency(grandTotalIncome)}</td>
-                <td>${formatCurrency(grandTotalExpense)}</td>
-                <td style="color: ${totalBalanceColor};">${formatCurrency(yearBalance)}</td>
-            `;
-            tbody.appendChild(totalTr);
-        }
-
-        // --- GERENCIAMENTO DE NOMES ---
-        function renderTags() {
-            const container = document.getElementById('tagsContainer');
-            container.innerHTML = '';
-            categories.forEach(cat => {
-                let cleanedName = cat.name.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, "").trim();
-                let tagEl = document.createElement('div');
-                tagEl.className = 'tag';
-                tagEl.innerText = cat.name;
-                tagEl.onclick = () => { fillDescription(cleanedName); checkLiveBudget(); };
-                container.appendChild(tagEl);
-            });
-        }
-
-        function renderCategoryManagement() {
-            const container = document.getElementById('categoryListContainer');
-            container.innerHTML = '';
-            categories.forEach((cat, index) => {
-                let div = document.createElement('div');
-                div.className = 'category-item';
-                
-                let budgetText = cat.budget > 0 ? `Teto mensal: ${formatCurrency(cat.budget)}` : "Sem limite estipulado";
-                
-                div.innerHTML = `
-                    <div class="category-main-info">
-                        <strong>${cat.name}</strong>
-                        <button class="btn-delete-cat" onclick="deleteCategory(${index})">🗑️</button>
-                    </div>
-                    <div class="category-budget-info">${budgetText}</div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function addNewCategory() {
-            let input = document.getElementById('new_category_name');
-            let budgetInput = document.getElementById('new_category_budget');
-            let name = input.value.trim();
-            let budget = parseFloat(budgetInput.value) || 0;
-
-            if(!name) return alert('Por favor, digite um nome válido!');
-            if(!name.match(/[\u1F600-\u1F64F]/)) { name = "🔹 " + name; }
-            
-            categories.push({ name: name, budget: budget });
-            localStorage.setItem('custom_categories_v2', JSON.stringify(categories));
-            
-            input.value = '';
-            budgetInput.value = '0';
-            renderCategoryManagement();
-            renderTags();
-        }
-
-        function deleteCategory(index) {
-            if(confirm(`Deseja mesmo excluir o nome "${categories[index].name}"?`)) {
-                categories.splice(index, 1);
-                localStorage.setItem('custom_categories_v2', JSON.stringify(categories));
-                renderCategoryManagement();
-                renderTags();
-            }
-        }
-
-        // --- TECLADO NUMÉRICO ---
-        function updateAmountDisplay() {
-            let numericValue = parseInt(rawDigits, 10) / 100;
-            document.getElementById('amountDisplay').innerText = formatCurrency(numericValue);
-        }
-
-        function pressKey(key) {
-            if (key === 'C') {
-                rawDigits = "0";
-            } else if (key === 'back') {
-                rawDigits = rawDigits.slice(0, -1);
-                if (rawDigits === "" || rawDigits === "-") rawDigits = "0";
-            } else {
-                if (rawDigits === "0") { rawDigits = key; } 
-                else if (rawDigits.length < 10) { rawDigits += key; }
-            }
-            updateAmountDisplay();
-            checkLiveBudget();
-        }
-
-        function getNumericValue() { return parseInt(rawDigits, 10) / 100; }
-        function fillDescription(text) { document.getElementById('tx_description').value = text; }
-        function toggleConditionalFields() { document.getElementById('conditionalFields').style.display = document.getElementById('is_fixed').checked ? 'block' : 'none'; }
-
-        function togglePrivacyMode() {
-            privacyMode = !privacyMode;
-            document.getElementById('btnCortina').innerText = privacyMode ? '🙈' : '👁️';
-            loadData();
-            if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
-        }
-
-        function showBanner() {
-            const banner = document.getElementById('successBanner');
-            banner.style.display = 'block';
-            setTimeout(() => banner.style.display = 'none', 2000);
-        }
-
-        function formatCurrency(val) {
-            if (privacyMode) return "R$ ***,**";
-            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
-
-        // --- SALVAR TRANSAÇÃO MANUAL ---
-        function saveTransaction(type) {
-            const val = getNumericValue();
-            if (val <= 0) return alert('Digite um valor maior que R$ 0,00');
-
-            let desc = document.getElementById('tx_description').value.trim() || 'Lançamento';
-            const dateInput = document.getElementById('tx_date').value;
-            const isFixed = document.getElementById('is_fixed').checked;
-
-            if (isFixed) {
-                const dueDay = parseInt(document.getElementById('due_day').value, 10) || 10;
-                let baseDate = new Date(dateInput + 'T12:00:00');
-                
-                for (let i = 0; i < 12; i++) {
-                    let futureDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, dueDay);
-                    transactions.push({
-                        id: Date.now() + '-' + i,
-                        amount: val,
-                        type: type,
-                        description: desc + ' (Fixo)',
-                        date: `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
-                    });
-                }
-            } else {
-                transactions.push({ id: String(Date.now()), amount: val, type: type, description: desc, date: dateInput });
-            }
-            saveAndReset();
-        }
-
-        // --- INTELIGÊNCIA REAL DO CARTÃO DE CRÉDITO ---
-        function openCreditModal() {
-            const val = getNumericValue();
-            if (val <= 0) return alert('Digite um valor maior que R$ 0,00');
-            document.getElementById('creditModal').style.display = 'flex';
-        }
-
-        function closeCreditModal() {
-            document.getElementById('creditModal').style.display = 'none';
-            document.getElementById('custom_installments').value = '';
-        }
-
-        function saveCustomCredit() {
-            const num = parseInt(document.getElementById('custom_installments').value, 10);
-            if (isNaN(num) || num <= 0) return alert('Insira um número válido.');
-            saveCreditTransaction(num);
-        }
-
-        function saveCreditTransaction(installments) {
-            const totalVal = getNumericValue();
-            let desc = document.getElementById('tx_description').value.trim() || 'Cartão de Crédito';
-            const dateInput = document.getElementById('tx_date').value;
-            
-            let baseDate = new Date(dateInput + 'T12:00:00');
-            let purchaseDay = baseDate.getDate();
-
-            // Algoritmo do Ciclo de Fatura Real: se passou do dia de fechamento, a 1ª parcela pula para o mês seguinte
-            let monthOffset = 0;
-            if (purchaseDay >= ccConfig.closeDay) {
-                monthOffset = 1;
-            }
-
-            const baseAmount = Math.floor((totalVal / installments) * 100) / 100;
-            let remainder = Math.round((totalVal - (baseAmount * installments)) * 100) / 100;
-
-            for (let i = 0; i < installments; i++) {
-                let targetMonthIndex = baseDate.getMonth() + i + monthOffset;
-                // As parcelas vencem sempre no dia oficial de vencimento do cartão
-                let futureDate = new Date(baseDate.getFullYear(), targetMonthIndex, ccConfig.dueDay);
-                
-                let currentInstallmentAmount = baseAmount;
-                if (i === installments - 1) {
-                    currentInstallmentAmount = Math.round((baseAmount + remainder) * 100) / 100;
-                }
-
-                transactions.push({
-                    id: Date.now() + '-cc-' + i,
-                    amount: currentInstallmentAmount,
-                    type: 'expense_cash',
-                    description: `${desc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
-                    date: `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
-                });
-            }
-
-            closeCreditModal();
-            saveAndReset();
-        }
-
-        function saveAndReset() {
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-            rawDigits = "0";
-            document.getElementById('tx_description').value = '';
-            document.getElementById('is_fixed').checked = false;
-            toggleConditionalFields();
-            updateAmountDisplay();
-            document.getElementById('budgetMonitor').style.display = 'none';
-            showBanner();
-            loadData();
-        }
-
-        // --- FILTRO DO EXTRATO ---
-        function loadData() {
-            const currentSelectedTarget = document.getElementById('monthSelector').value;
-            const container = document.getElementById('historyContainer');
-            container.innerHTML = '';
-
-            let totalIncome = 0;
-            let totalExpense = 0;
-            let countItems = 0;
-
-            let sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            sortedTransactions.forEach(t => {
-                if (t.date.substring(0, 7) === currentSelectedTarget) {
-                    countItems++;
-                    if (t.type === 'income') totalIncome += t.amount;
-                    if (t.type === 'expense_cash') totalExpense += t.amount;
-
-                    let item = document.createElement('div');
-                    item.className = 'history-item';
-                    
-                    let dateFormatted = t.date.split('-').reverse().join('/');
-                    let indicatorColor = t.type === 'income' ? 'var(--success)' : 'var(--danger)';
-                    let prefix = t.type === 'income' ? '+' : '-';
-
-                    item.innerHTML = `
-                        <div class="history-info">
-                            <span class="history-desc">${t.description}</span>
-                            <span class="history-date">${dateFormatted}</span>
-                        </div>
-                        <div class="history-right">
-                            <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
-                            <button class="btn-delete-item" onclick="deleteTransaction('${t.id}')">🗑️</button>
-                        </div>
-                    `;
-                    container.appendChild(item);
-                }
-            });
-
-            if (countItems === 0) {
-                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhum lançamento registrado.</div>`;
-            }
-
-            let sobrou = totalIncome - totalExpense;
-            document.getElementById('lblGanhos').innerText = formatCurrency(totalIncome);
-            document.getElementById('lblGastos').innerText = formatCurrency(totalExpense);
-            document.getElementById('lblSobrou').innerText = formatCurrency(sobrou);
-
-            const summaryCard = document.getElementById('summaryCard');
-            const lblSobrou = document.getElementById('lblSobrou');
-            
-            if (sobrou >= 0) {
-                lblSobrou.style.color = 'var(--primary)';
-                summaryCard.classList.remove('alert-blink');
-            } else {
-                lblSobrou.style.color = 'var(--danger)';
-                summaryCard.classList.add('alert-blink');
-            }
-        }
-
-        // Inicializações
-        updateAmountDisplay();
-        renderTags();
-        loadData();
-
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('Erro SW:', err));
-            });
-        }
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finanças Direto ao Ponto</title>
-    <link rel="manifest" href="manifest.json">
-    <style>
-        :root {
-            --bg-main: #121212;
-            --bg-card: #1e1e1e;
-            --bg-input: #2d2d2d;
-            --primary: #bb86fc;
-            --success: #00C853;
-            --danger: #D50000;
-            --accent: #2962FF;
-            --warning: #FFAB00;
-            --text: #ffffff;
-            --text-muted: #a0a0a0;
-        }
-
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text);
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-        }
-
-        .app-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
             max-width: 480px;
             margin: 0 auto;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
-            padding-bottom: 20px;
-        }
-
-        .top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
+            padding: 12px 20px;
             background: var(--bg-card);
             border-bottom: 1px solid #2d2d2d;
+            z-index: 999;
+            box-sizing: border-box;
         }
 
         .top-bar h2 {
-            font-size: 18px;
+            font-size: 16px;
             margin: 0;
             color: var(--primary);
         }
 
         .top-actions {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             align-items: center;
         }
 
@@ -969,7 +73,7 @@
             background: none;
             border: none;
             color: var(--text);
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
             padding: 5px;
         }
@@ -978,34 +82,44 @@
             background: var(--bg-input);
             color: var(--text);
             border: none;
-            padding: 5px 10px;
+            padding: 6px 10px;
             border-radius: 5px;
-            font-size: 14px;
+            font-size: 13px;
         }
 
+        /* MENU INFERIOR FIXO (TABS estilo App) */
         .tab-navigation {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 480px;
+            margin: 0 auto;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             background: var(--bg-card);
-            border-bottom: 1px solid #2d2d2d;
+            border-top: 1px solid #2d2d2d;
+            z-index: 999;
+            box-sizing: border-box;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.3);
         }
 
         .tab-btn {
             background: none;
             border: none;
             color: var(--text-muted);
-            padding: 12px 5px;
+            padding: 15px 5px;
             font-weight: bold;
             font-size: 12px;
             cursor: pointer;
             text-align: center;
             transition: all 0.2s;
-            border-bottom: 3px solid transparent;
+            border-top: 3px solid transparent;
         }
 
         .tab-btn.active {
             color: var(--primary);
-            border-bottom-color: var(--primary);
+            border-top-color: var(--primary);
             background: rgba(187, 134, 252, 0.05);
         }
 
@@ -1134,33 +248,28 @@
 
     <div class="success-banner" id="successBanner">Lançamento Salvo! ✓</div>
 
-    <div class="app-container">
-        <div class="top-bar">
-            <h2>Finanças Direto ao Ponto</h2>
-            <div class="top-actions">
-                <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
-                <select class="month-select" id="monthSelector" onchange="loadData()">
-                    <option value="2026-01">Janeiro 2026</option>
-                    <option value="2026-02">Fevereiro 2026</option>
-                    <option value="2026-03">Março 2026</option>
-                    <option value="2026-04">Abril 2026</option>
-                    <option value="2026-05">Maio 2026</option>
-                    <option value="2026-06" selected>Junho 2026</option>
-                    <option value="2026-07">Julho 2026</option>
-                    <option value="2026-08">Agosto 2026</option>
-                    <option value="2026-09">Setembro 2026</option>
-                    <option value="2026-10">Outubro 2026</option>
-                    <option value="2026-11">Novembro 2026</option>
-                    <option value="2026-12">Dezembro 2026</option>
-                </select>
-            </div>
+    <div class="top-bar">
+        <h2>Finanças Direto ao Ponto</h2>
+        <div class="top-actions">
+            <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
+            <select class="month-select" id="monthSelector" onchange="loadData()">
+                <option value="2026-01">Janeiro 2026</option>
+                <option value="2026-02">Fevereiro 2026</option>
+                <option value="2026-03">Março 2026</option>
+                <option value="2026-04">Abril 2026</option>
+                <option value="2026-05">Maio 2026</option>
+                <option value="2026-06" selected>Junho 2026</option>
+                <option value="2026-07">Julho 2026</option>
+                <option value="2026-08">Agosto 2026</option>
+                <option value="2026-09">Setembro 2026</option>
+                <option value="2026-10">Outubro 2026</option>
+                <option value="2026-11">Novembro 2026</option>
+                <option value="2026-12">Dezembro 2026</option>
+            </select>
         </div>
+    </div>
 
-        <div class="tab-navigation">
-            <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">Lançamentos</button>
-            <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Nomes / Opções</button>
-            <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Balanço Anual</button>
-        </div>
+    <div class="app-container">
 
         <div id="page-lançamentos" class="page-content active">
             <div class="card">
@@ -1309,6 +418,12 @@
         </div>
     </div>
 
+    <div class="tab-navigation">
+        <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">Lançamentos</button>
+        <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Nomes / Opções</button>
+        <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Balanço Anual</button>
+    </div>
+
     <div class="modal" id="creditModal">
         <div class="modal-content">
             <div class="modal-title">Escolha as Parcelas do Cartão</div>
@@ -1333,12 +448,10 @@
     </div>
 
     <script>
-        // --- ESTADO DO APLICATIVO ---
         let rawDigits = "0";
         let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
         let privacyMode = false;
         
-        // Estrutura de categorias com suporte a limites de gastos
         let defaultCategories = [
             { name: "🛒 Supermercado", budget: 0 },
             { name: "💰 Salário", budget: 0 },
@@ -1347,7 +460,6 @@
         ];
         let categories = JSON.parse(localStorage.getItem('custom_categories_v2')) || defaultCategories;
 
-        // Configuração do ciclo do cartão de crédito
         let ccConfig = JSON.parse(localStorage.getItem('cc_config')) || { closeDay: 25, dueDay: 5 };
         document.getElementById('cc_close_day').value = ccConfig.closeDay;
         document.getElementById('cc_due_day').value = ccConfig.dueDay;
@@ -1366,7 +478,6 @@
             localStorage.setItem('cc_config', JSON.stringify(ccConfig));
         }
 
-        // --- SISTEMA DE ABAS ---
         function switchPage(pageId) {
             document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -1381,9 +492,9 @@
             } else if (pageId === 'anual') {
                 renderAnnualBalance();
             }
+            window.scrollTo(0,0);
         }
 
-        // --- EXCLUSÃO DE LANÇAMENTOS ---
         function deleteTransaction(id) {
             if(confirm("Tem certeza que deseja excluir permanentemente este valor?")) {
                 transactions = transactions.filter(t => t.id !== id);
@@ -1392,7 +503,6 @@
             }
         }
 
-        // --- RECURSO: TETO DE GASTOS DINÂMICO ---
         function checkLiveBudget() {
             let desc = document.getElementById('tx_description').value.trim().toLowerCase();
             let dateVal = document.getElementById('tx_date').value;
@@ -1404,8 +514,6 @@
             }
 
             let targetMonth = dateVal.substring(0, 7);
-            
-            // Procura se a descrição bate com alguma categoria cadastrada
             let foundCat = categories.find(c => c.name.toLowerCase().includes(desc) || desc.includes(c.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase()));
 
             if(foundCat && foundCat.budget > 0) {
@@ -1440,13 +548,8 @@
             }
         }
 
-        // --- SISTEMA DE COPIA DE SEGURANÇA (BACKUP) ---
         function exportBackup() {
-            let backupData = {
-                transactions: transactions,
-                categories: categories,
-                ccConfig: ccConfig
-            };
+            let backupData = { transactions: transactions, categories: categories, ccConfig: ccConfig };
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
             let downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
@@ -1484,18 +587,15 @@
             reader.readAsText(file);
         }
 
-        // --- BALANÇO ANUAL ---
         function renderAnnualBalance() {
             const tbody = document.getElementById('annualTableBody');
             tbody.innerHTML = '';
-
             let grandTotalIncome = 0;
             let grandTotalExpense = 0;
 
             for (let m = 1; m <= 12; m++) {
                 let monthStr = String(m).padStart(2, '0');
                 let targetYearMonth = `2026-${monthStr}`;
-
                 let monthlyIncome = 0;
                 let monthlyExpense = 0;
 
@@ -1535,7 +635,6 @@
             tbody.appendChild(totalTr);
         }
 
-        // --- GERENCIAMENTO DE NOMES ---
         function renderTags() {
             const container = document.getElementById('tagsContainer');
             container.innerHTML = '';
@@ -1555,9 +654,7 @@
             categories.forEach((cat, index) => {
                 let div = document.createElement('div');
                 div.className = 'category-item';
-                
                 let budgetText = cat.budget > 0 ? `Teto mensal: ${formatCurrency(cat.budget)}` : "Sem limite estipulado";
-                
                 div.innerHTML = `
                     <div class="category-main-info">
                         <strong>${cat.name}</strong>
@@ -1596,16 +693,15 @@
             }
         }
 
-        // --- TECLADO NUMÉRICO ---
         function updateAmountDisplay() {
             let numericValue = parseInt(rawDigits, 10) / 100;
             document.getElementById('amountDisplay').innerText = formatCurrency(numericValue);
         }
 
+         Hellenistic Key Press
         function pressKey(key) {
-            if (key === 'C') {
-                rawDigits = "0";
-            } else if (key === 'back') {
+            if (key === 'C') { rawDigits = "0"; } 
+            else if (key === 'back') {
                 rawDigits = rawDigits.slice(0, -1);
                 if (rawDigits === "" || rawDigits === "-") rawDigits = "0";
             } else {
@@ -1638,11 +734,9 @@
             return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
-        // --- SALVAR TRANSAÇÃO MANUAL ---
         function saveTransaction(type) {
             const val = getNumericValue();
             if (val <= 0) return alert('Digite um valor maior que R$ 0,00');
-
             let desc = document.getElementById('tx_description').value.trim() || 'Lançamento';
             const dateInput = document.getElementById('tx_date').value;
             const isFixed = document.getElementById('is_fixed').checked;
@@ -1650,7 +744,6 @@
             if (isFixed) {
                 const dueDay = parseInt(document.getElementById('due_day').value, 10) || 10;
                 let baseDate = new Date(dateInput + 'T12:00:00');
-                
                 for (let i = 0; i < 12; i++) {
                     let futureDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, dueDay);
                     transactions.push({
@@ -1667,13 +760,13 @@
             saveAndReset();
         }
 
-        // --- INTELIGÊNCIA REAL DO CARTÃO DE CRÉDITO ---
         function openCreditModal() {
             const val = getNumericValue();
             if (val <= 0) return alert('Digite um valor maior que R$ 0,00');
             document.getElementById('creditModal').style.display = 'flex';
         }
 
+        document.getElementById('creditModal').style.display = 'none';
         function closeCreditModal() {
             document.getElementById('creditModal').style.display = 'none';
             document.getElementById('custom_installments').value = '';
@@ -1689,24 +782,18 @@
             const totalVal = getNumericValue();
             let desc = document.getElementById('tx_description').value.trim() || 'Cartão de Crédito';
             const dateInput = document.getElementById('tx_date').value;
-            
             let baseDate = new Date(dateInput + 'T12:00:00');
             let purchaseDay = baseDate.getDate();
 
-            // Algoritmo do Ciclo de Fatura Real: se passou do dia de fechamento, a 1ª parcela pula para o mês seguinte
             let monthOffset = 0;
-            if (purchaseDay >= ccConfig.closeDay) {
-                monthOffset = 1;
-            }
+            if (purchaseDay >= ccConfig.closeDay) { monthOffset = 1; }
 
             const baseAmount = Math.floor((totalVal / installments) * 100) / 100;
             let remainder = Math.round((totalVal - (baseAmount * installments)) * 100) / 100;
 
             for (let i = 0; i < installments; i++) {
                 let targetMonthIndex = baseDate.getMonth() + i + monthOffset;
-                // As parcelas vencem sempre no dia oficial de vencimento do cartão
                 let futureDate = new Date(baseDate.getFullYear(), targetMonthIndex, ccConfig.dueDay);
-                
                 let currentInstallmentAmount = baseAmount;
                 if (i === installments - 1) {
                     currentInstallmentAmount = Math.round((baseAmount + remainder) * 100) / 100;
@@ -1720,7 +807,6 @@
                     date: `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
                 });
             }
-
             closeCreditModal();
             saveAndReset();
         }
@@ -1737,12 +823,10 @@
             loadData();
         }
 
-        // --- FILTRO DO EXTRATO ---
         function loadData() {
             const currentSelectedTarget = document.getElementById('monthSelector').value;
             const container = document.getElementById('historyContainer');
             container.innerHTML = '';
-
             let totalIncome = 0;
             let totalExpense = 0;
             let countItems = 0;
@@ -1757,7 +841,6 @@
 
                     let item = document.createElement('div');
                     item.className = 'history-item';
-                    
                     let dateFormatted = t.date.split('-').reverse().join('/');
                     let indicatorColor = t.type === 'income' ? 'var(--success)' : 'var(--danger)';
                     let prefix = t.type === 'income' ? '+' : '-';
@@ -1797,7 +880,6 @@
             }
         }
 
-        // Inicializações
         updateAmountDisplay();
         renderTags();
         loadData();
@@ -1810,3 +892,4 @@
     </script>
 </body>
 </html>
+
