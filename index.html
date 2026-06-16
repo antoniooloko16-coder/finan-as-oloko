@@ -35,11 +35,10 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            padding-top: 115px; /* Ajustado para dar espaço ao Topo + Menu de Abas fixos */
+            padding-top: 115px;
             padding-bottom: 20px;
         }
 
-        /* CONTAINER DO TOPO FIXO (Garante que tudo no cabeçalho fique junto) */
         .header-fixed-container {
             position: fixed;
             top: 0;
@@ -69,7 +68,7 @@
 
         .top-actions {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             align-items: center;
         }
 
@@ -80,18 +79,19 @@
             font-size: 18px;
             cursor: pointer;
             padding: 5px;
+            margin-right: 4px;
         }
 
-        .month-select {
+        /* Seletores de Mês e Ano Separados */
+        .date-select {
             background: var(--bg-input);
             color: var(--text);
             border: none;
-            padding: 6px 10px;
+            padding: 6px 8px;
             border-radius: 5px;
             font-size: 13px;
         }
 
-        /* MENU DE SELEÇÃO NA PARTE DE CIMA */
         .tab-navigation {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -181,7 +181,6 @@
         .tags-container { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 5px; }
         .tag { background: #2d2d2d; border: 1px solid #444; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--text); }
 
-        /* MONITOR DE METAS */
         .budget-monitor {
             margin-top: 10px;
             background: #181818;
@@ -245,29 +244,37 @@
 
     <div class="header-fixed-container">
         <div class="top-bar">
-            <h2>Finanças Direto ao Ponto</h2>
+            <h2>Finanças</h2>
             <div class="top-actions">
                 <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
-                <select class="month-select" id="monthSelector" onchange="loadData()">
-                    <option value="2026-01">Janeiro 2026</option>
-                    <option value="2026-02">Fevereiro 2026</option>
-                    <option value="2026-03">Março 2026</option>
-                    <option value="2026-04">Abril 2026</option>
-                    <option value="2026-05">Maio 2026</option>
-                    <option value="2026-06" selected>Junho 2026</option>
-                    <option value="2026-07">Julho 2026</option>
-                    <option value="2026-08">Agosto 2026</option>
-                    <option value="2026-09">Setembro 2026</option>
-                    <option value="2026-10">Outubro 2026</option>
-                    <option value="2026-11">Novembro 2026</option>
-                    <option value="2026-12">Dezembro 2026</option>
+                
+                <select class="date-select" id="monthSelector" onchange="loadData()">
+                    <option value="01">Jan</option>
+                    <option value="02">Fev</option>
+                    <option value="03">Mar</option>
+                    <option value="04">Abr</option>
+                    <option value="05">Mai</option>
+                    <option value="06" selected>Jun</option>
+                    <option value="07">Jul</option>
+                    <option value="08">Ago</option>
+                    <option value="09">Set</option>
+                    <option value="10">Out</option>
+                    <option value="11">Nov</option>
+                    <option value="12">Dez</option>
+                </select>
+
+                <select class="date-select" id="yearSelector" onchange="loadData()">
+                    <option value="2025">2025</option>
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
                 </select>
             </div>
         </div>
         
         <div class="tab-navigation">
             <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">Lançamentos</button>
-            <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Nomes / Opções</button>
+            <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Nomes</button>
             <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Balanço Anual</button>
         </div>
     </div>
@@ -403,8 +410,8 @@
 
         <div id="page-anual" class="page-content">
             <div class="card">
-                <h3 style="margin-top:0; color: var(--primary); font-size: 16px; margin-bottom: 5px;">📊 Resumo Acumulado 2026</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 15px 0;">Saldos consolidados de janeiro a dezembro.</p>
+                <h3 style="margin-top:0; color: var(--primary); font-size: 16px; margin-bottom: 5px;">📊 Resumo Acumulado <span id="lblAnualHeader">2026</span></h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 15px 0;">Saldos consolidados de janeiro a dezembro baseados no ano selecionado.</p>
                 
                 <table class="annual-table">
                     <thead>
@@ -459,7 +466,6 @@
 
         let ccConfig = JSON.parse(localStorage.getItem('cc_config')) || { closeDay: 25, dueDay: 5 };
         
-        // Garante que os elementos de configuração existem antes de atribuir valor
         window.addEventListener('DOMContentLoaded', () => {
             if(document.getElementById('cc_close_day')) document.getElementById('cc_close_day').value = ccConfig.closeDay;
             if(document.getElementById('cc_due_day')) document.getElementById('cc_due_day').value = ccConfig.dueDay;
@@ -556,7 +562,7 @@
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
             let downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `Backup_Financas_2026.json`);
+            downloadAnchor.setAttribute("download", `Backup_Financas_App.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
@@ -592,13 +598,16 @@
 
         function renderAnnualBalance() {
             const tbody = document.getElementById('annualTableBody');
+            const selectedYear = document.getElementById('yearSelector').value;
+            document.getElementById('lblAnualHeader').innerText = selectedYear;
+            
             tbody.innerHTML = '';
             let grandTotalIncome = 0;
             let grandTotalExpense = 0;
 
             for (let m = 1; m <= 12; m++) {
                 let monthStr = String(m).padStart(2, '0');
-                let targetYearMonth = `2026-${monthStr}`;
+                let targetYearMonth = `${selectedYear}-${monthStr}`;
                 let monthlyIncome = 0;
                 let monthlyExpense = 0;
 
@@ -829,7 +838,10 @@
         }
 
         function loadData() {
-            const currentSelectedTarget = document.getElementById('monthSelector').value;
+            const selectedMonth = document.getElementById('monthSelector').value;
+            const selectedYear = document.getElementById('yearSelector').value;
+            const currentSelectedTarget = `${selectedYear}-${selectedMonth}`;
+            
             const container = document.getElementById('historyContainer');
             if(!container) return;
             container.innerHTML = '';
