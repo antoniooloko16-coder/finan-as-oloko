@@ -3,33 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu PWA</title>
+    <title>Minhas Finanças</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        body {
-            font-family: system-ui, sans-serif;
-            text-align: center;
-            background-color: #121212;
-            color: #ffffff;
-            margin: 0;
-            padding: 40px 20px;
-        }
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            background: #1e1e1e;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-        h1 { color: #bb86fc; }
-        p { color: #a0a0a0; font-size: 16px; }
+        body { font-family: system-ui, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 20px; }
+        .container { max-width: 400px; margin: 20px auto; background: #1e1e1e; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        h1 { color: #bb86fc; text-align: center; margin-bottom: 25px; font-size: 24px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #a0a0a0; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #2d2d2d; color: #fff; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; background: #03dac6; border: none; border-radius: 8px; color: #000; font-weight: bold; font-size: 16px; margin-top: 10px; cursor: pointer; }
+        .resultado { margin-top: 20px; padding: 15px; background: #2d2d2d; border-radius: 8px; text-align: center; font-size: 18px; }
+        .saldo-positivo { color: #03dac6; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Meu PWA Funciona!</h1>
-        <p>Este é o início do seu aplicativo gratuito rodando direto pelo navegador.</p>
+        <h1>Controle Financeiro</h1>
+        
+        <div class="input-group">
+            <label>Sua Renda Total (R$):</label>
+            <input type="number" id="renda" placeholder="Ex: 3000">
+        </div>
+
+        <div class="input-group">
+            <label>Total de Gastos (R$):</label>
+            <input type="number" id="gastos" placeholder="Ex: 1500">
+        </div>
+
+        <button onclick="calcularSaldo()">Calcular Saldo</button>
+
+        <div class="resultado">
+            Saldo Restante: <span id="saldo" class="saldo-positivo">R$ 0,00</span>
+        </div>
     </div>
+
+    <script>
+        function calcularSaldo() {
+            const renda = parseFloat(document.getElementById('renda').value) || 0;
+            const gastos = parseFloat(document.getElementById('gastos').value) || 0;
+            const saldoFinal = renda - gastos;
+            document.getElementById('saldo').innerText = 'R$ ' + saldoFinal.toFixed(2).replace('.', ',');
+        }
+    </script>
 </body>
 </html>
