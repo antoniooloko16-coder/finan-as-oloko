@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finanças Direto ao Ponto</title>
+    <title>Finanças Direto ao Ponto 🚀</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -205,12 +205,12 @@
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
         .conditional-box { background: #181818; padding: 15px; border-radius: 8px; margin-top: 10px; display: none; border-left: 3px solid var(--primary); }
 
-        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px; }
-        .btn-action { border: none; padding: 15px 5px; font-weight: bold; border-radius: 10px; color: #000; font-size: 13px; cursor: pointer; text-align: center; }
+        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px; }
+        .btn-action { border: none; padding: 15px 2px; font-weight: bold; border-radius: 10px; color: #000; font-size: 12px; cursor: pointer; text-align: center; }
 
-        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
-        .metric-box h4 { margin: 0 0 5px 0; font-size: 12px; color: var(--text-muted); }
-        .metric-box p { margin: 0; font-size: 14px; font-weight: bold; }
+        .summary-grid-four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: center; }
+        .metric-box h4 { margin: 0 0 5px 0; font-size: 11px; color: var(--text-muted); }
+        .metric-box p { margin: 0; font-weight: bold; font-size: 12px; white-space: nowrap; }
 
         @keyframes blink { 0%, 100% { border: 2px solid var(--danger); } 50% { border: 2px solid transparent; } }
         .alert-blink { animation: blink 1s infinite; background: rgba(213, 0, 0, 0.1) !important; border-radius: 16px; }
@@ -261,7 +261,7 @@
 
     <div class="header-fixed-container">
         <div class="top-bar">
-            <h2>Finanças</h2>
+            <h2>💰 Finanças Pro</h2>
             <div class="top-actions">
                 <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
                 
@@ -285,8 +285,8 @@
         </div>
         
         <div class="tab-navigation">
-            <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">Lançamentos</button>
-            <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Nomes</button>
+            <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">📝 Lançamentos</button>
+            <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Configurações</button>
             <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Balanço Anual</button>
         </div>
     </div>
@@ -314,14 +314,14 @@
 
             <div class="card">
                 <div class="input-group">
-                    <label for="tx_description">Descrição do Gasto / Receita</label>
+                    <label for="tx_description">🔍 Descrição do Gasto / Receita</label>
                     <input type="text" id="tx_description" class="text-input" placeholder="Selecione abaixo ou digite..." oninput="checkLiveBudget()">
                     <div class="tags-container" id="tagsContainer"></div>
                 </div>
 
                 <div class="budget-monitor" id="budgetMonitor">
                     <div class="budget-info">
-                        <span id="budgetLabelTarget">Categoria</span>
+                        <span id="budgetLabelTarget">🎯 Categoria</span>
                         <span id="budgetLabelValues">R$ 0 / R$ 0</span>
                     </div>
                     <div class="progress-bar-bg">
@@ -330,41 +330,46 @@
                 </div>
 
                 <div class="input-group" style="margin-top:15px;">
-                    <label for="tx_date">Data do Lançamento</label>
+                    <label for="tx_date">📅 Data do Lançamento</label>
                     <input type="date" id="tx_date" class="text-input" onchange="checkLiveBudget()">
                 </div>
 
                 <div class="checkbox-group">
                     <input type="checkbox" id="is_fixed" onchange="toggleConditionalFields()">
-                    <label for="is_fixed" style="color: var(--text)">Repetir todo mês (Fixo)</label>
+                    <label for="is_fixed" style="color: var(--text)">🔄 Repetir todo mês (Fixo)</label>
                 </div>
 
                 <div class="conditional-box" id="conditionalFields">
                     <div class="input-group">
-                        <label>Dia padrão de cobrança</label>
+                        <label>📆 Dia padrão de cobrança</label>
                         <input type="number" id="due_day" class="text-input" min="1" max="31" value="10">
                     </div>
                 </div>
             </div>
 
             <div class="action-grid">
-                <button class="btn-action" style="background: var(--success);" onclick="saveTransaction('income')">Ganhei</button>
-                <button class="btn-action" style="background: var(--danger); color: #fff;" onclick="saveTransaction('expense_cash')">Gastei</button>
-                <button class="btn-action" style="background: var(--accent); color: #fff;" onclick="openCreditModal()">Cartão</button>
+                <button class="btn-action" style="background: var(--success);" onclick="saveTransaction('income')">🤑 Ganhei</button>
+                <button class="btn-action" style="background: var(--danger); color: #fff;" onclick="saveTransaction('expense_cash')">💸 Gastei</button>
+                <button class="btn-action" style="background: var(--accent); color: #fff;" onclick="openCreditModal()">💳 Cartão</button>
+                <button class="btn-action" style="background: var(--warning);" onclick="saveTransaction('saving')">💰 Caixinha</button>
             </div>
 
             <div class="card" id="summaryCard">
-                <div class="summary-grid">
+                <div class="summary-grid-four">
                     <div class="metric-box">
-                        <h4>Ganhos</h4>
+                        <h4>🟢 Ganhos</h4>
                         <p style="color: var(--success);" id="lblGanhos">R$ 0,00</p>
                     </div>
                     <div class="metric-box">
-                        <h4>Gastos</h4>
+                        <h4>🔴 Gastos</h4>
                         <p style="color: var(--danger);" id="lblGastos">R$ 0,00</p>
                     </div>
                     <div class="metric-box">
-                        <h4>Sobrou</h4>
+                        <h4>🟡 Caixinha</h4>
+                        <p style="color: var(--warning);" id="lblCaixinha">R$ 0,00</p>
+                    </div>
+                    <div class="metric-box">
+                        <h4>🟣 Sobrou</h4>
                         <p style="color: var(--primary);" id="lblSobrou">R$ 0,00</p>
                     </div>
                 </div>
@@ -372,7 +377,7 @@
 
             <div class="card">
                 <div class="filter-header">
-                    <label style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Extrato do Mês Selecionado</label>
+                    <label style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">🧾 Extrato do Mês Selecionado</label>
                     <button class="btn-clear-filter" id="btnClearFilter" onclick="clearExtratoFilter()">❌ Limpar Filtro</button>
                 </div>
                 <div class="history-list" id="historyContainer"></div>
@@ -381,27 +386,27 @@
 
         <div id="page-categorias" class="page-content">
             <div class="card">
-                <h3 style="margin-top:0; color: var(--primary); font-size: 16px;">Adicionar Novo Nome de Gasto</h3>
+                <h3 style="margin-top:0; color: var(--primary); font-size: 16px;">✨ Adicionar Novo Nome de Gasto</h3>
                 <div class="input-group">
-                    <label>Nome do Gasto / Categoria</label>
+                    <label>🏷️ Nome do Gasto / Categoria</label>
                     <input type="text" id="new_category_name" class="text-input" placeholder="Ex: Combustível, Mercado...">
                 </div>
                 <div class="input-group">
-                    <label>Teto de Gasto Mensal (Opcional - 0 para ilimitado)</label>
+                    <label>🎯 Teto de Gasto Mensal (Opcional - 0 para ilimitado)</label>
                     <input type="number" id="new_category_budget" class="text-input" placeholder="Ex: 500" value="0">
                 </div>
-                <button class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">Adicionar Novo Nome</button>
+                <button class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">➕ Adicionar Novo Nome</button>
             </div>
 
             <div class="card">
                 <h3 style="margin-top:0; color: var(--accent); font-size: 15px;">💳 Ciclo da Fatura do Cartão</h3>
                 <div class="grid-2col">
                     <div class="input-group">
-                        <label>Dia Fechamento</label>
+                        <label>🔓 Dia Fechamento</label>
                         <input type="number" id="cc_close_day" class="text-input" min="1" max="31" value="25" onchange="saveCCConfig()">
                     </div>
                     <div class="input-group">
-                        <label>Dia Vencimento</label>
+                        <label>🔒 Dia Vencimento</label>
                         <input type="number" id="cc_due_day" class="text-input" min="1" max="31" value="5" onchange="saveCCConfig()">
                     </div>
                 </div>
@@ -418,7 +423,7 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0; color: var(--text-muted); font-size: 14px; text-transform: uppercase;">Meus Nomes Cadastrados</h3>
+                <h3 style="margin-top:0; color: var(--text-muted); font-size: 14px; text-transform: uppercase;">📋 Meus Nomes Cadastrados</h3>
                 <div id="categoryListContainer"></div>
             </div>
         </div>
@@ -436,9 +441,9 @@
                     <thead>
                         <tr>
                             <th>Mês</th>
-                            <th>Ganhos</th>
-                            <th>Gastos</th>
-                            <th>Sobra/Falta</th>
+                            <th>🟢 Ganhos</th>
+                            <th>🔴 Saídas</th>
+                            <th>⚖️ Sobra/Falta</th>
                         </tr>
                     </thead>
                     <tbody id="annualTableBody"></tbody>
@@ -449,7 +454,7 @@
 
     <div class="modal" id="creditModal">
         <div class="modal-content">
-            <div class="modal-title">Escolha as Parcelas do Cartão</div>
+            <div class="modal-title">🔢 Escolha as Parcelas do Cartão</div>
             <button class="modal-btn" onclick="saveCreditTransaction(1)">1x (À Vista na Fatura)</button>
             <button class="modal-btn" onclick="saveCreditTransaction(2)">2 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(3)">3 meses seguintes</button>
@@ -460,13 +465,13 @@
             <button class="modal-btn" onclick="saveCreditTransaction(12)">12 meses seguintes</button>
             
             <div style="border-top: 1px solid #444; margin: 15px 0; padding-top: 10px;">
-                <label style="font-size: 12px; color: var(--text-muted); display:block; margin-bottom:5px;">Outra quantidade de vezes:</label>
+                <label style="font-size: 12px; color: var(--text-muted); display:block; margin-bottom:5px;">✍️ Outra quantidade de vezes:</label>
                 <div class="custom-installments-container">
                     <input type="number" id="custom_installments" class="text-input" min="1" max="48" placeholder="Ex: 8">
                     <button class="btn-action" style="background: var(--primary); padding: 0 15px; font-size:14px; width:auto;" onclick="saveCustomCredit()">Aplicar</button>
                 </div>
             </div>
-            <button class="modal-btn" style="background: #333; text-align: center; margin-top: 10px;" onclick="closeCreditModal()">Cancelar</button>
+            <button class="modal-btn" style="background: #333; text-align: center; margin-top: 10px;" onclick="closeCreditModal()">❌ Cancelar</button>
         </div>
     </div>
 
@@ -474,8 +479,8 @@
         let rawDigits = "0";
         let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
         let privacyMode = false;
-        let filtroCategoriaAtivo = ""; // Variável auxiliar para o filtro de extrato
-        let instGraficoAnual = null; // Instância global do gráfico Chart.js
+        let filtroCategoriaAtivo = ""; 
+        let instGraficoAnual = null; 
         
         let defaultCategories = [
             { name: "🛒 Supermercado", budget: 0 },
@@ -488,7 +493,7 @@
         let ccConfig = JSON.parse(localStorage.getItem('cc_config')) || { closeDay: 25, dueDay: 5 };
         
         window.addEventListener('DOMContentLoaded', () => {
-            configurarSeletorAnos(); // Torna os anos dinâmicos automáticos
+            configurarSeletorAnos(); 
             if(document.getElementById('cc_close_day')) document.getElementById('cc_close_day').value = ccConfig.closeDay;
             if(document.getElementById('cc_due_day')) document.getElementById('cc_due_day').value = ccConfig.dueDay;
             if(document.getElementById('tx_date')) document.getElementById('tx_date').valueAsDate = new Date();
@@ -503,7 +508,6 @@
             "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro"
         };
 
-        // GERA ANOS AUTOMÁTICOS COM BASE NO ANO CORRENTE DO DISPOSITIVO
         function configurarSeletorAnos() {
             const seletorAno = document.getElementById('yearSelector');
             const anoCorrente = new Date().getFullYear();
@@ -575,7 +579,7 @@
                 let percentage = Math.min((totalProjected / foundCat.budget) * 100, 100);
 
                 document.getElementById('budgetMonitor').style.display = 'block';
-                document.getElementById('budgetLabelTarget').innerText = `Meta de ${foundCat.name}`;
+                document.getElementById('budgetLabelTarget').innerText = `🎯 Meta de ${foundCat.name}`;
                 document.getElementById('budgetLabelValues').innerText = `${formatCurrency(totalProjected)} / ${formatCurrency(foundCat.budget)}`;
                 
                 let fill = document.getElementById('budgetBarFill');
@@ -623,7 +627,7 @@
                         alert('Backup restaurado com sucesso completo! 🎉');
                         window.location.reload();
                     } else {
-                        alert('Arquivo de backup inválido.');
+                        alert('Arquivo de backup inválido ❌');
                     }
                 } catch (err) {
                     alert('Erro ao ler arquivo.');
@@ -641,7 +645,6 @@
             let grandTotalIncome = 0;
             let grandTotalExpense = 0;
 
-            // Arrays auxiliares para alimentar o gráfico do Chart.js
             let arrayGanhosMeses = [];
             let arrayGastosMeses = [];
 
@@ -654,14 +657,13 @@
                 transactions.forEach(t => {
                     if (t.date.substring(0, 7) === targetYearMonth) {
                         if (t.type === 'income') monthlyIncome += t.amount;
-                        if (t.type === 'expense_cash') monthlyExpense += t.amount;
+                        if (t.type === 'expense_cash' || t.type === 'saving') monthlyExpense += t.amount;
                     }
                 });
 
                 grandTotalIncome += monthlyIncome;
                 grandTotalExpense += monthlyExpense;
                 
-                // Salva nos arrays do gráfico
                 arrayGanhosMeses.push(monthlyIncome);
                 arrayGastosMeses.push(monthlyExpense);
 
@@ -670,7 +672,7 @@
 
                 let tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="font-weight:500;">${monthNames[monthStr]}</td>
+                    <td style="font-weight:500;">📅 ${monthNames[monthStr]}</td>
                     <td style="color: var(--success);">${formatCurrency(monthlyIncome)}</td>
                     <td style="color: var(--danger);">${formatCurrency(monthlyExpense)}</td>
                     <td style="color: ${balanceColor}; font-weight: bold;">${formatCurrency(monthlyBalance)}</td>
@@ -684,14 +686,13 @@
             let totalTr = document.createElement('tr');
             totalTr.className = 'total-row';
             totalTr.innerHTML = `
-                <td>TOTAL ANO</td>
+                <td>🏁 TOTAL ANO</td>
                 <td>${formatCurrency(grandTotalIncome)}</td>
                 <td>${formatCurrency(grandTotalExpense)}</td>
                 <td style="color: ${totalBalanceColor};">${formatCurrency(yearBalance)}</td>
             `;
             tbody.appendChild(totalTr);
 
-            // MONTA OU ATUALIZA O GRÁFICO DINÂMICO DE BARRAS
             renderizarGraficoBarras(arrayGanhosMeses, arrayGastosMeses);
         }
 
@@ -699,10 +700,9 @@
             const ctx = document.getElementById('chartAnual').getContext('2d');
             
             if (instGraficoAnual) {
-                instGraficoAnual.destroy(); // Reseta para não sobrepor gráficos antigos ao mudar o ano
+                instGraficoAnual.destroy(); 
             }
 
-            // Oculta os valores reais no gráfico caso a privacidade esteja ativada
             let dadosGanhos = privacyMode ? ganhos.map(() => 0) : ganhos;
             let dadosGastos = privacyMode ? gastos.map(() => 0) : gastos;
 
@@ -711,8 +711,8 @@
                 data: {
                     labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
                     datasets: [
-                        { label: 'Ganhos', data: dadosGanhos, backgroundColor: '#00C853', borderRadius: 4 },
-                        { label: 'Gastos', data: dadosGastos, backgroundColor: '#D50000', borderRadius: 4 }
+                        { label: 'Ganhos 🟢', data: dadosGanhos, backgroundColor: '#00C853', borderRadius: 4 },
+                        { label: 'Saídas/Caixinha 🔴', data: dadosGastos, backgroundColor: '#D50000', borderRadius: 4 }
                     ]
                 },
                 options: {
@@ -729,7 +729,6 @@
             });
         }
 
-        // ALTERAÇÃO: CLICAR NA TAG AGORA FILTRA O EXTRATO SE JÁ ESTIVER LOGADO
         function filtrarExtratoPorTag(nomeTag, elementoTag) {
             document.querySelectorAll('.tag').forEach(t => t.classList.remove('active-filter'));
             
@@ -761,7 +760,6 @@
                 if (filtroCategoriaAtivo === cleanedName) tagEl.classList.add('active-filter');
                 tagEl.innerText = cat.name;
                 
-                // Evento duplo: Preenche o input e filtra o extrato ao mesmo tempo!
                 tagEl.onclick = () => { 
                     fillDescription(cleanedName); 
                     checkLiveBudget(); 
@@ -778,7 +776,7 @@
             categories.forEach((cat, index) => {
                 let div = document.createElement('div');
                 div.className = 'category-item';
-                let budgetText = cat.budget > 0 ? `Teto mensal: ${formatCurrency(cat.budget)}` : "Sem limite estipulado";
+                let budgetText = cat.budget > 0 ? `🎯 Teto mensal: ${formatCurrency(cat.budget)}` : "♾️ Sem limite estipulado";
                 div.innerHTML = `
                     <div class="category-main-info">
                         <strong>${cat.name}</strong>
@@ -796,7 +794,7 @@
             let name = input.value.trim();
             let budget = parseFloat(budgetInput.value) || 0;
 
-            if(!name) return alert('Por favor, digite um nome válido!');
+            if(!name) return alert('Por favor, digite um nome válido! ⚠️');
             if(!name.match(/[\u1F600-\u1F64F]/)) { name = "🔹 " + name; }
             
             categories.push({ name: name, budget: budget });
@@ -809,7 +807,7 @@
         }
 
         function deleteCategory(index) {
-            if(confirm(`Deseja mesmo excluir o nome "${categories[index].name}"?`)) {
+            if(confirm(`Deseja mesmo excluir o nome "${categories[index].name}"? 🗑️`)) {
                 categories.splice(index, 1);
                 localStorage.setItem('custom_categories_v2', JSON.stringify(categories));
                 renderCategoryManagement();
@@ -837,7 +835,6 @@
             checkLiveBudget();
         }
 
-        // ANIMAÇÃO DE ERRO SE TENTAR SALVAR SEM VALOR DIGITADO
         function dispararErroVisor() {
             const visor = document.getElementById('amountDisplay');
             visor.classList.add('visor-erro');
@@ -872,7 +869,13 @@
                 dispararErroVisor();
                 return;
             }
-            let desc = document.getElementById('tx_description').value.trim() || 'Lançamento';
+            let desc = document.getElementById('tx_description').value.trim();
+            if(!desc) {
+                if(type === 'saving') desc = 'Depósito Caixinha 💰';
+                else if(type === 'income') desc = 'Receita Extra 💵';
+                else desc = 'Lançamento Geral 📝';
+            }
+            
             const dateInput = document.getElementById('tx_date').value;
             const isFixed = document.getElementById('is_fixed').checked;
 
@@ -885,7 +888,7 @@
                         id: Date.now() + '-' + i,
                         amount: val,
                         type: type,
-                        description: desc + ' (Fixo)',
+                        description: desc + ' 🔄',
                         date: `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
                     });
                 }
@@ -911,13 +914,13 @@
 
         function saveCustomCredit() {
             const num = parseInt(document.getElementById('custom_installments').value, 10);
-            if (isNaN(num) || num <= 0) return alert('Insira um número válido.');
+            if (isNaN(num) || num <= 0) return alert('Insira um número válido ⚠️');
             saveCreditTransaction(num);
         }
 
         function saveCreditTransaction(installments) {
             const totalVal = getNumericValue();
-            let desc = document.getElementById('tx_description').value.trim() || 'Cartão de Crédito';
+            let desc = document.getElementById('tx_description').value.trim() || 'Compra Cartão 💳';
             const dateInput = document.getElementById('tx_date').value;
             let baseDate = new Date(dateInput + 'T12:00:00');
             let purchaseDay = baseDate.getDate();
@@ -970,6 +973,7 @@
             container.innerHTML = '';
             let totalIncome = 0;
             let totalExpense = 0;
+            let totalSaving = 0;
             let countItems = 0;
 
             let sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -977,25 +981,28 @@
             sortedTransactions.forEach(t => {
                 if (t.date.substring(0, 7) === currentSelectedTarget) {
                     
-                    // FILTRO DE TAG EXTRATO EXECUTADO EM TEMPO REAL
                     if (filtroCategoriaAtivo !== "" && !t.description.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase())) {
-                        return; // Pula o item se o filtro estiver ligado e ele não bater
+                        return; 
                     }
 
                     countItems++;
                     if (t.type === 'income') totalIncome += t.amount;
                     if (t.type === 'expense_cash') totalExpense += t.amount;
+                    if (t.type === 'saving') totalSaving += t.amount;
 
                     let item = document.createElement('div');
                     item.className = 'history-item';
                     let dateFormatted = t.date.split('-').reverse().join('/');
-                    let indicatorColor = t.type === 'income' ? 'var(--success)' : 'var(--danger)';
-                    let prefix = t.type === 'income' ? '+' : '-';
+                    
+                    let indicatorColor = 'var(--success)';
+                    let prefix = '+';
+                    if (t.type === 'expense_cash') { indicatorColor = 'var(--danger)'; prefix = '-'; }
+                    if (t.type === 'saving') { indicatorColor = 'var(--warning)'; prefix = '💰'; }
 
                     item.innerHTML = `
                         <div class="history-info">
                             <span class="history-desc">${t.description}</span>
-                            <span class="history-date">${dateFormatted}</span>
+                            <span class="history-date">📅 ${dateFormatted}</span>
                         </div>
                         <div class="history-right">
                             <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
@@ -1007,12 +1014,13 @@
             });
 
             if (countItems === 0) {
-                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhum lançamento registrado.</div>`;
+                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhum lançamento registrado. 📭</div>`;
             }
 
-            let sobrou = totalIncome - totalExpense;
+            let sobrou = totalIncome - totalExpense - totalSaving;
             document.getElementById('lblGanhos').innerText = formatCurrency(totalIncome);
             document.getElementById('lblGastos').innerText = formatCurrency(totalExpense);
+            document.getElementById('lblCaixinha').innerText = formatCurrency(totalSaving);
             document.getElementById('lblSobrou').innerText = formatCurrency(sobrou);
 
             const summaryCard = document.getElementById('summaryCard');
@@ -1029,3 +1037,4 @@
     </script>
 </body>
 </html>
+
