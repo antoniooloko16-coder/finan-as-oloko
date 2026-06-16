@@ -24,7 +24,7 @@
             color: var(--text);
             margin: 0;
             padding: 0;
-            overflow-x: hidden; /* CORRIGIDO: user-select removido daqui para liberar os cliques */
+            overflow-x: hidden;
         }
 
         .app-container {
@@ -109,8 +109,8 @@
             font-weight: bold;
             border-radius: 10px;
             cursor: pointer;
-            pointer-events: auto; /* CORRIGIDO: Força o navegador a aceitar os toques na tela */
-            user-select: none; /* Deixa o bloqueio de cópia de texto apenas nas teclas */
+            pointer-events: auto;
+            user-select: none;
         }
 
         .key:active { background: #444; }
@@ -133,5 +133,362 @@
         .tag { background: #2d2d2d; border: 1px solid #444; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; }
 
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
-        .conditional-box { background: #181818; padding: 15px; border-radius: 8px; margin-top: 1
+        .conditional-box { background: #181818; padding: 15px; border-radius: 8px; margin-top: 10px; display: none; border-left: 3px solid var(--primary); }
 
+        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px; }
+        .btn-action { border: none; padding: 15px 5px; font-weight: bold; border-radius: 10px; color: #000; font-size: 13px; cursor: pointer; text-align: center; }
+
+        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
+        .metric-box h4 { margin: 0 0 5px 0; font-size: 12px; color: var(--text-muted); }
+        .metric-box p { margin: 0; font-size: 14px; font-weight: bold; }
+
+        @keyframes blink { 0%, 100% { border: 2px solid var(--danger); } 50% { border: 2px solid transparent; } }
+        .alert-blink { animation: blink 1s infinite; background: rgba(213, 0, 0, 0.1) !important; border-radius: 16px; }
+
+        .history-list { margin-top: 15px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #2d2d2d; }
+        .history-info { display: flex; flex-direction: column; }
+        .history-desc { font-weight: 500; font-size: 15px; }
+        .history-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .history-val { font-weight: bold; font-size: 15px; }
+
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; padding: 20px; }
+        .modal-content { background: var(--bg-card); width: 100%; max-width: 360px; padding: 25px; border-radius: 16px; box-sizing: border-box; }
+        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
+        .modal-btn { width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 10px; font-weight: 500; text-align: left; cursor: pointer; }
+
+        .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--success); color: #000; padding: 10px 25px; border-radius: 20px; font-weight: bold; z-index: 2000; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="success-banner" id="successBanner">Lançamento Salvo! ✓</div>
+
+    <div class="app-container">
+        <div class="top-bar">
+            <h2>Finanças Direto ao Ponto</h2>
+            <div class="top-actions">
+                <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
+                <select class="month-select" id="monthSelector" onchange="loadData()">
+                    <option value="2026-06">Junho 2026</option>
+                    <option value="2026-07">Julho 2026</option>
+                    <option value="2026-08">Agosto 2026</option>
+                    <option value="2026-09">Setembro 2026</option>
+                    <option value="2026-10">Outubro 2026</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="display-amount" id="amountDisplay">R$ 0,00</div>
+            <div class="keyboard-grid">
+                <button class="key" onclick="pressKey('1')">1</button>
+                <button class="key" onclick="pressKey('2')">2</button>
+                <button class="key" onclick="pressKey('3')">3</button>
+                <button class="key" onclick="pressKey('4')">4</button>
+                <button class="key" onclick="pressKey('5')">5</button>
+                <button class="key" onclick="pressKey('6')">6</button>
+                <button class="key" onclick="pressKey('7')">7</button>
+                <button class="key" onclick="pressKey('8')">8</button>
+                <button class="key" onclick="pressKey('9')">9</button>
+                <button class="key" onclick="pressKey('C')" style="color:var(--danger)">C</button>
+                <button class="key" onclick="pressKey('0')">0</button>
+                <button class="key" onclick="pressKey('back')">⌫</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="input-group">
+                <label for="tx_description">Descrição</label>
+                <input type="text" id="tx_description" class="text-input" placeholder="Ex: Supermercado">
+                <div class="tags-container">
+                    <div class="tag" onclick="fillDescription('Supermercado')">🛒 Supermercado</div>
+                    <div class="tag" onclick="fillDescription('Salário')">💰 Salário</div>
+                    <div class="tag" onclick="fillDescription('Restaurante')">🍔 Restaurante</div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="tx_date">Data do Lançamento</label>
+                <input type="date" id="tx_date" class="text-input">
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="is_fixed" onchange="toggleConditionalFields()">
+                <label for="is_fixed" style="color: var(--text)">Repetir todo mês (Fixo)</label>
+            </div>
+
+            <div class="conditional-box" id="conditionalFields">
+                <div class="input-group">
+                    <label>Dia padrão de cobrança</label>
+                    <input type="number" id="due_day" class="text-input" min="1" max="31" value="10">
+                </div>
+            </div>
+        </div>
+
+        <div class="action-grid">
+            <button class="btn-action" style="background: var(--success);" onclick="saveTransaction('income')">Ganhei</button>
+            <button class="btn-action" style="background: var(--danger); color: #fff;" onclick="saveTransaction('expense_cash')">Gastei</button>
+            <button class="btn-action" style="background: var(--accent); color: #fff;" onclick="openCreditModal()">Cartão</button>
+        </div>
+
+        <div class="card" id="summaryCard">
+            <div class="summary-grid">
+                <div class="metric-box">
+                    <h4>Ganhos</h4>
+                    <p style="color: var(--success);" id="lblGanhos">R$ 0,00</p>
+                </div>
+                <div class="metric-box">
+                    <h4>Gastos</h4>
+                    <p style="color: var(--danger);" id="lblGastos">R$ 0,00</p>
+                </div>
+                <div class="metric-box">
+                    <h4>Sobrou</h4>
+                    <p style="color: var(--primary);" id="lblSobrou">R$ 0,00</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <label style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">Extrato do Mês</label>
+            <div class="history-list" id="historyContainer">
+                </div>
+        </div>
+    </div>
+
+    <div class="modal" id="creditModal">
+        <div class="modal-content">
+            <div class="modal-title">Parcelas do Cartão</div>
+            <button class="modal-btn" onclick="saveCreditTransaction(1)">À Vista (Próxima Fatura)</button>
+            <button class="modal-btn" onclick="saveCreditTransaction(2)">2x sem juros</button>
+            <button class="modal-btn" onclick="saveCreditTransaction(3)">3x sem juros</button>
+            <button class="modal-btn" onclick="saveCreditTransaction(4)">4x sem juros</button>
+            <button class="modal-btn" onclick="saveCreditTransaction(5)">5x sem juros</button>
+            <button class="modal-btn" onclick="saveCreditTransaction(6)">6x sem juros</button>
+            <button class="modal-btn" onclick="saveCreditTransaction(12)">12x sem juros</button>
+            <button class="modal-btn" style="background: #333; text-align: center; margin-top: 10px;" onclick="closeCreditModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        // --- ESTADO DO APLICATIVO ---
+        let rawDigits = "0";
+        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        let privacyMode = false;
+
+        // Inicializar a data padrão com a data de hoje
+        document.getElementById('tx_date').valueAsDate = new Date();
+
+        // --- SISTEMA DE TECLADO NUMÉRICO ---
+        function updateAmountDisplay() {
+            let numericValue = parseInt(rawDigits, 10) / 100;
+            document.getElementById('amountDisplay').innerText = formatCurrency(numericValue);
+        }
+
+        function pressKey(key) {
+            if (key === 'C') {
+                rawDigits = "0";
+            } else if (key === 'back') {
+                rawDigits = rawDigits.slice(0, -1);
+                if (rawDigits === "" || rawDigits === "-") rawDigits = "0";
+            } else {
+                if (rawDigits === "0") {
+                    rawDigits = key;
+                } else if (rawDigits.length < 10) {
+                    rawDigits += key;
+                }
+            }
+            updateAmountDisplay();
+        }
+
+        function getNumericValue() {
+            return parseInt(rawDigits, 10) / 100;
+        }
+
+        function fillDescription(text) {
+            document.getElementById('tx_description').value = text;
+        }
+
+        function toggleConditionalFields() {
+            const checked = document.getElementById('is_fixed').checked;
+            document.getElementById('conditionalFields').style.display = checked ? 'block' : 'none';
+        }
+
+        // --- MODO CORTINA (PRIVACIDADE) ---
+        function togglePrivacyMode() {
+            privacyMode = !privacyMode;
+            document.getElementById('btnCortina').innerText = privacyMode ? '🙈' : '👁️';
+            loadData();
+        }
+
+        function showBanner() {
+            const banner = document.getElementById('successBanner');
+            banner.style.display = 'block';
+            setTimeout(() => banner.style.display = 'none', 2000);
+        }
+
+        function formatCurrency(val) {
+            if (privacyMode) return "R$ ***,**";
+            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        // --- SALVAR TRANSAÇÃO ---
+        function saveTransaction(type) {
+            const val = getNumericValue();
+            if (val <= 0) return alert('Digite um valor maior que R$ 0,00');
+
+            let desc = document.getElementById('tx_description').value.trim() || 'Lançamento';
+            const dateInput = document.getElementById('tx_date').value;
+            const isFixed = document.getElementById('is_fixed').checked;
+
+            if (isFixed) {
+                const dueDay = parseInt(document.getElementById('due_day').value, 10) || 10;
+                let baseDate = new Date(dateInput + 'T12:00:00');
+                
+                for (let i = 0; i < 12; i++) {
+                    let futureDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, dueDay);
+                    let year = futureDate.getFullYear();
+                    let month = String(futureDate.getMonth() + 1).padStart(2, '0');
+                    let day = String(futureDate.getDate()).padStart(2, '0');
+
+                    transactions.push({
+                        id: Date.now() + '-' + i,
+                        amount: val,
+                        type: type,
+                        description: desc + ' (Fixo)',
+                        date: `${year}-${month}-${day}`
+                    });
+                }
+            } else {
+                transactions.push({
+                    id: String(Date.now()),
+                    amount: val,
+                    type: type,
+                    description: desc,
+                    date: dateInput
+                });
+            }
+
+            saveAndReset();
+        }
+
+        // --- MODAL DO CARTÃO DE CRÉDITO ---
+        function openCreditModal() {
+            const val = getNumericValue();
+            if (val <= 0) return alert('Digite um valor maior que R$ 0,00');
+            document.getElementById('creditModal').style.display = 'flex';
+        }
+
+        function closeCreditModal() {
+            document.getElementById('creditModal').style.display = 'none';
+        }
+
+        function saveCreditTransaction(installments) {
+            const totalVal = getNumericValue();
+            let desc = document.getElementById('tx_description').value.trim() || 'Compra Cartão';
+            const dateInput = document.getElementById('tx_date').value;
+            
+            let baseDate = new Date(dateInput + 'T12:00:00');
+            const baseAmount = Math.floor((totalVal / installments) * 100) / 100;
+            let remainder = Math.round((totalVal - (baseAmount * installments)) * 100) / 100;
+
+            for (let i = 0; i < installments; i++) {
+                let futureDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate());
+                let year = futureDate.getFullYear();
+                let month = String(futureDate.getMonth() + 1).padStart(2, '0');
+                let day = String(futureDate.getDate()).padStart(2, '0');
+
+                let currentInstallmentAmount = baseAmount;
+                if (i === installments - 1) {
+                    currentInstallmentAmount = Math.round((baseAmount + remainder) * 100) / 100;
+                }
+
+                transactions.push({
+                    id: Date.now() + '-cc-' + i,
+                    amount: currentInstallmentAmount,
+                    type: 'expense_cash',
+                    description: `${desc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
+                    date: `${year}-${month}-${day}`
+                });
+            }
+
+            closeCreditModal();
+            saveAndReset();
+        }
+
+        function saveAndReset() {
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+            rawDigits = "0";
+            document.getElementById('tx_description').value = '';
+            document.getElementById('is_fixed').checked = false;
+            toggleConditionalFields();
+            updateAmountDisplay();
+            showBanner();
+            loadData();
+        }
+
+        // --- CARREGAMENTO E FILTRO DO EXTRATO ---
+        function loadData() {
+            const currentSelectedTarget = document.getElementById('monthSelector').value;
+            const container = document.getElementById('historyContainer');
+            container.innerHTML = '';
+
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            let sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sortedTransactions.forEach(t => {
+                if (t.date.substring(0, 7) === currentSelectedTarget) {
+                    if (t.type === 'income') totalIncome += t.amount;
+                    if (t.type === 'expense_cash') totalExpense += t.amount;
+
+                    let item = document.createElement('div');
+                    item.className = 'history-item';
+                    
+                    let dateFormatted = t.date.split('-').reverse().join('/');
+                    let indicatorColor = t.type === 'income' ? 'var(--success)' : 'var(--danger)';
+                    let prefix = t.type === 'income' ? '+' : '-';
+
+                    item.innerHTML = `
+                        <div class="history-info">
+                            <span class="history-desc">${t.description}</span>
+                            <span class="history-date">${dateFormatted}</span>
+                        </div>
+                        <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
+                    `;
+                    container.appendChild(item);
+                }
+            });
+
+            let sobrou = totalIncome - totalExpense;
+
+            document.getElementById('lblGanhos').innerText = formatCurrency(totalIncome);
+            document.getElementById('lblGastos').innerText = formatCurrency(totalExpense);
+            document.getElementById('lblSobrou').innerText = formatCurrency(sobrou);
+
+            const summaryCard = document.getElementById('summaryCard');
+            const lblSobrou = document.getElementById('lblSobrou');
+            
+            if (sobrou >= 0) {
+                lblSobrou.style.color = 'var(--primary)';
+                summaryCard.classList.remove('alert-blink');
+            } else {
+                lblSobrou.style.color = 'var(--danger)';
+                summaryCard.classList.add('alert-blink');
+            }
+        }
+
+        // Execuções Iniciais Obrigatorias
+        updateAmountDisplay();
+        loadData();
+
+        // --- REGISTRO DO SERVICE WORKER ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('Erro SW:', err));
+            });
+        }
+    </script>
+</body>
+</html>
