@@ -275,7 +275,6 @@
         .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: bold; display: none; }
 
-        /* Estilos adicionados na V2 - Etapa 1 */
         .edit-badge { background: var(--warning); color: #000; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px; display: none; }
         .card-dash-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 15px 0 15px; }
         .card-dash { background: var(--bg-card); padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); text-align: center; }
@@ -334,7 +333,7 @@
                     <p id="dashFaturaCartao" style="color: var(--accent);">R$ 0,00</p>
                 </div>
                 <div class="card-dash" style="border-left: 4px solid var(--success);">
-                    <h3>🔮 Caixa Futuro (Ano)</h3>
+                    <h3>🔮 Balanço Ideal Anual</h3>
                     <p id="dashCaixaFuturo" style="color: var(--success);">R$ 0,00</p>
                 </div>
             </div>
@@ -410,7 +409,7 @@
             <div class="card" id="summaryCard">
                 <div class="summary-grid-four">
                     <div class="metric-box">
-                        <h4>🟢 Ganhos</h4>
+                        <h4 id="lblTitleGanhos">🟢 Ganhos</h4>
                         <p style="color: var(--success);" id="lblGanhos">R$ 0,00</p>
                     </div>
                     <div class="metric-box">
@@ -422,9 +421,16 @@
                         <p style="color: var(--warning);" id="lblCaixinha">R$ 0,00</p>
                     </div>
                     <div class="metric-box">
-                        <h4>🟣 Sobrou</h4>
+                        <h4 id="lblTitleSobrou">🟣 Sobrou</h4>
                         <p style="color: var(--primary);" id="lblSobrou">R$ 0,00</p>
                     </div>
+                </div>
+            </div>
+
+            <div class="card" id="cardGraficoMensal">
+                <label style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">📊 Distribuição de Gastos do Mês</label>
+                <div class="chart-box" style="min-height: 200px; margin-top: 10px;">
+                    <canvas id="chartMensalCategorias"></canvas>
                 </div>
             </div>
 
@@ -544,13 +550,13 @@
         let privacyMode = false;
         let filtroCategoriaAtivo = ""; 
         let instGraficoAnual = null; 
+        let instGraficoMensal = null;
         
         let transactions = [];
         let categories = [];
         let ccConfig = { closeDay: 25, dueDay: 5 };
         let transactionIndexedMap = new Map();
 
-        // Variáveis de controle de edição e exclusão inteligente
         let editingTransactionId = null;
         let pendingDeleteId = null;
 
@@ -573,11 +579,15 @@
                 categories = JSON.parse(localStorage.getItem('categories_pessoal')) || defaultCategoriesPessoal;
                 ccConfig = JSON.parse(localStorage.getItem('cc_config_pessoal')) || { closeDay: 25, dueDay: 5 };
                 document.getElementById('appTitle').innerText = "👤 Finanças Pessoais";
+                document.getElementById('lblTitleGanhos').innerText = "🟢 Ganhos";
+                document.getElementById('lblTitleSobrou').innerText = "🟣 Sobrou";
             } else {
                 transactions = JSON.parse(localStorage.getItem('transactions_empresa')) || [];
                 categories = JSON.parse(localStorage.getItem('categories_empresa')) || defaultCategoriesEmpresa;
                 ccConfig = JSON.parse(localStorage.getItem('cc_config_empresa')) || { closeDay: 25, dueDay: 5 };
                 document.getElementById('appTitle').innerText = "🏢 Finanças Business";
+                document.getElementById('lblTitleGanhos').innerText = "🟢 Faturamento";
+                document.getElementById('lblTitleSobrou').innerText = "🟣 Lucro Caixa";
             }
             rebuildTransactionIndex();
         }
@@ -742,9 +752,8 @@
             window.scrollTo(0,0);
         }
 
-        /* --- SISTEMA DE EDIÇÃO DE LANÇAMENTOS (Etapa 1) --- */
         function editTransaction(id, event) {
-            if (event) event.stopPropagation(); // Evita conflitos com outros cliques
+            if (event) event.stopPropagation();
             
             const target = transactions.find(t => t.id === id);
             if (!target) return;
@@ -756,11 +765,9 @@
             document.getElementById('tx_description').value = target.description;
             document.getElementById('tx_date').value = target.date;
             
-            // Oculta a caixa de recorrência na edição simples para evitar quebras em cadeia
             document.getElementById('containerFixedCheck').style.display = 'none';
             document.getElementById('editBadge').style.display = 'inline-block';
             
-            // Alterna os blocos de botões de controle
             document.getElementById('actionButtonsContainer').style.display = 'none';
             document.getElementById('editButtonsContainer').style.display = 'grid';
             
@@ -781,8 +788,17 @@
                 return t;
             });
 
-            cancelEdit();
-            saveAndReset();
+            editingTransactionId = null;
+            document.getElementById('containerFixedCheck').style.display = 'flex';
+            document.getElementById('editBadge').style.display = 'none';
+            document.getElementById('actionButtonsContainer').style.display = 'grid';
+            document.getElementById('editButtonsContainer').style.display = 'none';
+            
+            safeLocalStorageSave();
+            rawDigits = "0";
+            document.getElementById('tx_description').value = '';
+            updateAmountDisplay();
+            loadData();
         }
 
         function cancelEdit() {
@@ -791,17 +807,18 @@
             document.getElementById('editBadge').style.display = 'none';
             document.getElementById('actionButtonsContainer').style.display = 'grid';
             document.getElementById('editButtonsContainer').style.display = 'none';
-            saveAndReset();
+            rawDigits = "0";
+            document.getElementById('tx_description').value = '';
+            updateAmountDisplay();
+            loadData();
         }
 
-        /* --- SISTEMA DE EXCLUSÃO INTELIGENTE DE PARCELAMENTOS (Etapa 1) --- */
         function deleteTransaction(id, event) {
             if (event) event.stopPropagation();
             
             const target = transactions.find(t => t.id === id);
             if (!target) return;
 
-            // Expressão regular para identificar o padrão (01/12) ou similares
             const matchParcela = target.description.match(/\((\d+)\/(\d+)\)/);
 
             if (matchParcela) {
@@ -828,14 +845,12 @@
                 const parcelaAtual = parseInt(matchParcela[1], 10);
 
                 transactions = transactions.filter(t => {
-                    // Mantém se não for o mesmo tipo/descrição
                     if (!t.description.startsWith(baseDescription)) return true;
                     
                     const internalMatch = t.description.match(/\((\d+)\/(\d+)\)/);
                     if (!internalMatch) return true;
 
                     const internalParcela = parseInt(internalMatch[1], 10);
-                    // Remove apenas a parcela selecionada e as superiores
                     return internalParcela < parcelaAtual;
                 });
             }
@@ -1019,13 +1034,10 @@
             if(!canvas || typeof Chart === 'undefined') return; 
             
             const ctx = canvas.getContext('2d');
-            if (instGraficoAnual) {
-                instGraficoAnual.destroy(); 
-            }
+            if (instGraficoAnual) { instGraficoAnual.destroy(); }
 
             let dadosGanhos = privacyMode ? ganhos.map(() => 0) : ganhos;
             let dadosGastos = privacyMode ? gastos.map(() => 0) : gastos;
-
             let corDestaqueGanhos = currentProfile === "pessoal" ? '#00C853' : '#00E5FF';
 
             instGraficoAnual = new Chart(ctx, {
@@ -1040,12 +1052,78 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: '#ffffff', font: { size: 10 } } }
-                    },
+                    plugins: { legend: { labels: { color: '#ffffff', font: { size: 10 } } } },
                     scales: {
                         x: { ticks: { color: '#a0a0a0', font: { size: 10 } }, grid: { display: false } },
                         y: { ticks: { color: '#a0a0a0', font: { size: 10 } }, grid: { color: '#2d2d2d' } }
+                    }
+                }
+            });
+        }
+
+        // Nova função para renderizar gráfico Donut de gastos por categoria no mês
+        function renderizarGraficoMensalCategorias(targetMonthList) {
+            const canvas = document.getElementById('chartMensalCategorias');
+            if (!canvas || typeof Chart === 'undefined') return;
+
+            const ctx = canvas.getContext('2d');
+            if (instGraficoMensal) { instGraficoMensal.destroy(); }
+
+            let resumoCategorias = {};
+            categories.forEach(c => {
+                let clean = c.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim();
+                resumoCategorias[clean] = 0;
+            });
+            resumoCategorias["Geral / Não Categorizado"] = 0;
+
+            targetMonthList.forEach(t => {
+                if (t.type === 'expense_cash') {
+                    let achou = false;
+                    for (let catName in resumoCategorias) {
+                        if (t.description.toLowerCase().includes(catName.toLowerCase())) {
+                            resumoCategorias[catName] += t.amount;
+                            achou = true;
+                            break;
+                        }
+                    }
+                    if (!achou) { resumoCategorias["Geral / Não Categorizado"] += t.amount; }
+                }
+            });
+
+            let labels = [];
+            let dataValues = [];
+            for (let name in resumoCategorias) {
+                if (resumoCategorias[name] > 0) {
+                    labels.push(name);
+                    dataValues.push(resumoCategorias[name]);
+                }
+            }
+
+            if (dataValues.length === 0) {
+                document.getElementById('cardGraficoMensal').style.display = 'none';
+                return;
+            } else {
+                document.getElementById('cardGraficoMensal').style.display = 'block';
+            }
+
+            if (privacyMode) { dataValues = dataValues.map(() => 1); }
+
+            instGraficoMensal = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: ['#bb86fc', '#00E5FF', '#FFAB00', '#00C853', '#2962FF', '#D50000', '#7289da'],
+                        borderWidth: 1,
+                        borderColor: '#1e1e1e'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#ffffff', font: { size: 10 } } }
                     }
                 }
             });
@@ -1286,7 +1364,7 @@
                     type: 'expense_cash',
                     description: `${desc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
                     date: formatarDataISO(anoCalculado, mesCalculado, diaVencimento),
-                    isCredit: true // Tag interna para identificar gastos no cartão no dashboard
+                    isCredit: true 
                 });
             }
             closeCreditModal();
@@ -1336,7 +1414,6 @@
 
                 let item = document.createElement('div');
                 item.className = 'history-item';
-                // Ao clicar no item, o app entra em modo de edição
                 item.setAttribute('onclick', `editTransaction('${t.id}', event)`);
                 
                 let dateFormatted = t.date.split('-').reverse().join('/');
@@ -1369,7 +1446,6 @@
             document.getElementById('lblCaixinha').innerText = formatCurrency(totalSaving);
             document.getElementById('lblSobrou').innerText = formatCurrency(sobrou);
 
-            /* --- METRICAS ADICIONAIS: DASHBOARD DE CARTÃO E FLUXO FUTURO (Etapa 1) --- */
             let totalFaturaCartao = 0;
             targetMonthList.forEach(t => {
                 if(t.isCredit || t.description.includes('(')) {
@@ -1399,6 +1475,9 @@
                     summaryCard.classList.add('alert-blink');
                 }
             }
+
+            // Invoca a renderização do novo gráfico donut de despesas mensais
+            renderizarGraficoMensalCategorias(targetMonthList);
         }
     </script>
 </body>
