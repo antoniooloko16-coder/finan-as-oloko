@@ -8,28 +8,30 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-main: #121212;
-            --bg-card: #1e1e1e;
-            --bg-input: #2d2d2d;
+            --bg-main: #0b0b0c;
+            --bg-card: #141416;
+            --bg-input: #1e1e22;
+            --border-color: #242428;
             --primary: #bb86fc;
-            --success: #00C853;
-            --danger: #D50000;
-            --accent: #2962FF;
-            --warning: #FFAB00;
+            --success: #00e676;
+            --danger: #ff1744;
+            --accent: #2979ff;
+            --warning: #ffea00;
             --text: #ffffff;
-            --text-muted: #a0a0a0;
+            --text-muted: #7e7e86;
         }
 
-        body.perfil-pessoal { --primary: #bb86fc; }
-        body.perfil-empresa { --primary: #00E5FF; }
+        body.perfil-pessoal { --primary: #a370f7; }
+        body.perfil-empresa { --primary: #00e5ff; }
 
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-main);
             color: var(--text);
             margin: 0;
             padding: 0;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
         .app-container {
@@ -39,8 +41,8 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            padding-top: 165px;
-            padding-bottom: 20px;
+            padding-top: 175px;
+            padding-bottom: 30px;
         }
 
         .header-fixed-container {
@@ -51,15 +53,18 @@
             max-width: 480px;
             margin: 0 auto;
             z-index: 999;
-            background: var(--bg-card);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            background: rgba(20, 20, 22, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
         }
 
         .profile-switcher {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            background: #151515;
-            border-bottom: 1px solid #2d2d2d;
+            background: #0b0b0c;
+            padding: 6px;
+            gap: 6px;
         }
 
         .profile-btn {
@@ -68,32 +73,35 @@
             color: var(--text-muted);
             padding: 10px;
             font-size: 13px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            border-radius: 8px;
+            transition: all 0.2s ease;
         }
 
         .profile-btn.active {
             color: #fff;
             background: var(--bg-card);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
         
-        body.perfil-pessoal .profile-btn#prof-pessoal { border-bottom: 3px solid #bb86fc; color: #bb86fc; }
-        body.perfil-empresa .profile-btn#prof-empresa { border-bottom: 3px solid #00E5FF; color: #00E5FF; }
+        body.perfil-pessoal .profile-btn#prof-pessoal { color: #a370f7; }
+        body.perfil-empresa .profile-btn#prof-empresa { color: #00e5ff; }
 
         .top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 20px;
-            border-bottom: 1px solid #2d2d2d;
+            padding: 14px 20px;
             box-sizing: border-box;
         }
 
         .top-bar h2 {
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: 700;
             margin: 0;
-            color: var(--primary);
+            color: var(--text);
+            letter-spacing: -0.5px;
         }
 
         .top-actions {
@@ -103,29 +111,36 @@
         }
 
         .icon-btn {
-            background: none;
-            border: none;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
             color: var(--text);
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
-            padding: 5px;
-            margin-right: 4px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
         }
+        .icon-btn:active { background: var(--border-color); }
 
         .date-select {
             background: var(--bg-input);
             color: var(--text);
-            border: none;
-            padding: 6px 8px;
-            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            padding: 6px 10px;
+            border-radius: 8px;
             font-size: 13px;
+            font-weight: 600;
+            outline: none;
         }
 
         .tab-navigation {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            background: var(--bg-card);
-            box-sizing: border-box;
+            padding: 0 10px;
+            gap: 4px;
         }
 
         .tab-btn {
@@ -133,7 +148,7 @@
             border: none;
             color: var(--text-muted);
             padding: 12px 5px;
-            font-weight: bold;
+            font-weight: 600;
             font-size: 12px;
             cursor: pointer;
             text-align: center;
@@ -144,7 +159,6 @@
         .tab-btn.active {
             color: var(--primary);
             border-bottom-color: var(--primary);
-            background: rgba(187, 134, 252, 0.05);
         }
 
         .page-content { display: none; }
@@ -155,17 +169,16 @@
             margin: 15px 15px 0 15px;
             padding: 20px;
             border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            border: 1px solid var(--border-color);
         }
 
         .display-amount {
-            font-size: 42px;
-            font-weight: bold;
+            font-size: 38px;
+            font-weight: 700;
             text-align: center;
-            margin: 10px 0 20px 0;
+            margin: 5px 0 15px 0;
             color: var(--text);
-            letter-spacing: 1px;
-            transition: color 0.2s;
+            letter-spacing: -1px;
         }
 
         @keyframes erroVisor {
@@ -178,113 +191,124 @@
         .keyboard-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
         }
 
         .key {
             background: var(--bg-input);
-            border: none;
+            border: 1px solid rgba(255,255,255,0.02);
             color: var(--text);
-            padding: 15px;
+            padding: 14px;
             font-size: 20px;
-            font-weight: bold;
-            border-radius: 10px;
+            font-weight: 600;
+            border-radius: 12px;
             cursor: pointer;
             user-select: none;
+            transition: background 0.1s;
         }
-
-        .key:active { background: #444; }
+        .key:active { background: var(--border-color); }
 
         .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
+        .input-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
         
         .text-input {
             width: 100%;
-            padding: 12px;
+            padding: 12px 14px;
             background: var(--bg-input);
-            border: 1px solid #333;
-            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
             color: var(--text);
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
         }
+        .text-input:focus { border-color: var(--primary); }
 
-        .tags-container { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 5px; }
-        .tag { background: #2d2d2d; border: 1px solid #444; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--text); }
-        .tag.active-filter { background: var(--primary); color: #000; border-color: var(--primary); font-weight: bold; }
+        .tags-container { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+        .tags-container::-webkit-scrollbar { display: none; }
+        .tag { background: var(--bg-input); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; color: var(--text); transition: all 0.2s; }
+        .tag.active-filter { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
 
         .budget-monitor {
             margin-top: 10px;
-            background: #181818;
+            background: #0b0b0c;
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
             display: none;
         }
-        .budget-info { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
-        .progress-bar-bg { background: #333; height: 8px; border-radius: 4px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; width: 0%; background: var(--success); transition: width 0.3s; }
+        .budget-info { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; font-weight: 500; }
+        .progress-bar-bg { background: var(--bg-input); height: 6px; border-radius: 4px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; width: 0%; background: var(--success); border-radius: 4px; transition: width 0.3s; }
 
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
-        .conditional-box { background: #181818; padding: 15px; border-radius: 8px; margin-top: 10px; display: none; border-left: 3px solid var(--primary); }
+        .conditional-box { background: #0b0b0c; padding: 15px; border-radius: 10px; margin-top: 10px; display: none; border-left: 3px solid var(--primary); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
 
         .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px; }
-        .btn-action { border: none; padding: 15px 2px; font-weight: bold; border-radius: 10px; color: #000; font-size: 12px; cursor: pointer; text-align: center; }
+        .btn-action { border: none; padding: 14px 2px; font-weight: 700; border-radius: 12px; color: #000; font-size: 12px; cursor: pointer; text-align: center; transition: opacity 0.2s; }
+        .btn-action:active { opacity: 0.8; }
 
-        .summary-grid-four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: center; }
-        .metric-box h4 { margin: 0 0 5px 0; font-size: 11px; color: var(--text-muted); }
-        .metric-box p { margin: 0; font-weight: bold; font-size: 12px; white-space: nowrap; }
+        .summary-grid-four { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; text-align: left; }
+        .metric-box { background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.01); }
+        .metric-box h4 { margin: 0 0 4px 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .metric-box p { margin: 0; font-weight: 700; font-size: 15px; white-space: nowrap; }
 
-        @keyframes blink { 0%, 100% { border: 2px solid var(--danger); } 50% { border: 2px solid transparent; } }
-        .alert-blink { animation: blink 1s infinite; background: rgba(213, 0, 0, 0.1) !important; border-radius: 16px; }
+        @keyframes blink { 0%, 100% { border-color: var(--danger); box-shadow: 0 0 10px rgba(255,23,68,0.1); } 50% { border-color: var(--border-color); box-shadow: none; } }
+        .alert-blink { animation: blink 1.5s infinite; background: rgba(255, 23, 68, 0.03) !important; }
 
-        .history-list { margin-top: 15px; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #2d2d2d; cursor: pointer; }
-        .history-info { display: flex; flex-direction: column; flex-grow: 1; }
-        .history-desc { font-weight: 500; font-size: 15px; }
-        .history-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .history-list { margin-top: 10px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border-color); cursor: pointer; }
+        .history-item:last-child { border-bottom: none; }
+        .history-info { display: flex; flex-direction: column; flex-grow: 1; padding-right: 10px; }
+        .history-desc { font-weight: 600; font-size: 14px; color: #f2f2f7; }
+        .history-date { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
         .history-right { display: flex; align-items: center; gap: 12px; }
-        .history-val { font-weight: bold; font-size: 15px; }
+        .history-val { font-weight: 700; font-size: 14px; }
         
-        .btn-delete-item { background: none; border: none; color: var(--danger); font-size: 16px; cursor: pointer; padding: 5px; }
+        .btn-delete-item { background: none; border: none; color: var(--text-muted); font-size: 15px; cursor: pointer; padding: 5px; transition: color 0.2s; }
+        .btn-delete-item:hover { color: var(--danger); }
 
-        .category-item { background: var(--bg-input); padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #333; }
+        .category-item { background: var(--bg-input); padding: 14px 16px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--border-color); }
         .category-main-info { display: flex; justify-content: space-between; align-items: center; }
-        .category-budget-info { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-        .btn-delete-cat { background: none; border: none; color: var(--danger); font-size: 16px; cursor: pointer; }
+        .category-budget-info { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+        .btn-delete-cat { background: none; border: none; color: var(--text-muted); font-size: 15px; cursor: pointer; }
+        .btn-delete-cat:hover { color: var(--danger); }
 
         .annual-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-        .annual-table th { text-align: left; padding: 10px 5px; color: var(--text-muted); border-bottom: 1px solid #333; font-size: 11px; }
-        .annual-table td { padding: 12px 5px; border-bottom: 1px solid #222; }
-        .annual-table tr.total-row { background: rgba(187, 134, 252, 0.1); font-weight: bold; }
-        .annual-table tr.total-row td { border-top: 2px solid var(--primary); color: #fff; }
+        .annual-table th { text-align: left; padding: 10px 5px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .annual-table td { padding: 12px 5px; border-bottom: 1px solid #141416; }
+        .annual-table tr.total-row { background: rgba(187, 134, 252, 0.05); font-weight: 700; }
+        .annual-table tr.total-row td { border-top: 1px solid var(--primary); color: #fff; padding: 14px 5px; }
 
         .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-secondary { background: var(--bg-input); border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; font-size: 13px; }
+        .btn-secondary { background: var(--bg-input); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer; text-align: center; font-size: 13px; transition: background 0.2s; }
+        .btn-secondary:active { background: var(--border-color); }
 
-        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; padding: 20px; }
-        .modal-content { background: var(--bg-card); width: 100%; max-width: 360px; padding: 25px; border-radius: 16px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
-        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 20px; color: var(--primary); }
-        .modal-btn { width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 10px; font-weight: 500; text-align: left; cursor: pointer; }
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; display: none; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-content { background: var(--bg-card); border: 1px solid var(--border-color); width: 100%; max-width: 360px; padding: 24px; border-radius: 20px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
+        .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 18px; color: var(--text); text-align: center; }
+        .modal-btn { width: 100%; padding: 14px; background: var(--bg-input); border: 1px solid var(--border-color); color: #fff; border-radius: 12px; margin-bottom: 8px; font-weight: 600; text-align: left; cursor: pointer; font-size: 14px; transition: background 0.2s; }
+        .modal-btn:active { background: var(--border-color); }
         
         .custom-installments-container { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
-        .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--success); color: #000; padding: 10px 25px; border-radius: 20px; font-weight: bold; z-index: 2000; display: none; }
+        .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #00e676; color: #000; padding: 10px 24px; border-radius: 30px; font-weight: 700; font-size: 14px; z-index: 2000; display: none; box-shadow: 0 4px 16px rgba(0,230,118,0.3); }
         
-        .chart-box { background: #181818; padding: 10px; border-radius: 12px; margin-top: 15px; min-height: 160px; }
+        .chart-box { background: #0b0b0c; padding: 14px; border-radius: 14px; margin-top: 15px; border: 1px solid var(--border-color); }
         
         .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: bold; display: none; }
+        .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: 700; text-transform: uppercase; display: none; }
 
-        .edit-badge { background: var(--warning); color: #000; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px; display: none; }
-        .card-dash-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 15px 0 15px; }
-        .card-dash { background: var(--bg-card); padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); text-align: center; }
-        .card-dash h3 { margin: 0 0 5px 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
-        .card-dash p { margin: 0; font-size: 16px; font-weight: bold; }
+        .edit-badge { background: var(--warning); color: #000; font-size: 10px; padding: 3px 6px; border-radius: 5px; font-weight: 700; margin-left: 8px; display: none; }
+        .card-dash-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 15px 15px 0 15px; }
+        .card-dash { background: var(--bg-card); padding: 14px; border-radius: 16px; border: 1px solid var(--border-color); text-align: left; }
+        .card-dash h3 { margin: 0 0 4px 0; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .card-dash p { margin: 0; font-size: 15px; font-weight: 700; }
 
-        /* Estilos melhorados para os filtros de pagamento */
-        .payment-filter-container { display: flex; gap: 6px; margin: 10px 15px 0 15px; overflow-x: auto; }
-        .pay-filter-btn { background: var(--bg-input); border: 1px solid #444; color: var(--text-muted); padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
-        .pay-filter-btn.active { background: rgba(187, 134, 252, 0.15); border-color: var(--primary); color: var(--primary); }
+        .payment-filter-container { display: flex; gap: 6px; margin: 15px 15px 0 15px; overflow-x: auto; scrollbar-width: none; }
+        .payment-filter-container::-webkit-scrollbar { display: none; }
+        .pay-filter-btn { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+        .pay-filter-btn.active { background: rgba(187, 134, 252, 0.08); border-color: var(--primary); color: var(--primary); }
     </style>
 </head>
 <body class="perfil-pessoal">
@@ -323,8 +347,8 @@
         
         <div class="tab-navigation">
             <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">📝 Lançamentos</button>
-            <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Configurações</button>
-            <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Balanço Anual</button>
+            <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Ajustes</button>
+            <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Anual</button>
         </div>
     </div>
 
@@ -333,12 +357,12 @@
         <div id="page-lançamentos" class="page-content active">
             
             <div class="card-dash-container">
-                <div class="card-dash" style="border-left: 4px solid var(--accent);">
+                <div class="card-dash" style="border-left: 3px solid var(--accent);">
                     <h3>💳 Fatura Cartão</h3>
                     <p id="dashFaturaCartao" style="color: var(--accent);">R$ 0,00</p>
                 </div>
-                <div class="card-dash" style="border-left: 4px solid var(--success);">
-                    <h3>🔮 Balanço Ideal Anual</h3>
+                <div class="card-dash" style="border-left: 3px solid var(--success);">
+                    <h3>🔮 Ideal Anual</h3>
                     <p id="dashCaixaFuturo" style="color: var(--success);">R$ 0,00</p>
                 </div>
             </div>
@@ -366,7 +390,7 @@
 
             <div class="card">
                 <div class="input-group">
-                    <label for="tx_description">🔍 Descrição do Gasto / Receita</label>
+                    <label for="tx_description">🔍 Descrição do Lançamento</label>
                     <input type="text" id="tx_description" class="text-input" placeholder="Selecione abaixo ou digite..." oninput="checkLiveBudget()">
                     <div class="tags-container" id="tagsContainer"></div>
                 </div>
@@ -382,13 +406,13 @@
                 </div>
 
                 <div class="input-group" style="margin-top:15px;">
-                    <label for="tx_date">📅 Data do Lançamento</label>
+                    <label for="tx_date">📅 Data</label>
                     <input type="date" id="tx_date" class="text-input" onchange="checkLiveBudget()">
                 </div>
 
                 <div class="checkbox-group" id="containerFixedCheck">
                     <input type="checkbox" id="is_fixed" onchange="toggleConditionalFields()">
-                    <label for="is_fixed" style="color: var(--text)">🔄 Repetir todo mês (Fixo)</label>
+                    <label for="is_fixed" style="color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer;">🔄 Repetir todo mês (Fixo)</label>
                 </div>
 
                 <div class="conditional-box" id="conditionalFields">
@@ -407,8 +431,8 @@
             </div>
             
             <div id="editButtonsContainer" style="margin: 15px; display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button class="btn-action" style="background: var(--success); width: 100%; font-size: 14px;" onclick="confirmEdit()">💾 Salvar Alteração</button>
-                <button class="btn-action" style="background: #333; color: #fff; width: 100%; font-size: 14px;" onclick="cancelEdit()">❌ Cancelar</button>
+                <button class="btn-action" style="background: var(--success); width: 100%; font-size: 14px;" onclick="confirmEdit()">💾 Salvar</button>
+                <button class="btn-action" style="background: var(--bg-input); border: 1px solid var(--border-color); color: #fff; width: 100%; font-size: 14px;" onclick="cancelEdit()">❌ Cancelar</button>
             </div>
 
             <div class="card" id="summaryCard">
@@ -433,22 +457,22 @@
             </div>
 
             <div class="card" id="cardGraficoMensal">
-                <label style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">📊 Distribuição de Gastos do Mês</label>
+                <label style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">📊 Distribuição Mensal</label>
                 <div class="chart-box" style="min-height: 200px; margin-top: 10px;">
                     <canvas id="chartMensalCategorias"></canvas>
                 </div>
             </div>
 
             <div class="payment-filter-container">
-                <button class="pay-filter-btn active" id="payFilterAll" onclick="setPaymentFilter('')">🔄 Todos os Meios</button>
+                <button class="pay-filter-btn active" id="payFilterAll" onclick="setPaymentFilter('')">🔄 Todos</button>
                 <button class="pay-filter-btn" id="payFilterDinheiro" onclick="setPaymentFilter('dinheiro')">💵 Dinheiro / Pix</button>
-                <button class="pay-filter-btn" id="payFilterCartao" onclick="setPaymentFilter('cartao')">💳 Cartão de Crédito</button>
+                <button class="pay-filter-btn" id="payFilterCartao" onclick="setPaymentFilter('cartao')">💳 Cartão</button>
             </div>
 
             <div class="card">
                 <div class="filter-header">
-                    <label style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: bold;">🧾 Extrato do Mês Selecionado</label>
-                    <button class="btn-clear-filter" id="btnClearFilter" onclick="clearExtratoFilter()">❌ Limpar Filtro</button>
+                    <label style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">🧾 Extrato do Mês</label>
+                    <button class="btn-clear-filter" id="btnClearFilter" onclick="clearExtratoFilter()">❌ Limpar</button>
                 </div>
                 <div class="history-list" id="historyContainer"></div>
             </div>
@@ -456,35 +480,35 @@
 
         <div id="page-categorias" class="page-content">
             <div class="card">
-                <h3 style="margin-top:0; color: var(--primary); font-size: 16px;">✨ Adicionar Novo Nome de Gasto</h3>
+                <h3 style="margin-top:0; color: var(--primary); font-size: 15px; font-weight: 700;">✨ Novo Nome de Gasto</h3>
                 <div class="input-group">
-                    <label>🏷️ Nome do Gasto / Categoria</label>
+                    <label>🏷️ Nome da Categoria</label>
                     <input type="text" id="new_category_name" class="text-input" placeholder="Ex: Combustível, Mercado...">
                 </div>
                 <div class="input-group">
-                    <label>🎯 Teto de Gasto Mensal (Opcional - 0 para ilimitado)</label>
+                    <label>🎯 Teto de Gasto Mensal (Opcional)</label>
                     <input type="number" id="new_category_budget" class="text-input" placeholder="Ex: 500" value="0">
                 </div>
-                <button class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">➕ Adicionar Novo Nome</button>
+                <button class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">➕ Adicionar</button>
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0; color: var(--accent); font-size: 15px;">💳 Ciclo da Fatura do Cartão</h3>
+                <h3 style="margin-top:0; color: var(--accent); font-size: 15px; font-weight: 700;">💳 Ciclo da Fatura</h3>
                 <div class="grid-2col">
                     <div class="input-group">
-                        <label>🔓 Dia Fechamento</label>
+                        <label>🔓 Fechamento</label>
                         <input type="number" id="cc_close_day" class="text-input" min="1" max="31" value="25" onchange="saveCCConfig()">
                     </div>
                     <div class="input-group">
-                        <label>🔒 Dia Vencimento</label>
+                        <label>🔒 Vencimento</label>
                         <input type="number" id="cc_due_day" class="text-input" min="1" max="31" value="5" onchange="saveCCConfig()">
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0; color: var(--warning); font-size: 15px;">💾 Cópia de Segurança (Backup Geral)</h3>
-                <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Baixe seus dados para não perder nada caso troque ou formate o celular. Este arquivo salva ambos os perfis.</p>
+                <h3 style="margin-top:0; color: var(--warning); font-size: 15px; font-weight: 700;">💾 Cópia de Segurança (Backup)</h3>
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">Baixe seus dados para não perder nada caso troque ou formate o celular.</p>
                 <div class="grid-2col">
                     <button class="btn-secondary" onclick="exportBackup()">📤 Exportar</button>
                     <button class="btn-secondary" onclick="document.getElementById('fileFileInput').click()">📥 Importar</button>
@@ -493,15 +517,15 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0; color: var(--text-muted); font-size: 14px; text-transform: uppercase;">📋 Meus Nomes Cadastrados</h3>
+                <h3 style="margin-top:0; color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">📋 Nomes Cadastrados</h3>
                 <div id="categoryListContainer"></div>
             </div>
         </div>
 
         <div id="page-anual" class="page-content">
             <div class="card">
-                <h3 style="margin-top:0; color: var(--primary); font-size: 16px; margin-bottom: 5px;">📊 Resumo Acumulado <span id="lblAnualHeader">2026</span></h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 15px 0;">Saldos consolidados de janeiro a dezembro baseados no ano selecionado.</p>
+                <h3 style="margin-top:0; color: var(--primary); font-size: 16px; font-weight: 700; margin-bottom: 4px;">📊 Balanço Acumulado <span id="lblAnualHeader">2026</span></h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 15px 0; font-weight: 500;">Saldos consolidados de janeiro a dezembro.</p>
                 
                 <div class="chart-box">
                     <canvas id="chartAnual"></canvas>
@@ -513,7 +537,7 @@
                             <th>Mês</th>
                             <th>🟢 Ganhos</th>
                             <th>🔴 Saídas</th>
-                            <th>⚖️ Sobra/Falta</th>
+                            <th>⚖️ Sobra</th>
                         </tr>
                     </thead>
                     <tbody id="annualTableBody"></tbody>
@@ -525,42 +549,42 @@
     <div class="modal" id="expenseModal">
         <div class="modal-content">
             <div class="modal-title">💵 Como você pagou esse gasto?</div>
-            <button class="modal-btn" style="border-left: 5px solid var(--success);" onclick="executeExpenseSave('dinheiro')">💵 Dinheiro / PIX / Débito</button>
-            <button class="modal-btn" style="border-left: 5px solid var(--accent);" onclick="closeExpenseModal(); openCreditModal();">💳 Cartão de Crédito</button>
-            <button class="modal-btn" style="background: #333; text-align: center; margin-top: 15px;" onclick="closeExpenseModal()">❌ Cancelar</button>
+            <button class="modal-btn" style="border-left: 4px solid var(--success);" onclick="executeExpenseSave('dinheiro')">💵 Dinheiro / PIX / Débito</button>
+            <button class="modal-btn" style="border-left: 4px solid var(--accent);" onclick="closeExpenseModal(); openCreditModal();">💳 Cartão de Crédito</button>
+            <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 15px; border-color: transparent;" onclick="closeExpenseModal()">❌ Cancelar</button>
         </div>
     </div>
 
     <div class="modal" id="creditModal">
         <div class="modal-content">
-            <div class="modal-title">🔢 Escolha as Parcelas do Cartão</div>
+            <div class="modal-title">🔢 Parcelas do Cartão</div>
             <button class="modal-btn" onclick="saveCreditTransaction(1)">1x (À Vista na Fatura)</button>
             <button class="modal-btn" onclick="saveCreditTransaction(2)">2 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(3)">3 meses seguintes</button>
-            <button class="modal-btn" onclick="saveCreditTransaction(4) e">4 meses seguintes</button>
+            <button class="modal-btn" onclick="saveCreditTransaction(4)">4 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(5)">5 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(6)">6 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(10)">10 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(12)">12 meses seguintes</button>
             
-            <div style="border-top: 1px solid #444; margin: 15px 0; padding-top: 10px;">
-                <label style="font-size: 12px; color: var(--text-muted); display:block; margin-bottom:5px;">✍️ Outra quantidade de vezes:</label>
+            <div style="border-top: 1px solid var(--border-color); margin: 15px 0; padding-top: 10px;">
+                <label style="font-size: 11px; font-weight:600; color: var(--text-muted); display:block; margin-bottom:6px; text-transform: uppercase;">✍️ Outra quantidade:</label>
                 <div class="custom-installments-container">
                     <input type="number" id="custom_installments" class="text-input" min="1" max="48" placeholder="Ex: 8">
                     <button class="btn-action" style="background: var(--primary); padding: 0 15px; font-size:14px; width:auto;" onclick="saveCustomCredit()">Aplicar</button>
                 </div>
             </div>
-            <button class="modal-btn" style="background: #333; text-align: center; margin-top: 10px;" onclick="closeCreditModal()">❌ Cancelar</button>
+            <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 10px; border-color: transparent;" onclick="closeCreditModal()">❌ Cancelar</button>
         </div>
     </div>
 
     <div class="modal" id="deleteParcelamentoModal">
         <div class="modal-content">
             <div class="modal-title" style="color: var(--danger)">⚠️ Excluir Parcelamento</div>
-            <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">Identificamos que este lançamento faz parte de uma sequência de parcelas. Como deseja prosseguir?</p>
-            <button class="modal-btn" style="background: #2b1818; border-color: var(--danger);" onclick="executeSmartDelete('single')">❌ Excluir APENAS esta parcela</button>
-            <button class="modal-btn" style="background: var(--danger); color: #fff;" onclick="executeSmartDelete('future')">⚠️ Excluir ESTA e todas as PRÓXIMAS</button>
-            <button class="modal-btn" style="background: #333; text-align: center; margin-top: 15px;" onclick="closeSmartDeleteModal()">Cancelar</button>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; text-align: center; font-weight: 500;">Esse lançamento faz parte de um parcelamento. Como deseja prosseguir?</p>
+            <button class="modal-btn" style="border-left: 4px solid var(--danger);" onclick="executeSmartDelete('single')">❌ Excluir APENAS esta parcela</button>
+            <button class="modal-btn" style="background: var(--danger); color: #fff; border-color: transparent;" onclick="executeSmartDelete('future')">⚠️ Excluir ESTA e todas as PRÓXIMAS</button>
+            <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 15px; border-color: transparent;" onclick="closeSmartDeleteModal()">Cancelar</button>
         </div>
     </div>
 
@@ -569,7 +593,7 @@
         let rawDigits = "0";
         let privacyMode = false;
         let filtroCategoriaAtivo = ""; 
-        let filtroPagamentoAtivo = ""; // Novo controle de filtro de pagamento
+        let filtroPagamentoAtivo = ""; 
         let instGraficoAnual = null; 
         let instGraficoMensal = null;
         
@@ -611,7 +635,6 @@
                 document.getElementById('lblTitleSobrou').innerText = "🟣 Lucro Caixa";
             }
             
-            // Tratamento preventivo: Adicionar ID único caso existam categorias legadas antigas estruturadas sem ID
             let alterouCategorias = false;
             categories = categories.map(c => {
                 if(!c.id) { c.id = gerarIDUnico(); alterouCategorias = true; }
@@ -672,7 +695,6 @@
 
         function safeLocalStorageSave() {
             try {
-                // Prevenção inteligente de estouro de cache antes de salvar de fato no disco do browser
                 const rawDataStringPessoal = JSON.stringify(transactions) + JSON.stringify(categories);
                 if (rawDataStringPessoal.length > 4500000) { 
                     alert("⚠️ Armazenamento muito próximo do limite! Recomendamos exportar o Backup Geral e limpar os dados.");
@@ -733,7 +755,6 @@
             return `${ano}-${mStr}-${dStr}`;
         }
 
-        // Parsing seguro de data isolando problemas clássicos de fusos horários locais
         function parseSafeDate(dateStr) {
             if (!dateStr) return new Date();
             const parts = dateStr.split('-');
@@ -916,7 +937,6 @@
 
             let targetMonth = dateVal.substring(0, 7);
             
-            // Busca segura associando o ID da categoria
             let foundCat = categories.find(c => {
                 let cleanCatName = c.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase();
                 return desc === cleanCatName || desc.includes(cleanCatName);
@@ -1046,8 +1066,8 @@
                 let tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="font-weight:500;">📅 ${monthNames[monthStr]}</td>
-                    <td style="color: var(--success);">${formatCurrency(monthlyIncome)}</td>
-                    <td style="color: var(--danger);">${formatCurrency(monthlyExpense)}</td>
+                    <td style="color: var(--success); font-weight: 600;">${formatCurrency(monthlyIncome)}</td>
+                    <td style="color: var(--danger); font-weight: 600;">${formatCurrency(monthlyExpense)}</td>
                     <td style="color: ${balanceColor}; font-weight: bold;">${formatCurrency(monthlyBalance)}</td>
                 `;
                 tbody.appendChild(tr);
@@ -1060,9 +1080,9 @@
             totalTr.className = 'total-row';
             totalTr.innerHTML = `
                 <td>🏁 TOTAL ANO</td>
-                <td>${formatCurrency(grandTotalIncome)}</td>
-                <td>${formatCurrency(grandTotalExpense)}</td>
-                <td style="color: ${totalBalanceColor};">${formatCurrency(yearBalance)}</td>
+                <td style="color: var(--success);">${formatCurrency(grandTotalIncome)}</td>
+                <td style="color: var(--danger);">${formatCurrency(grandTotalExpense)}</td>
+                <td style="color: ${totalBalanceColor}; font-weight: 700;">${formatCurrency(yearBalance)}</td>
             `;
             tbody.appendChild(totalTr);
 
@@ -1078,7 +1098,7 @@
 
             let dadosGanhos = privacyMode ? ganhos.map(() => 0) : ganhos;
             let dadosGastos = privacyMode ? gastos.map(() => 0) : gastos;
-            let corDestaqueGanhos = currentProfile === "pessoal" ? '#00C853' : '#00E5FF';
+            let corDestaqueGanhos = currentProfile === "pessoal" ? '#a370f7' : '#00e5ff';
 
             instGraficoAnual = new Chart(ctx, {
                 type: 'bar',
@@ -1086,16 +1106,16 @@
                     labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
                     datasets: [
                         { label: 'Ganhos 🟢', data: dadosGanhos, backgroundColor: corDestaqueGanhos, borderRadius: 4 },
-                        { label: 'Saídas/Caixinha 🔴', data: dadosGastos, backgroundColor: '#D50000', borderRadius: 4 }
+                        { label: 'Saídas 🔴', data: dadosGastos, backgroundColor: '#ff1744', borderRadius: 4 }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#ffffff', font: { size: 10 } } } },
+                    plugins: { legend: { labels: { color: '#ffffff', font: { size: 10, weight: '600' } } } },
                     scales: {
-                        x: { ticks: { color: '#a0a0a0', font: { size: 10 } }, grid: { display: false } },
-                        y: { ticks: { color: '#a0a0a0', font: { size: 10 } }, grid: { color: '#2d2d2d' } }
+                        x: { ticks: { color: '#7e7e86', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#7e7e86', font: { size: 10 } }, grid: { color: '#242428' } }
                     }
                 }
             });
@@ -1119,7 +1139,6 @@
                 if (t.type === 'expense_cash') {
                     let achou = false;
                     
-                    // Busca preferencial inteligente vinculando o ID dinâmico da categoria
                     if(t.categoryId) {
                         let catObj = categories.find(c => c.id === t.categoryId);
                         if(catObj) {
@@ -1168,16 +1187,16 @@
                     labels: labels,
                     datasets: [{
                         data: dataValues,
-                        backgroundColor: ['#bb86fc', '#00E5FF', '#FFAB00', '#00C853', '#2962FF', '#D50000', '#7289da'],
-                        borderWidth: 1,
-                        borderColor: '#1e1e1e'
+                        backgroundColor: ['#a370f7', '#00e5ff', '#ffea00', '#00e676', '#2979ff', '#ff1744', '#7289da'],
+                        borderWidth: 2,
+                        borderColor: '#141416'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'right', labels: { color: '#ffffff', font: { size: 10 } } }
+                        legend: { position: 'right', labels: { color: '#ffffff', font: { size: 10, weight: '500' } } }
                     }
                 }
             });
@@ -1245,7 +1264,7 @@
             categories.forEach((cat, index) => {
                 let div = document.createElement('div');
                 div.className = 'category-item';
-                let budgetText = cat.budget > 0 ? `🎯 Teto mensal: ${formatCurrency(cat.budget)}` : "♾️ Sem limite estipulado";
+                let budgetText = cat.budget > 0 ? `🎯 Teto mensal: ${formatCurrency(cat.budget)}` : "♾️ Sem limite";
                 div.innerHTML = `
                     <div class="category-main-info">
                         <strong>${cat.name}</strong>
@@ -1266,7 +1285,6 @@
             if(!name) return alert('Por favor, digite um nome válido! ⚠️');
             if(!name.match(/[\u1F600-\u1F64F]/)) { name = "🔹 " + name; }
             
-            // Inclusão automática de ID Único estruturado na criação
             categories.push({ id: gerarIDUnico(), name: name, budget: budget });
             safeLocalStorageSave();
             
@@ -1368,7 +1386,6 @@
             const dateInput = document.getElementById('tx_date').value;
             const isFixed = document.getElementById('is_fixed').checked;
 
-            // Encontra dinamicamente a ID correspondente da Categoria escolhida pela tag/nome
             let matchedCategory = categories.find(c => {
                 let cleanCat = c.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase();
                 return desc.toLowerCase().includes(cleanCat);
@@ -1471,7 +1488,7 @@
                     categoryId: categoryId,
                     amount: currentInstallmentAmount,
                     type: 'expense_cash',
-                    paymentMethod: 'cartao', // Marcador estrutural de Cartão de Crédito
+                    paymentMethod: 'cartao', 
                     description: `${desc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
                     date: formatarDataISO(anoCalculado, mesCalculado, diaVencimento),
                     isCredit: true 
@@ -1513,7 +1530,6 @@
             let targetMonthList = transactionIndexedMap.get(currentSelectedTarget) || [];
 
             targetMonthList.forEach(t => {
-                // Filtro por Tag de Categoria
                 if (filtroCategoriaAtivo !== "") {
                     let matchObj = categories.find(c => c.id === t.categoryId);
                     let matchByName = t.description.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase());
@@ -1521,7 +1537,6 @@
                     if (!matchByName && !matchByID) return;
                 }
 
-                // Filtro por Tipo de Pagamento (Dinheiro vs Cartão)
                 if (filtroPagamentoAtivo !== "" && t.type === 'expense_cash') {
                     if (filtroPagamentoAtivo === 'cartao' && t.paymentMethod !== 'cartao') return;
                     if (filtroPagamentoAtivo === 'dinheiro' && t.paymentMethod === 'cartao') return;
@@ -1543,7 +1558,6 @@
                 if (t.type === 'expense_cash') { indicatorColor = 'var(--danger)'; prefix = '-'; }
                 if (t.type === 'saving') { indicatorColor = 'var(--warning)'; prefix = '💰'; }
 
-                // Badge visual indicando se foi pago em dinheiro ou cartão
                 let badgeMetodo = "";
                 if(t.type === 'expense_cash') {
                     badgeMetodo = t.paymentMethod === 'cartao' ? " <span style='color:var(--accent); font-size:10px;'>[💳]</span>" : " <span style='color:var(--success); font-size:10px;'>[💵]</span>";
@@ -1552,7 +1566,7 @@
                 item.innerHTML = `
                     <div class="history-info">
                         <span class="history-desc">${t.description}${badgeMetodo}</span>
-                        <span class="history-date">📅 ${dateFormatted} (Toque para editar)</span>
+                        <span class="history-date">📅 ${dateFormatted}</span>
                     </div>
                     <div class="history-right">
                         <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
@@ -1594,7 +1608,7 @@
             
             if (summaryCard && lblSobrou) {
                 if (sobrou >= 0) {
-                    lblSobrou.style.color = currentProfile === 'pessoal' ? 'var(--primary)' : '#00E5FF';
+                    lblSobrou.style.color = currentProfile === 'pessoal' ? 'var(--primary)' : '#00e5ff';
                     summaryCard.classList.remove('alert-blink');
                 } else {
                     lblSobrou.style.color = 'var(--danger)';
