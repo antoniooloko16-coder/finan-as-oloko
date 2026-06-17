@@ -246,7 +246,7 @@
         .custom-installments-container { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
         .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--success); color: #000; padding: 10px 25px; border-radius: 20px; font-weight: bold; z-index: 2000; display: none; }
         
-        .chart-box { background: #181818; padding: 10px; border-radius: 12px; margin-top: 15px; }
+        .chart-box { background: #181818; padding: 10px; border-radius: 12px; margin-top: 15px; min-height: 160px; }
         
         .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: bold; display: none; }
@@ -479,21 +479,19 @@
         let filtroCategoriaAtivo = ""; 
         let instGraficoAnual = null; 
         
-        // Estrutura de Indexação Avançada (Cache O(1))
         let transactionIndexedMap = new Map();
 
         function rebuildTransactionIndex() {
             transactionIndexedMap.clear();
             transactions.forEach(t => {
                 if (t && t.date) {
-                    const key = t.date.substring(0, 7); // Obtém o "YYYY-MM"
+                    const key = t.date.substring(0, 7); 
                     if (!transactionIndexedMap.has(key)) {
                         transactionIndexedMap.set(key, []);
                     }
                     transactionIndexedMap.get(key).push(t);
                 }
             });
-            // Ordena cada balde interno por data decrescente de forma nativa
             transactionIndexedMap.forEach((list) => {
                 list.sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
             });
@@ -504,7 +502,7 @@
                 localStorage.setItem('transactions', JSON.stringify(transactions));
                 rebuildTransactionIndex();
             } catch (e) {
-                alert("⚠️ Erro de capacidade: O armazenamento local do seu navegador está cheio. Faça um backup e limpe dados antigos.");
+                alert("⚠️ Erro de capacidade: O armazenamento local está cheio. Faça um backup e limpe dados antigos.");
             }
         }
         
@@ -518,15 +516,23 @@
         let ccConfig = JSON.parse(localStorage.getItem('cc_config')) || { closeDay: 25, dueDay: 5 };
         
         window.addEventListener('DOMContentLoaded', () => {
-            const dataHoje = new Date();
             configurarSeletorAnos(); 
             rebuildTransactionIndex();
             
+            const dataHoje = new Date();
+            const anoCorrente = dataHoje.getFullYear();
             const mesCorrente = String(dataHoje.getMonth() + 1).padStart(2, '0');
+            const diaCorrente = String(dataHoje.getDate()).padStart(2, '0');
+            
             if(document.getElementById('monthSelector')) document.getElementById('monthSelector').value = mesCorrente;
+            if(document.getElementById('yearSelector')) document.getElementById('yearSelector').value = anoCorrente;
             if(document.getElementById('cc_close_day')) document.getElementById('cc_close_day').value = ccConfig.closeDay;
             if(document.getElementById('cc_due_day')) document.getElementById('cc_due_day').value = ccConfig.dueDay;
-            if(document.getElementById('tx_date')) document.getElementById('tx_date').valueAsDate = dataHoje;
+            
+            // Correção fuso horário do input date nativo
+            if(document.getElementById('tx_date')) {
+                document.getElementById('tx_date').value = `${anoCorrente}-${mesCorrente}-${diaCorrente}`;
+            }
             
             updateAmountDisplay();
             renderTags();
@@ -552,7 +558,6 @@
             return `${ano}-${mStr}-${dStr}`;
         }
 
-        // Conversor imutável de fuso horário para impedir desvios de datas nos aparelhos
         function parseSafeDate(dateStr) {
             if (!dateStr) return new Date();
             const parts = dateStr.split('-');
@@ -570,9 +575,9 @@
 
         function configurarSeletorAnos() {
             const seletorAno = document.getElementById('yearSelector');
+            if(!seletorAno) return;
             const anoCorrente = new Date().getFullYear();
             seletorAno.innerHTML = "";
-            // Escalonamento fixado e blindado até 2030 conforme solicitado
             for (let i = 2024; i <= 2030; i++) {
                 let opt = document.createElement('option');
                 opt.value = i;
@@ -625,7 +630,6 @@
 
             let targetMonth = dateVal.substring(0, 7);
             
-            // Procura exata sanitizando emojis para evitar cruzamento falso de strings
             let foundCat = categories.find(c => {
                 let cleanCatName = c.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase();
                 return desc === cleanCatName || desc.includes(cleanCatName);
@@ -708,7 +712,9 @@
         function renderAnnualBalance() {
             const tbody = document.getElementById('annualTableBody');
             const selectedYear = document.getElementById('yearSelector').value;
-            document.getElementById('lblAnualHeader').innerText = selectedYear;
+            if(document.getElementById('lblAnualHeader')) {
+                document.getElementById('lblAnualHeader').innerText = selectedYear;
+            }
             
             tbody.innerHTML = '';
             let grandTotalIncome = 0;
@@ -766,8 +772,10 @@
         }
 
         function renderizarGraficoBarras(ganhos, gastos) {
-            const ctx = document.getElementById('chartAnual').getContext('2d');
+            const canvas = document.getElementById('chartAnual');
+            if(!canvas || typeof Chart === 'undefined') return; // Proteção se estiver offline sem carregar a biblioteca
             
+            const ctx = canvas.getContext('2d');
             if (instGraficoAnual) {
                 instGraficoAnual.destroy(); 
             }
@@ -813,7 +821,7 @@
 
         function clearExtratoFilter() {
             filtroCategoriaAtivo = "";
-            document.getElementById('btnClearFilter').style.display = 'none';
+            if(document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'none';
             document.querySelectorAll('.tag').forEach(t => t.classList.remove('active-filter'));
             loadData();
         }
@@ -906,11 +914,13 @@
 
         function dispararErroVisor() {
             const visor = document.getElementById('amountDisplay');
-            visor.classList.add('visor-erro');
-            setTimeout(() => visor.classList.remove('visor-erro'), 400);
+            if(visor) {
+                visor.classList.add('visor-erro');
+                setTimeout(() => visor.classList.remove('visor-erro'), 400);
+            }
         }
 
-        getNumericValue = () => parseInt(rawDigits, 10) / 100;
+        let getNumericValue = () => parseInt(rawDigits, 10) / 100;
         function fillDescription(text) { document.getElementById('tx_description').value = text; }
         function toggleConditionalFields() { document.getElementById('conditionalFields').style.display = document.getElementById('is_fixed').checked ? 'block' : 'none'; }
 
@@ -923,8 +933,10 @@
 
         function showBanner() {
             const banner = document.getElementById('successBanner');
-            banner.style.display = 'block';
-            setTimeout(() => banner.style.display = 'none', 2000);
+            if(banner) {
+                banner.style.display = 'block';
+                setTimeout(() => banner.style.display = 'none', 2000);
+            }
         }
 
         function formatCurrency(val) {
@@ -1042,14 +1054,18 @@
             document.getElementById('is_fixed').checked = false;
             toggleConditionalFields();
             updateAmountDisplay();
-            document.getElementById('budgetMonitor').style.display = 'none';
+            if(document.getElementById('budgetMonitor')) document.getElementById('budgetMonitor').style.display = 'none';
             showBanner();
             clearExtratoFilter();
         }
 
         function loadData() {
-            const selectedMonth = document.getElementById('monthSelector').value;
-            const selectedYear = document.getElementById('yearSelector').value;
+            const monthSelector = document.getElementById('monthSelector');
+            const yearSelector = document.getElementById('yearSelector');
+            if(!monthSelector || !yearSelector) return;
+
+            const selectedMonth = monthSelector.value;
+            const selectedYear = yearSelector.value;
             const currentSelectedTarget = `${selectedYear}-${selectedMonth}`;
             
             const container = document.getElementById('historyContainer');
@@ -1060,7 +1076,6 @@
             let totalSaving = 0;
             let countItems = 0;
 
-            // Busca instantânea O(1) usando o mapa indexado pré-calculado
             let targetMonthList = transactionIndexedMap.get(currentSelectedTarget) || [];
 
             targetMonthList.forEach(t => {
@@ -1108,14 +1123,17 @@
             const summaryCard = document.getElementById('summaryCard');
             const lblSobrou = document.getElementById('lblSobrou');
             
-            if (sobrou >= 0) {
-                lblSobrou.style.color = 'var(--primary)';
-                summaryCard.classList.remove('alert-blink');
-            } else {
-                lblSobrou.style.color = 'var(--danger)';
-                summaryCard.classList.add('alert-blink');
+            if (summaryCard && lblSobrou) {
+                if (sobrou >= 0) {
+                    lblSobrou.style.color = 'var(--primary)';
+                    summaryCard.classList.remove('alert-blink');
+                } else {
+                    lblSobrou.style.color = 'var(--danger)';
+                    summaryCard.classList.add('alert-blink');
+                }
             }
         }
     </script>
 </body>
 </html>
+
