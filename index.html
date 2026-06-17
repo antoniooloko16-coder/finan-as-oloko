@@ -479,6 +479,35 @@
         let filtroCategoriaAtivo = ""; 
         let instGraficoAnual = null; 
         
+        // Estrutura de Indexação Avançada (Cache O(1))
+        let transactionIndexedMap = new Map();
+
+        function rebuildTransactionIndex() {
+            transactionIndexedMap.clear();
+            transactions.forEach(t => {
+                if (t && t.date) {
+                    const key = t.date.substring(0, 7); // Obtém o "YYYY-MM"
+                    if (!transactionIndexedMap.has(key)) {
+                        transactionIndexedMap.set(key, []);
+                    }
+                    transactionIndexedMap.get(key).push(t);
+                }
+            });
+            // Ordena cada balde interno por data decrescente de forma nativa
+            transactionIndexedMap.forEach((list) => {
+                list.sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
+            });
+        }
+
+        function safeLocalStorageSave() {
+            try {
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+                rebuildTransactionIndex();
+            } catch (e) {
+                alert("⚠️ Erro de capacidade: O armazenamento local do seu navegador está cheio. Faça um backup e limpe dados antigos.");
+            }
+        }
+        
         let defaultCategories = [
             { name: "🛒 Supermercado", budget: 0 },
             { name: "💰 Salário", budget: 0 },
@@ -491,6 +520,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             const dataHoje = new Date();
             configurarSeletorAnos(); 
+            rebuildTransactionIndex();
             
             const mesCorrente = String(dataHoje.getMonth() + 1).padStart(2, '0');
             if(document.getElementById('monthSelector')) document.getElementById('monthSelector').value = mesCorrente;
@@ -522,6 +552,16 @@
             return `${ano}-${mStr}-${dStr}`;
         }
 
+        // Conversor imutável de fuso horário para impedir desvios de datas nos aparelhos
+        function parseSafeDate(dateStr) {
+            if (!dateStr) return new Date();
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 12, 0, 0);
+            }
+            return new Date(dateStr);
+        }
+
         function obterUltimoDiaValido(ano, mes, diaAlvo) {
             let dataTeste = new Date(ano, mes, 0); 
             let maxDiasNoMes = dataTeste.getDate();
@@ -532,7 +572,8 @@
             const seletorAno = document.getElementById('yearSelector');
             const anoCorrente = new Date().getFullYear();
             seletorAno.innerHTML = "";
-            for (let i = anoCorrente - 1; i <= anoCorrente + 2; i++) {
+            // Escalonamento fixado e blindado até 2030 conforme solicitado
+            for (let i = 2024; i <= 2030; i++) {
                 let opt = document.createElement('option');
                 opt.value = i;
                 opt.innerText = i;
@@ -567,7 +608,7 @@
         function deleteTransaction(id) {
             if(confirm("Tem certeza que deseja excluir permanentemente este valor?")) {
                 transactions = transactions.filter(t => t.id !== id);
-                localStorage.setItem('transactions', JSON.stringify(transactions));
+                safeLocalStorageSave();
                 loadData();
             }
         }
@@ -583,13 +624,21 @@
             }
 
             let targetMonth = dateVal.substring(0, 7);
-            let foundCat = categories.find(c => c.name.toLowerCase().includes(desc) || desc.includes(c.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase()));
+            
+            // Procura exata sanitizando emojis para evitar cruzamento falso de strings
+            let foundCat = categories.find(c => {
+                let cleanCatName = c.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase();
+                return desc === cleanCatName || desc.includes(cleanCatName);
+            });
 
             if(foundCat && foundCat.budget > 0) {
                 let accumulatedSpent = 0;
-                transactions.forEach(t => {
-                    if(t.date.substring(0, 7) === targetMonth && t.type === 'expense_cash') {
-                        if(t.description.toLowerCase().includes(foundCat.name.toLowerCase()) || foundCat.name.toLowerCase().includes(t.description.toLowerCase())) {
+                const targetList = transactionIndexedMap.get(targetMonth) || [];
+                
+                targetList.forEach(t => {
+                    if(t.type === 'expense_cash') {
+                        let cleanCatName = foundCat.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase();
+                        if(t.description.toLowerCase().includes(cleanCatName)) {
                             accumulatedSpent += t.amount;
                         }
                     }
@@ -640,9 +689,9 @@
                         categories = imported.categories;
                         if(imported.ccConfig) ccConfig = imported.ccConfig;
                         
-                        localStorage.setItem('transactions', JSON.stringify(transactions));
                         localStorage.setItem('custom_categories_v2', JSON.stringify(categories));
                         localStorage.setItem('cc_config', JSON.stringify(ccConfig));
+                        localStorage.setItem('transactions', JSON.stringify(transactions));
                         
                         alert('Backup restaurado com sucesso completo! 🎉');
                         window.location.reload();
@@ -674,11 +723,11 @@
                 let monthlyIncome = 0;
                 let monthlyExpense = 0;
 
-                transactions.forEach(t => {
-                    if (t.date.substring(0, 7) === targetYearMonth) {
-                        if (t.type === 'income') monthlyIncome += t.amount;
-                        if (t.type === 'expense_cash' || t.type === 'saving') monthlyExpense += t.amount;
-                    }
+                const currentMonthList = transactionIndexedMap.get(targetYearMonth) || [];
+
+                currentMonthList.forEach(t => {
+                    if (t.type === 'income') monthlyIncome += t.amount;
+                    if (t.type === 'expense_cash' || t.type === 'saving') monthlyExpense += t.amount;
                 });
 
                 grandTotalIncome += monthlyIncome;
@@ -861,7 +910,7 @@
             setTimeout(() => visor.classList.remove('visor-erro'), 400);
         }
 
-        function getNumericValue() { return parseInt(rawDigits, 10) / 100; }
+        getNumericValue = () => parseInt(rawDigits, 10) / 100;
         function fillDescription(text) { document.getElementById('tx_description').value = text; }
         function toggleConditionalFields() { document.getElementById('conditionalFields').style.display = document.getElementById('is_fixed').checked ? 'block' : 'none'; }
 
@@ -907,9 +956,9 @@
 
                 for (let i = 0; i < 12; i++) {
                     let mesAlvo = mesBase + i;
-                    let dataFutura = new Date(anoBase, mesAlvo, 1);
-                    let anoCalculado = dataFutura.getFullYear();
-                    let mesCalculado = dataFutura.getMonth() + 1;
+                    let referenceDate = new Date(anoBase, mesAlvo, 1, 12, 0, 0);
+                    let anoCalculado = referenceDate.getFullYear();
+                    let mesCalculado = referenceDate.getMonth() + 1;
                     let diaCalculado = obterUltimoDiaValido(anoCalculado, mesCalculado, dueDay);
 
                     transactions.push({
@@ -964,7 +1013,7 @@
 
             for (let i = 0; i < installments; i++) {
                 let mesAlvo = mesCompra + i + monthOffset;
-                let dataReferencia = new Date(anoCompra, mesAlvo, 1);
+                let dataReferencia = new Date(anoCompra, mesAlvo, 1, 12, 0, 0);
                 let anoCalculado = dataReferencia.getFullYear();
                 let mesCalculado = dataReferencia.getMonth() + 1;
                 let diaVencimento = obterUltimoDiaValido(anoCalculado, mesCalculado, ccConfig.dueDay);
@@ -987,7 +1036,7 @@
         }
 
         function saveAndReset() {
-            localStorage.setItem('transactions', JSON.stringify(transactions));
+            safeLocalStorageSave();
             rawDigits = "0";
             document.getElementById('tx_description').value = '';
             document.getElementById('is_fixed').checked = false;
@@ -1011,41 +1060,39 @@
             let totalSaving = 0;
             let countItems = 0;
 
-            let sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+            // Busca instantânea O(1) usando o mapa indexado pré-calculado
+            let targetMonthList = transactionIndexedMap.get(currentSelectedTarget) || [];
 
-            sortedTransactions.forEach(t => {
-                if (t.date.substring(0, 7) === currentSelectedTarget) {
-                    
-                    if (filtroCategoriaAtivo !== "" && !t.description.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase())) {
-                        return; 
-                    }
-
-                    countItems++;
-                    if (t.type === 'income') totalIncome += t.amount;
-                    if (t.type === 'expense_cash') totalExpense += t.amount;
-                    if (t.type === 'saving') totalSaving += t.amount;
-
-                    let item = document.createElement('div');
-                    item.className = 'history-item';
-                    let dateFormatted = t.date.split('-').reverse().join('/');
-                    
-                    let indicatorColor = 'var(--success)';
-                    let prefix = '+';
-                    if (t.type === 'expense_cash') { indicatorColor = 'var(--danger)'; prefix = '-'; }
-                    if (t.type === 'saving') { indicatorColor = 'var(--warning)'; prefix = '💰'; }
-
-                    item.innerHTML = `
-                        <div class="history-info">
-                            <span class="history-desc">${t.description}</span>
-                            <span class="history-date">📅 ${dateFormatted}</span>
-                        </div>
-                        <div class="history-right">
-                            <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
-                            <button class="btn-delete-item" onclick="deleteTransaction('${t.id}')">🗑️</button>
-                        </div>
-                    `;
-                    container.appendChild(item);
+            targetMonthList.forEach(t => {
+                if (filtroCategoriaAtivo !== "" && !t.description.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase())) {
+                    return; 
                 }
+
+                countItems++;
+                if (t.type === 'income') totalIncome += t.amount;
+                if (t.type === 'expense_cash') totalExpense += t.amount;
+                if (t.type === 'saving') totalSaving += t.amount;
+
+                let item = document.createElement('div');
+                item.className = 'history-item';
+                let dateFormatted = t.date.split('-').reverse().join('/');
+                
+                let indicatorColor = 'var(--success)';
+                let prefix = '+';
+                if (t.type === 'expense_cash') { indicatorColor = 'var(--danger)'; prefix = '-'; }
+                if (t.type === 'saving') { indicatorColor = 'var(--warning)'; prefix = '💰'; }
+
+                item.innerHTML = `
+                    <div class="history-info">
+                        <span class="history-desc">${t.description}</span>
+                        <span class="history-date">📅 ${dateFormatted}</span>
+                    </div>
+                    <div class="history-right">
+                        <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
+                        <button class="btn-delete-item" onclick="deleteTransaction('${t.id}')">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(item);
             });
 
             if (countItems === 0) {
@@ -1072,4 +1119,3 @@
     </script>
 </body>
 </html>
-
