@@ -144,7 +144,6 @@
             transition: color 0.2s;
         }
 
-        /* Efeito de Erro no Visor */
         @keyframes erroVisor {
             0%, 100% { color: var(--text); transform: translateX(0); }
             20%, 60% { color: var(--danger); transform: translateX(-6px); }
@@ -247,10 +246,8 @@
         .custom-installments-container { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
         .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--success); color: #000; padding: 10px 25px; border-radius: 20px; font-weight: bold; z-index: 2000; display: none; }
         
-        /* Box do Gráfico */
         .chart-box { background: #181818; padding: 10px; border-radius: 12px; margin-top: 15px; }
         
-        /* Filtro de Extrato */
         .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: bold; display: none; }
     </style>
@@ -271,7 +268,7 @@
                     <option value="03">Mar</option>
                     <option value="04">Abr</option>
                     <option value="05">Mai</option>
-                    <option value="06" selected>Jun</option>
+                    <option value="06">Jun</option>
                     <option value="07">Jul</option>
                     <option value="08">Ago</option>
                     <option value="09">Set</option>
@@ -489,14 +486,18 @@
             { name: "💸 Outros Gastos", budget: 0 }
         ];
         let categories = JSON.parse(localStorage.getItem('custom_categories_v2')) || defaultCategories;
-
         let ccConfig = JSON.parse(localStorage.getItem('cc_config')) || { closeDay: 25, dueDay: 5 };
         
         window.addEventListener('DOMContentLoaded', () => {
+            const dataHoje = new Date();
             configurarSeletorAnos(); 
+            
+            const mesCorrente = String(dataHoje.getMonth() + 1).padStart(2, '0');
+            if(document.getElementById('monthSelector')) document.getElementById('monthSelector').value = mesCorrente;
             if(document.getElementById('cc_close_day')) document.getElementById('cc_close_day').value = ccConfig.closeDay;
             if(document.getElementById('cc_due_day')) document.getElementById('cc_due_day').value = ccConfig.dueDay;
-            if(document.getElementById('tx_date')) document.getElementById('tx_date').valueAsDate = new Date();
+            if(document.getElementById('tx_date')) document.getElementById('tx_date').valueAsDate = dataHoje;
+            
             updateAmountDisplay();
             renderTags();
             loadData();
@@ -507,6 +508,25 @@
             "05": "Maio", "06": "Junho", "07": "Julho", "08": "Agosto",
             "09": "Setembro", "10": "Outubro", "11": "Novembro", "12": "Dezembro"
         };
+
+        function gerarIDUnico() {
+            if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+                return crypto.randomUUID();
+            }
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+
+        function formatarDataISO(ano, mes, dia) {
+            let mStr = String(mes).padStart(2, '0');
+            let dStr = String(dia).padStart(2, '0');
+            return `${ano}-${mStr}-${dStr}`;
+        }
+
+        function obterUltimoDiaValido(ano, mes, diaAlvo) {
+            let dataTeste = new Date(ano, mes, 0); 
+            let maxDiasNoMes = dataTeste.getDate();
+            return Math.min(diaAlvo, maxDiasNoMes);
+        }
 
         function configurarSeletorAnos() {
             const seletorAno = document.getElementById('yearSelector');
@@ -881,19 +901,27 @@
 
             if (isFixed) {
                 const dueDay = parseInt(document.getElementById('due_day').value, 10) || 10;
-                let baseDate = new Date(dateInput + 'T12:00:00');
+                let splitData = dateInput.split('-');
+                let anoBase = parseInt(splitData[0], 10);
+                let mesBase = parseInt(splitData[1], 10) - 1; 
+
                 for (let i = 0; i < 12; i++) {
-                    let futureDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, dueDay);
+                    let mesAlvo = mesBase + i;
+                    let dataFutura = new Date(anoBase, mesAlvo, 1);
+                    let anoCalculado = dataFutura.getFullYear();
+                    let mesCalculado = dataFutura.getMonth() + 1;
+                    let diaCalculado = obterUltimoDiaValido(anoCalculado, mesCalculado, dueDay);
+
                     transactions.push({
-                        id: Date.now() + '-' + i,
+                        id: gerarIDUnico(),
                         amount: val,
                         type: type,
-                        description: desc + ' 🔄',
-                        date: `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
+                        description: desc + ' 🔄 Fixo',
+                        date: formatarDataISO(anoCalculado, mesCalculado, diaCalculado)
                     });
                 }
             } else {
-                transactions.push({ id: String(Date.now()), amount: val, type: type, description: desc, date: dateInput });
+                transactions.push({ id: gerarIDUnico(), amount: val, type: type, description: desc, date: dateInput });
             }
             saveAndReset();
         }
@@ -922,29 +950,36 @@
             const totalVal = getNumericValue();
             let desc = document.getElementById('tx_description').value.trim() || 'Compra Cartão 💳';
             const dateInput = document.getElementById('tx_date').value;
-            let baseDate = new Date(dateInput + 'T12:00:00');
-            let purchaseDay = baseDate.getDate();
+            
+            let splitData = dateInput.split('-');
+            let anoCompra = parseInt(splitData[0], 10);
+            let mesCompra = parseInt(splitData[1], 10) - 1; 
+            let diaCompra = parseInt(splitData[2], 10);
 
             let monthOffset = 0;
-            if (purchaseDay >= ccConfig.closeDay) { monthOffset = 1; }
+            if (diaCompra >= ccConfig.closeDay) { monthOffset = 1; }
 
             const baseAmount = Math.floor((totalVal / installments) * 100) / 100;
             let remainder = Math.round((totalVal - (baseAmount * installments)) * 100) / 100;
 
             for (let i = 0; i < installments; i++) {
-                let targetMonthIndex = baseDate.getMonth() + i + monthOffset;
-                let futureDate = new Date(baseDate.getFullYear(), targetMonthIndex, ccConfig.dueDay);
+                let mesAlvo = mesCompra + i + monthOffset;
+                let dataReferencia = new Date(anoCompra, mesAlvo, 1);
+                let anoCalculado = dataReferencia.getFullYear();
+                let mesCalculado = dataReferencia.getMonth() + 1;
+                let diaVencimento = obterUltimoDiaValido(anoCalculado, mesCalculado, ccConfig.dueDay);
+
                 let currentInstallmentAmount = baseAmount;
                 if (i === installments - 1) {
                     currentInstallmentAmount = Math.round((baseAmount + remainder) * 100) / 100;
                 }
 
                 transactions.push({
-                    id: Date.now() + '-cc-' + i,
+                    id: gerarIDUnico(),
                     amount: currentInstallmentAmount,
                     type: 'expense_cash',
                     description: `${desc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
-                    date: `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`
+                    date: formatarDataISO(anoCalculado, mesCalculado, diaVencimento)
                 });
             }
             closeCreditModal();
