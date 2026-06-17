@@ -20,6 +20,10 @@
             --text-muted: #a0a0a0;
         }
 
+        /* Cores temáticas para diferenciar os perfis */
+        body.perfil-pessoal { --primary: #bb86fc; }
+        body.perfil-empresa { --primary: #00E5FF; } /* Azul empresarial */
+
         body {
             font-family: system-ui, -apple-system, sans-serif;
             background-color: var(--bg-main);
@@ -36,7 +40,7 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            padding-top: 115px;
+            padding-top: 165px; /* Aumentado para acomodar a nova barra de perfil */
             padding-bottom: 20px;
         }
 
@@ -51,6 +55,32 @@
             background: var(--bg-card);
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
+
+        .profile-switcher {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: #151515;
+            border-bottom: 1px solid #2d2d2d;
+        }
+
+        .profile-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .profile-btn.active {
+            color: #fff;
+            background: var(--bg-card);
+        }
+        
+        body.perfil-pessoal .profile-btn#prof-pessoal { border-bottom: 3px solid #bb86fc; color: #bb86fc; }
+        body.perfil-empresa .profile-btn#prof-empresa { border-bottom: 3px solid #00E5FF; color: #00E5FF; }
 
         .top-bar {
             display: flex;
@@ -252,13 +282,18 @@
         .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: bold; display: none; }
     </style>
 </head>
-<body>
+<body class="perfil-pessoal">
 
     <div class="success-banner" id="successBanner">Lançamento Salvo! ✓</div>
 
     <div class="header-fixed-container">
+        <div class="profile-switcher">
+            <button class="profile-btn active" id="prof-pessoal" onclick="setProfile('pessoal')">👤 Pessoal</button>
+            <button class="profile-btn" id="prof-empresa" onclick="setProfile('empresa')">🏢 Empresa</button>
+        </div>
+
         <div class="top-bar">
-            <h2>💰 Finanças Pro</h2>
+            <h2 id="appTitle">💰 Finanças Pro</h2>
             <div class="top-actions">
                 <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
                 
@@ -410,8 +445,8 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0; color: var(--warning); font-size: 15px;">💾 Cópia de Segurança (Backup)</h3>
-                <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Baixe seus dados para não perder nada caso troque ou formate o celular.</p>
+                <h3 style="margin-top:0; color: var(--warning); font-size: 15px;">💾 Cópia de Segurança (Backup Geral)</h3>
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Baixe seus dados para não perder nada caso troque ou formate o celular. Este arquivo salva ambos os perfis.</p>
                 <div class="grid-2col">
                     <button class="btn-secondary" onclick="exportBackup()">📤 Exportar</button>
                     <button class="btn-secondary" onclick="document.getElementById('fileFileInput').click()">📥 Importar</button>
@@ -473,13 +508,79 @@
     </div>
 
     <script>
+        let currentProfile = "pessoal"; // Controle de perfil ativo ('pessoal' ou 'empresa')
         let rawDigits = "0";
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
         let privacyMode = false;
         let filtroCategoriaAtivo = ""; 
         let instGraficoAnual = null; 
         
+        let transactions = [];
+        let categories = [];
+        let ccConfig = { closeDay: 25, dueDay: 5 };
         let transactionIndexedMap = new Map();
+
+        // Categorias iniciais padrões para cada tipo de conta
+        const defaultCategoriesPessoal = [
+            { name: "🛒 Supermercado", budget: 0 },
+            { name: "🍔 Restaurante", budget: 0 },
+            { name: "💸 Outros Gastos", budget: 0 }
+        ];
+
+        const defaultCategoriesEmpresa = [
+            { name: "🏭 Insumos / Matéria Prima", budget: 0 },
+            { name: "🚚 Entregas / Frete", budget: 0 },
+            { name: "🔧 Manutenção", budget: 0 },
+            { name: "📈 Vendas / Receitas", budget: 0 }
+        ];
+
+        function switchProfileData() {
+            // Carrega os dados específicos do perfil ativo
+            if (currentProfile === "pessoal") {
+                transactions = JSON.parse(localStorage.getItem('transactions_pessoal')) || [];
+                categories = JSON.parse(localStorage.getItem('categories_pessoal')) || defaultCategoriesPessoal;
+                ccConfig = JSON.parse(localStorage.getItem('cc_config_pessoal')) || { closeDay: 25, dueDay: 5 };
+                document.getElementById('appTitle').innerText = "👤 Finanças Pessoais";
+            } else {
+                transactions = JSON.parse(localStorage.getItem('transactions_empresa')) || [];
+                categories = JSON.parse(localStorage.getItem('categories_empresa')) || defaultCategoriesEmpresa;
+                ccConfig = JSON.parse(localStorage.getItem('cc_config_empresa')) || { closeDay: 25, dueDay: 5 };
+                document.getElementById('appTitle').innerText = "🏢 Finanças Business";
+            }
+            rebuildTransactionIndex();
+        }
+
+        function setProfile(profile) {
+            if (currentProfile === profile) return;
+            currentProfile = profile;
+            
+            // Atualiza botões visuais do topo
+            document.querySelectorAll('.profile-btn').forEach(btn => btn.classList.remove('active'));
+            if (profile === 'pessoal') {
+                document.body.className = "perfil-pessoal";
+                document.getElementById('prof-pessoal').classList.add('active');
+            } else {
+                document.body.className = "perfil-empresa";
+                document.getElementById('prof-empresa').classList.add('active');
+            }
+
+            // Reseta filtros e recarrega dados estruturados
+            filtroCategoriaAtivo = "";
+            if (document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'none';
+            
+            switchProfileData();
+            
+            // Atualiza inputs de configuração com as regras do perfil selecionado
+            if(document.getElementById('cc_close_day')) document.getElementById('cc_close_day').value = ccConfig.closeDay;
+            if(document.getElementById('cc_due_day')) document.getElementById('cc_due_day').value = ccConfig.dueDay;
+
+            // Recarrega as views do app
+            renderTags();
+            
+            const activeTab = document.querySelector('.tab-btn.active').id;
+            if (activeTab === 'tab-lançamentos') loadData();
+            if (activeTab === 'tab-categorias') renderCategoryManagement();
+            if (activeTab === 'tab-anual') renderAnnualBalance();
+        }
 
         function rebuildTransactionIndex() {
             transactionIndexedMap.clear();
@@ -499,25 +600,22 @@
 
         function safeLocalStorageSave() {
             try {
-                localStorage.setItem('transactions', JSON.stringify(transactions));
+                if (currentProfile === "pessoal") {
+                    localStorage.setItem('transactions_pessoal', JSON.stringify(transactions));
+                    localStorage.setItem('categories_pessoal', JSON.stringify(categories));
+                } else {
+                    localStorage.setItem('transactions_empresa', JSON.stringify(transactions));
+                    localStorage.setItem('categories_empresa', JSON.stringify(categories));
+                }
                 rebuildTransactionIndex();
             } catch (e) {
                 alert("⚠️ Erro de capacidade: O armazenamento local está cheio. Faça um backup e limpe dados antigos.");
             }
         }
         
-        let defaultCategories = [
-            { name: "🛒 Supermercado", budget: 0 },
-            { name: "💰 Salário", budget: 0 },
-            { name: "🍔 Restaurante", budget: 0 },
-            { name: "💸 Outros Gastos", budget: 0 }
-        ];
-        let categories = JSON.parse(localStorage.getItem('custom_categories_v2')) || defaultCategories;
-        let ccConfig = JSON.parse(localStorage.getItem('cc_config')) || { closeDay: 25, dueDay: 5 };
-        
         window.addEventListener('DOMContentLoaded', () => {
             configurarSeletorAnos(); 
-            rebuildTransactionIndex();
+            switchProfileData();
             
             const dataHoje = new Date();
             const anoCorrente = dataHoje.getFullYear();
@@ -529,7 +627,6 @@
             if(document.getElementById('cc_close_day')) document.getElementById('cc_close_day').value = ccConfig.closeDay;
             if(document.getElementById('cc_due_day')) document.getElementById('cc_due_day').value = ccConfig.dueDay;
             
-            // Correção fuso horário do input date nativo
             if(document.getElementById('tx_date')) {
                 document.getElementById('tx_date').value = `${anoCorrente}-${mesCorrente}-${diaCorrente}`;
             }
@@ -590,7 +687,11 @@
         function saveCCConfig() {
             ccConfig.closeDay = parseInt(document.getElementById('cc_close_day').value, 10) || 25;
             ccConfig.dueDay = parseInt(document.getElementById('cc_due_day').value, 10) || 5;
-            localStorage.setItem('cc_config', JSON.stringify(ccConfig));
+            if (currentProfile === "pessoal") {
+                localStorage.setItem('cc_config_pessoal', JSON.stringify(ccConfig));
+            } else {
+                localStorage.setItem('cc_config_empresa', JSON.stringify(ccConfig));
+            }
         }
 
         function switchPage(pageId) {
@@ -671,11 +772,19 @@
         }
 
         function exportBackup() {
-            let backupData = { transactions: transactions, categories: categories, ccConfig: ccConfig };
+            // O backup unificado coleta os dados de todas as chaves criadas
+            let backupData = { 
+                t_pessoal: JSON.parse(localStorage.getItem('transactions_pessoal')) || [],
+                c_pessoal: JSON.parse(localStorage.getItem('categories_pessoal')) || defaultCategoriesPessoal,
+                cc_pessoal: JSON.parse(localStorage.getItem('cc_config_pessoal')) || { closeDay: 25, dueDay: 5 },
+                t_empresa: JSON.parse(localStorage.getItem('transactions_empresa')) || [],
+                c_empresa: JSON.parse(localStorage.getItem('categories_empresa')) || defaultCategoriesEmpresa,
+                cc_empresa: JSON.parse(localStorage.getItem('cc_config_empresa')) || { closeDay: 25, dueDay: 5 }
+            };
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
             let downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `Backup_Financas_App.json`);
+            downloadAnchor.setAttribute("download", `Backup_Financas_Completo.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
@@ -688,16 +797,23 @@
             reader.onload = function(e) {
                 try {
                     let imported = JSON.parse(e.target.result);
-                    if (imported.transactions && imported.categories) {
-                        transactions = imported.transactions;
-                        categories = imported.categories;
-                        if(imported.ccConfig) ccConfig = imported.ccConfig;
+                    // Suporta tanto o formato novo completo quanto o formato legado antigo
+                    if (imported.t_pessoal || imported.transactions) {
+                        if(imported.t_pessoal) {
+                            localStorage.setItem('transactions_pessoal', JSON.stringify(imported.t_pessoal));
+                            localStorage.setItem('categories_pessoal', JSON.stringify(imported.c_pessoal));
+                            localStorage.setItem('cc_config_pessoal', JSON.stringify(imported.cc_pessoal));
+                            localStorage.setItem('transactions_empresa', JSON.stringify(imported.t_empresa));
+                            localStorage.setItem('categories_empresa', JSON.stringify(imported.c_empresa));
+                            localStorage.setItem('cc_config_empresa', JSON.stringify(imported.cc_empresa));
+                        } else {
+                            // Legado (Migra os dados antigos para a aba pessoal)
+                            localStorage.setItem('transactions_pessoal', JSON.stringify(imported.transactions));
+                            localStorage.setItem('categories_pessoal', JSON.stringify(imported.categories || defaultCategoriesPessoal));
+                            if(imported.ccConfig) localStorage.setItem('cc_config_pessoal', JSON.stringify(imported.ccConfig));
+                        }
                         
-                        localStorage.setItem('custom_categories_v2', JSON.stringify(categories));
-                        localStorage.setItem('cc_config', JSON.stringify(ccConfig));
-                        localStorage.setItem('transactions', JSON.stringify(transactions));
-                        
-                        alert('Backup restaurado com sucesso completo! 🎉');
+                        alert('Backup restaurado com sucesso em ambos os perfis! 🎉');
                         window.location.reload();
                     } else {
                         alert('Arquivo de backup inválido ❌');
@@ -773,7 +889,7 @@
 
         function renderizarGraficoBarras(ganhos, gastos) {
             const canvas = document.getElementById('chartAnual');
-            if(!canvas || typeof Chart === 'undefined') return; // Proteção se estiver offline sem carregar a biblioteca
+            if(!canvas || typeof Chart === 'undefined') return; 
             
             const ctx = canvas.getContext('2d');
             if (instGraficoAnual) {
@@ -783,12 +899,15 @@
             let dadosGanhos = privacyMode ? ganhos.map(() => 0) : ganhos;
             let dadosGastos = privacyMode ? gastos.map(() => 0) : gastos;
 
+            // Altera a cor de destaque da legenda do gráfico baseado na identidade visual do perfil selecionado
+            let corDestaqueGanhos = currentProfile === "pessoal" ? '#00C853' : '#00E5FF';
+
             instGraficoAnual = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
                     datasets: [
-                        { label: 'Ganhos 🟢', data: dadosGanhos, backgroundColor: '#00C853', borderRadius: 4 },
+                        { label: 'Ganhos 🟢', data: dadosGanhos, backgroundColor: corDestaqueGanhos, borderRadius: 4 },
                         { label: 'Saídas/Caixinha 🔴', data: dadosGastos, backgroundColor: '#D50000', borderRadius: 4 }
                     ]
                 },
@@ -875,7 +994,7 @@
             if(!name.match(/[\u1F600-\u1F64F]/)) { name = "🔹 " + name; }
             
             categories.push({ name: name, budget: budget });
-            localStorage.setItem('custom_categories_v2', JSON.stringify(categories));
+            safeLocalStorageSave();
             
             input.value = '';
             budgetInput.value = '0';
@@ -886,7 +1005,7 @@
         function deleteCategory(index) {
             if(confirm(`Deseja mesmo excluir o nome "${categories[index].name}"? 🗑️`)) {
                 categories.splice(index, 1);
-                localStorage.setItem('custom_categories_v2', JSON.stringify(categories));
+                safeLocalStorageSave();
                 renderCategoryManagement();
                 renderTags();
             }
@@ -1125,7 +1244,7 @@
             
             if (summaryCard && lblSobrou) {
                 if (sobrou >= 0) {
-                    lblSobrou.style.color = 'var(--primary)';
+                    lblSobrou.style.color = currentProfile === 'pessoal' ? 'var(--primary)' : '#00E5FF';
                     summaryCard.classList.remove('alert-blink');
                 } else {
                     lblSobrou.style.color = 'var(--danger)';
