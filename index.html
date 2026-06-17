@@ -280,6 +280,11 @@
         .card-dash { background: var(--bg-card); padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); text-align: center; }
         .card-dash h3 { margin: 0 0 5px 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
         .card-dash p { margin: 0; font-size: 16px; font-weight: bold; }
+
+        /* Estilos melhorados para os filtros de pagamento */
+        .payment-filter-container { display: flex; gap: 6px; margin: 10px 15px 0 15px; overflow-x: auto; }
+        .pay-filter-btn { background: var(--bg-input); border: 1px solid #444; color: var(--text-muted); padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .pay-filter-btn.active { background: rgba(187, 134, 252, 0.15); border-color: var(--primary); color: var(--primary); }
     </style>
 </head>
 <body class="perfil-pessoal">
@@ -396,7 +401,7 @@
 
             <div class="action-grid" id="actionButtonsContainer">
                 <button class="btn-action" style="background: var(--success);" onclick="saveTransaction('income')">🤑 Ganhei</button>
-                <button class="btn-action" style="background: var(--danger); color: #fff;" onclick="saveTransaction('expense_cash')">💸 Gastei</button>
+                <button class="btn-action" style="background: var(--danger); color: #fff;" onclick="openExpenseModal()">💸 Gastei</button>
                 <button class="btn-action" style="background: var(--accent); color: #fff;" onclick="openCreditModal()">💳 Cartão</button>
                 <button class="btn-action" style="background: var(--warning);" onclick="saveTransaction('saving')">💰 Caixinha</button>
             </div>
@@ -432,6 +437,12 @@
                 <div class="chart-box" style="min-height: 200px; margin-top: 10px;">
                     <canvas id="chartMensalCategorias"></canvas>
                 </div>
+            </div>
+
+            <div class="payment-filter-container">
+                <button class="pay-filter-btn active" id="payFilterAll" onclick="setPaymentFilter('')">🔄 Todos os Meios</button>
+                <button class="pay-filter-btn" id="payFilterDinheiro" onclick="setPaymentFilter('dinheiro')">💵 Dinheiro / Pix</button>
+                <button class="pay-filter-btn" id="payFilterCartao" onclick="setPaymentFilter('cartao')">💳 Cartão de Crédito</button>
             </div>
 
             <div class="card">
@@ -511,13 +522,22 @@
         </div>
     </div>
 
+    <div class="modal" id="expenseModal">
+        <div class="modal-content">
+            <div class="modal-title">💵 Como você pagou esse gasto?</div>
+            <button class="modal-btn" style="border-left: 5px solid var(--success);" onclick="executeExpenseSave('dinheiro')">💵 Dinheiro / PIX / Débito</button>
+            <button class="modal-btn" style="border-left: 5px solid var(--accent);" onclick="closeExpenseModal(); openCreditModal();">💳 Cartão de Crédito</button>
+            <button class="modal-btn" style="background: #333; text-align: center; margin-top: 15px;" onclick="closeExpenseModal()">❌ Cancelar</button>
+        </div>
+    </div>
+
     <div class="modal" id="creditModal">
         <div class="modal-content">
             <div class="modal-title">🔢 Escolha as Parcelas do Cartão</div>
             <button class="modal-btn" onclick="saveCreditTransaction(1)">1x (À Vista na Fatura)</button>
             <button class="modal-btn" onclick="saveCreditTransaction(2)">2 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(3)">3 meses seguintes</button>
-            <button class="modal-btn" onclick="saveCreditTransaction(4)">4 meses seguintes</button>
+            <button class="modal-btn" onclick="saveCreditTransaction(4) e">4 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(5)">5 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(6)">6 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(10)">10 meses seguintes</button>
@@ -549,6 +569,7 @@
         let rawDigits = "0";
         let privacyMode = false;
         let filtroCategoriaAtivo = ""; 
+        let filtroPagamentoAtivo = ""; // Novo controle de filtro de pagamento
         let instGraficoAnual = null; 
         let instGraficoMensal = null;
         
@@ -561,16 +582,16 @@
         let pendingDeleteId = null;
 
         const defaultCategoriesPessoal = [
-            { name: "🛒 Supermercado", budget: 0 },
-            { name: "🍔 Restaurante", budget: 0 },
-            { name: "💸 Outros Gastos", budget: 0 }
+            { id: "cat_p_1", name: "🛒 Supermercado", budget: 0 },
+            { id: "cat_p_2", name: "🍔 Restaurante", budget: 0 },
+            { id: "cat_p_3", name: "💸 Outros Gastos", budget: 0 }
         ];
 
         const defaultCategoriesEmpresa = [
-            { name: "🏭 Insumos / Matéria Prima", budget: 0 },
-            { name: "🚚 Entregas / Frete", budget: 0 },
-            { name: "🔧 Manutenção", budget: 0 },
-            { name: "📈 Vendas / Receitas", budget: 0 }
+            { id: "cat_e_1", name: "🏭 Insumos / Matéria Prima", budget: 0 },
+            { id: "cat_e_2", name: "🚚 Entregas / Frete", budget: 0 },
+            { id: "cat_e_3", name: "🔧 Manutenção", budget: 0 },
+            { id: "cat_e_4", name: "📈 Vendas / Receitas", budget: 0 }
         ];
 
         function switchProfileData() {
@@ -589,6 +610,15 @@
                 document.getElementById('lblTitleGanhos').innerText = "🟢 Faturamento";
                 document.getElementById('lblTitleSobrou').innerText = "🟣 Lucro Caixa";
             }
+            
+            // Tratamento preventivo: Adicionar ID único caso existam categorias legadas antigas estruturadas sem ID
+            let alterouCategorias = false;
+            categories = categories.map(c => {
+                if(!c.id) { c.id = gerarIDUnico(); alterouCategorias = true; }
+                return c;
+            });
+            if(alterouCategorias) { safeLocalStorageSave(); }
+
             rebuildTransactionIndex();
         }
 
@@ -607,6 +637,8 @@
             }
 
             filtroCategoriaAtivo = "";
+            filtroPagamentoAtivo = "";
+            actualizarBotoesFiltroPagamento();
             if (document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'none';
             
             switchProfileData();
@@ -640,6 +672,12 @@
 
         function safeLocalStorageSave() {
             try {
+                // Prevenção inteligente de estouro de cache antes de salvar de fato no disco do browser
+                const rawDataStringPessoal = JSON.stringify(transactions) + JSON.stringify(categories);
+                if (rawDataStringPessoal.length > 4500000) { 
+                    alert("⚠️ Armazenamento muito próximo do limite! Recomendamos exportar o Backup Geral e limpar os dados.");
+                }
+
                 if (currentProfile === "pessoal") {
                     localStorage.setItem('transactions_pessoal', JSON.stringify(transactions));
                     localStorage.setItem('categories_pessoal', JSON.stringify(categories));
@@ -649,7 +687,7 @@
                 }
                 rebuildTransactionIndex();
             } catch (e) {
-                alert("⚠️ Erro de capacidade: O armazenamento local está cheio. Faça um backup e limpe dados antigos.");
+                alert("❌ Erro Crítico: O armazenamento local está lotado. Faça uma exportação e limpe dados passados para liberar espaço.");
             }
         }
         
@@ -695,6 +733,7 @@
             return `${ano}-${mStr}-${dStr}`;
         }
 
+        // Parsing seguro de data isolando problemas clássicos de fusos horários locais
         function parseSafeDate(dateStr) {
             if (!dateStr) return new Date();
             const parts = dateStr.split('-');
@@ -877,6 +916,7 @@
 
             let targetMonth = dateVal.substring(0, 7);
             
+            // Busca segura associando o ID da categoria
             let foundCat = categories.find(c => {
                 let cleanCatName = c.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase();
                 return desc === cleanCatName || desc.includes(cleanCatName);
@@ -889,7 +929,7 @@
                 targetList.forEach(t => {
                     if(t.type === 'expense_cash') {
                         let cleanCatName = foundCat.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase();
-                        if(t.description.toLowerCase().includes(cleanCatName)) {
+                        if(t.description.toLowerCase().includes(cleanCatName) || t.categoryId === foundCat.id) {
                             accumulatedSpent += t.amount;
                         }
                     }
@@ -1061,7 +1101,6 @@
             });
         }
 
-        // Nova função para renderizar gráfico Donut de gastos por categoria no mês
         function renderizarGraficoMensalCategorias(targetMonthList) {
             const canvas = document.getElementById('chartMensalCategorias');
             if (!canvas || typeof Chart === 'undefined') return;
@@ -1079,11 +1118,26 @@
             targetMonthList.forEach(t => {
                 if (t.type === 'expense_cash') {
                     let achou = false;
-                    for (let catName in resumoCategorias) {
-                        if (t.description.toLowerCase().includes(catName.toLowerCase())) {
-                            resumoCategorias[catName] += t.amount;
-                            achou = true;
-                            break;
+                    
+                    // Busca preferencial inteligente vinculando o ID dinâmico da categoria
+                    if(t.categoryId) {
+                        let catObj = categories.find(c => c.id === t.categoryId);
+                        if(catObj) {
+                            let cleanName = catObj.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim();
+                            if(resumoCategorias[cleanName] !== undefined) {
+                                resumoCategorias[cleanName] += t.amount;
+                                achou = true;
+                            }
+                        }
+                    }
+                    
+                    if(!achou) {
+                        for (let catName in resumoCategorias) {
+                            if (t.description.toLowerCase().includes(catName.toLowerCase())) {
+                                resumoCategorias[catName] += t.amount;
+                                achou = true;
+                                break;
+                            }
                         }
                     }
                     if (!achou) { resumoCategorias["Geral / Não Categorizado"] += t.amount; }
@@ -1142,8 +1196,23 @@
             }
         }
 
+        function setPaymentFilter(type) {
+            filtroPagamentoAtivo = type;
+            actualizarBotoesFiltroPagamento();
+            loadData();
+        }
+
+        function actualizarBotoesFiltroPagamento() {
+            document.querySelectorAll('.pay-filter-btn').forEach(b => b.classList.remove('active'));
+            if(filtroPagamentoAtivo === '') document.getElementById('payFilterAll').classList.add('active');
+            if(filtroPagamentoAtivo === 'dinheiro') document.getElementById('payFilterDinheiro').classList.add('active');
+            if(filtroPagamentoAtivo === 'cartao') document.getElementById('payFilterCartao').classList.add('active');
+        }
+
         function clearExtratoFilter() {
             filtroCategoriaAtivo = "";
+            filtroPagamentoAtivo = "";
+            actualizarBotoesFiltroPagamento();
             if(document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'none';
             document.querySelectorAll('.tag').forEach(t => t.classList.remove('active-filter'));
             loadData();
@@ -1197,7 +1266,8 @@
             if(!name) return alert('Por favor, digite um nome válido! ⚠️');
             if(!name.match(/[\u1F600-\u1F64F]/)) { name = "🔹 " + name; }
             
-            categories.push({ name: name, budget: budget });
+            // Inclusão automática de ID Único estruturado na criação
+            categories.push({ id: gerarIDUnico(), name: name, budget: budget });
             safeLocalStorageSave();
             
             input.value = '';
@@ -1267,7 +1337,22 @@
             return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
-        function saveTransaction(type) {
+        function openExpenseModal() {
+            const val = getNumericValue();
+            if (val <= 0) { dispararErroVisor(); return; }
+            document.getElementById('expenseModal').style.display = 'flex';
+        }
+
+        function closeExpenseModal() {
+            document.getElementById('expenseModal').style.display = 'none';
+        }
+
+        function executeExpenseSave(method) {
+            closeExpenseModal();
+            saveTransaction('expense_cash', method);
+        }
+
+        function saveTransaction(type, paymentMethod = 'dinheiro') {
             const val = getNumericValue();
             if (val <= 0) {
                 dispararErroVisor();
@@ -1282,6 +1367,13 @@
             
             const dateInput = document.getElementById('tx_date').value;
             const isFixed = document.getElementById('is_fixed').checked;
+
+            // Encontra dinamicamente a ID correspondente da Categoria escolhida pela tag/nome
+            let matchedCategory = categories.find(c => {
+                let cleanCat = c.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase();
+                return desc.toLowerCase().includes(cleanCat);
+            });
+            let categoryId = matchedCategory ? matchedCategory.id : null;
 
             if (isFixed) {
                 const dueDay = parseInt(document.getElementById('due_day').value, 10) || 10;
@@ -1298,14 +1390,24 @@
 
                     transactions.push({
                         id: gerarIDUnico(),
+                        categoryId: categoryId,
                         amount: val,
                         type: type,
+                        paymentMethod: paymentMethod,
                         description: desc + ' 🔄 Fixo',
                         date: formatarDataISO(anoCalculado, mesCalculado, diaCalculado)
                     });
                 }
             } else {
-                transactions.push({ id: gerarIDUnico(), amount: val, type: type, description: desc, date: dateInput });
+                transactions.push({ 
+                    id: gerarIDUnico(), 
+                    categoryId: categoryId, 
+                    amount: val, 
+                    type: type, 
+                    paymentMethod: paymentMethod, 
+                    description: desc, 
+                    date: dateInput 
+                });
             }
             saveAndReset();
         }
@@ -1346,6 +1448,12 @@
             const baseAmount = Math.floor((totalVal / installments) * 100) / 100;
             let remainder = Math.round((totalVal - (baseAmount * installments)) * 100) / 100;
 
+            let matchedCategory = categories.find(c => {
+                let cleanCat = c.name.replace(/[\u1F600-\u1F64F]|🔹/g, "").trim().toLowerCase();
+                return desc.toLowerCase().includes(cleanCat);
+            });
+            let categoryId = matchedCategory ? matchedCategory.id : null;
+
             for (let i = 0; i < installments; i++) {
                 let mesAlvo = mesCompra + i + monthOffset;
                 let dataReferencia = new Date(anoCompra, mesAlvo, 1, 12, 0, 0);
@@ -1360,8 +1468,10 @@
 
                 transactions.push({
                     id: gerarIDUnico(),
+                    categoryId: categoryId,
                     amount: currentInstallmentAmount,
                     type: 'expense_cash',
+                    paymentMethod: 'cartao', // Marcador estrutural de Cartão de Crédito
                     description: `${desc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
                     date: formatarDataISO(anoCalculado, mesCalculado, diaVencimento),
                     isCredit: true 
@@ -1403,8 +1513,18 @@
             let targetMonthList = transactionIndexedMap.get(currentSelectedTarget) || [];
 
             targetMonthList.forEach(t => {
-                if (filtroCategoriaAtivo !== "" && !t.description.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase())) {
-                    return; 
+                // Filtro por Tag de Categoria
+                if (filtroCategoriaAtivo !== "") {
+                    let matchObj = categories.find(c => c.id === t.categoryId);
+                    let matchByName = t.description.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase());
+                    let matchByID = matchObj && matchObj.name.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase());
+                    if (!matchByName && !matchByID) return;
+                }
+
+                // Filtro por Tipo de Pagamento (Dinheiro vs Cartão)
+                if (filtroPagamentoAtivo !== "" && t.type === 'expense_cash') {
+                    if (filtroPagamentoAtivo === 'cartao' && t.paymentMethod !== 'cartao') return;
+                    if (filtroPagamentoAtivo === 'dinheiro' && t.paymentMethod === 'cartao') return;
                 }
 
                 countItems++;
@@ -1423,9 +1543,15 @@
                 if (t.type === 'expense_cash') { indicatorColor = 'var(--danger)'; prefix = '-'; }
                 if (t.type === 'saving') { indicatorColor = 'var(--warning)'; prefix = '💰'; }
 
+                // Badge visual indicando se foi pago em dinheiro ou cartão
+                let badgeMetodo = "";
+                if(t.type === 'expense_cash') {
+                    badgeMetodo = t.paymentMethod === 'cartao' ? " <span style='color:var(--accent); font-size:10px;'>[💳]</span>" : " <span style='color:var(--success); font-size:10px;'>[💵]</span>";
+                }
+
                 item.innerHTML = `
                     <div class="history-info">
-                        <span class="history-desc">${t.description}</span>
+                        <span class="history-desc">${t.description}${badgeMetodo}</span>
                         <span class="history-date">📅 ${dateFormatted} (Toque para editar)</span>
                     </div>
                     <div class="history-right">
@@ -1448,7 +1574,7 @@
 
             let totalFaturaCartao = 0;
             targetMonthList.forEach(t => {
-                if(t.isCredit || t.description.includes('(')) {
+                if(t.paymentMethod === 'cartao' || t.isCredit || t.description.includes('(')) {
                     totalFaturaCartao += t.amount;
                 }
             });
@@ -1476,7 +1602,6 @@
                 }
             }
 
-            // Invoca a renderização do novo gráfico donut de despesas mensais
             renderizarGraficoMensalCategorias(targetMonthList);
         }
     </script>
