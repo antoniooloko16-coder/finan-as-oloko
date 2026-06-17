@@ -20,9 +20,8 @@
             --text-muted: #a0a0a0;
         }
 
-        /* Cores temáticas para diferenciar os perfis */
         body.perfil-pessoal { --primary: #bb86fc; }
-        body.perfil-empresa { --primary: #00E5FF; } /* Azul empresarial */
+        body.perfil-empresa { --primary: #00E5FF; }
 
         body {
             font-family: system-ui, -apple-system, sans-serif;
@@ -40,7 +39,7 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            padding-top: 165px; /* Aumentado para acomodar a nova barra de perfil */
+            padding-top: 165px;
             padding-bottom: 20px;
         }
 
@@ -148,13 +147,8 @@
             background: rgba(187, 134, 252, 0.05);
         }
 
-        .page-content {
-            display: none;
-        }
-
-        .page-content.active {
-            display: block;
-        }
+        .page-content { display: none; }
+        .page-content.active { display: block; }
 
         .card {
             background: var(--bg-card);
@@ -245,7 +239,7 @@
         .alert-blink { animation: blink 1s infinite; background: rgba(213, 0, 0, 0.1) !important; border-radius: 16px; }
 
         .history-list { margin-top: 15px; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #2d2d2d; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #2d2d2d; cursor: pointer; }
         .history-info { display: flex; flex-direction: column; flex-grow: 1; }
         .history-desc { font-weight: 500; font-size: 15px; }
         .history-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
@@ -280,6 +274,13 @@
         
         .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: bold; display: none; }
+
+        /* Estilos adicionados na V2 - Etapa 1 */
+        .edit-badge { background: var(--warning); color: #000; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px; display: none; }
+        .card-dash-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 15px 0 15px; }
+        .card-dash { background: var(--bg-card); padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); text-align: center; }
+        .card-dash h3 { margin: 0 0 5px 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+        .card-dash p { margin: 0; font-size: 16px; font-weight: bold; }
     </style>
 </head>
 <body class="perfil-pessoal">
@@ -326,8 +327,23 @@
     <div class="app-container">
 
         <div id="page-lançamentos" class="page-content active">
+            
+            <div class="card-dash-container">
+                <div class="card-dash" style="border-left: 4px solid var(--accent);">
+                    <h3>💳 Fatura Cartão</h3>
+                    <p id="dashFaturaCartao" style="color: var(--accent);">R$ 0,00</p>
+                </div>
+                <div class="card-dash" style="border-left: 4px solid var(--success);">
+                    <h3>🔮 Caixa Futuro (Ano)</h3>
+                    <p id="dashCaixaFuturo" style="color: var(--success);">R$ 0,00</p>
+                </div>
+            </div>
+
             <div class="card">
-                <div class="display-amount" id="amountDisplay">R$ 0,00</div>
+                <div style="display: flex; justify-content: center; align-items: center;">
+                    <div class="display-amount" id="amountDisplay">R$ 0,00</div>
+                    <span class="edit-badge" id="editBadge">MODO EDIÇÃO</span>
+                </div>
                 <div class="keyboard-grid">
                     <button class="key" onclick="pressKey('1')">1</button>
                     <button class="key" onclick="pressKey('2')">2</button>
@@ -366,7 +382,7 @@
                     <input type="date" id="tx_date" class="text-input" onchange="checkLiveBudget()">
                 </div>
 
-                <div class="checkbox-group">
+                <div class="checkbox-group" id="containerFixedCheck">
                     <input type="checkbox" id="is_fixed" onchange="toggleConditionalFields()">
                     <label for="is_fixed" style="color: var(--text)">🔄 Repetir todo mês (Fixo)</label>
                 </div>
@@ -379,11 +395,16 @@
                 </div>
             </div>
 
-            <div class="action-grid">
+            <div class="action-grid" id="actionButtonsContainer">
                 <button class="btn-action" style="background: var(--success);" onclick="saveTransaction('income')">🤑 Ganhei</button>
                 <button class="btn-action" style="background: var(--danger); color: #fff;" onclick="saveTransaction('expense_cash')">💸 Gastei</button>
                 <button class="btn-action" style="background: var(--accent); color: #fff;" onclick="openCreditModal()">💳 Cartão</button>
                 <button class="btn-action" style="background: var(--warning);" onclick="saveTransaction('saving')">💰 Caixinha</button>
+            </div>
+            
+            <div id="editButtonsContainer" style="margin: 15px; display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn-action" style="background: var(--success); width: 100%; font-size: 14px;" onclick="confirmEdit()">💾 Salvar Alteração</button>
+                <button class="btn-action" style="background: #333; color: #fff; width: 100%; font-size: 14px;" onclick="cancelEdit()">❌ Cancelar</button>
             </div>
 
             <div class="card" id="summaryCard">
@@ -507,8 +528,18 @@
         </div>
     </div>
 
+    <div class="modal" id="deleteParcelamentoModal">
+        <div class="modal-content">
+            <div class="modal-title" style="color: var(--danger)">⚠️ Excluir Parcelamento</div>
+            <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">Identificamos que este lançamento faz parte de uma sequência de parcelas. Como deseja prosseguir?</p>
+            <button class="modal-btn" style="background: #2b1818; border-color: var(--danger);" onclick="executeSmartDelete('single')">❌ Excluir APENAS esta parcela</button>
+            <button class="modal-btn" style="background: var(--danger); color: #fff;" onclick="executeSmartDelete('future')">⚠️ Excluir ESTA e todas as PRÓXIMAS</button>
+            <button class="modal-btn" style="background: #333; text-align: center; margin-top: 15px;" onclick="closeSmartDeleteModal()">Cancelar</button>
+        </div>
+    </div>
+
     <script>
-        let currentProfile = "pessoal"; // Controle de perfil ativo ('pessoal' ou 'empresa')
+        let currentProfile = "pessoal"; 
         let rawDigits = "0";
         let privacyMode = false;
         let filtroCategoriaAtivo = ""; 
@@ -519,7 +550,10 @@
         let ccConfig = { closeDay: 25, dueDay: 5 };
         let transactionIndexedMap = new Map();
 
-        // Categorias iniciais padrões para cada tipo de conta
+        // Variáveis de controle de edição e exclusão inteligente
+        let editingTransactionId = null;
+        let pendingDeleteId = null;
+
         const defaultCategoriesPessoal = [
             { name: "🛒 Supermercado", budget: 0 },
             { name: "🍔 Restaurante", budget: 0 },
@@ -534,7 +568,6 @@
         ];
 
         function switchProfileData() {
-            // Carrega os dados específicos do perfil ativo
             if (currentProfile === "pessoal") {
                 transactions = JSON.parse(localStorage.getItem('transactions_pessoal')) || [];
                 categories = JSON.parse(localStorage.getItem('categories_pessoal')) || defaultCategoriesPessoal;
@@ -552,8 +585,8 @@
         function setProfile(profile) {
             if (currentProfile === profile) return;
             currentProfile = profile;
+            cancelEdit();
             
-            // Atualiza botões visuais do topo
             document.querySelectorAll('.profile-btn').forEach(btn => btn.classList.remove('active'));
             if (profile === 'pessoal') {
                 document.body.className = "perfil-pessoal";
@@ -563,17 +596,14 @@
                 document.getElementById('prof-empresa').classList.add('active');
             }
 
-            // Reseta filtros e recarrega dados estruturados
             filtroCategoriaAtivo = "";
             if (document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'none';
             
             switchProfileData();
             
-            // Atualiza inputs de configuração com as regras do perfil selecionado
             if(document.getElementById('cc_close_day')) document.getElementById('cc_close_day').value = ccConfig.closeDay;
             if(document.getElementById('cc_due_day')) document.getElementById('cc_due_day').value = ccConfig.dueDay;
 
-            // Recarrega as views do app
             renderTags();
             
             const activeTab = document.querySelector('.tab-btn.active').id;
@@ -692,6 +722,7 @@
             } else {
                 localStorage.setItem('cc_config_empresa', JSON.stringify(ccConfig));
             }
+            loadData();
         }
 
         function switchPage(pageId) {
@@ -711,12 +742,112 @@
             window.scrollTo(0,0);
         }
 
-        function deleteTransaction(id) {
-            if(confirm("Tem certeza que deseja excluir permanentemente este valor?")) {
-                transactions = transactions.filter(t => t.id !== id);
-                safeLocalStorageSave();
-                loadData();
+        /* --- SISTEMA DE EDIÇÃO DE LANÇAMENTOS (Etapa 1) --- */
+        function editTransaction(id, event) {
+            if (event) event.stopPropagation(); // Evita conflitos com outros cliques
+            
+            const target = transactions.find(t => t.id === id);
+            if (!target) return;
+
+            editingTransactionId = id;
+            rawDigits = String(Math.round(target.amount * 100));
+            updateAmountDisplay();
+
+            document.getElementById('tx_description').value = target.description;
+            document.getElementById('tx_date').value = target.date;
+            
+            // Oculta a caixa de recorrência na edição simples para evitar quebras em cadeia
+            document.getElementById('containerFixedCheck').style.display = 'none';
+            document.getElementById('editBadge').style.display = 'inline-block';
+            
+            // Alterna os blocos de botões de controle
+            document.getElementById('actionButtonsContainer').style.display = 'none';
+            document.getElementById('editButtonsContainer').style.display = 'grid';
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function confirmEdit() {
+            const val = getNumericValue();
+            if (val <= 0) return dispararErroVisor();
+            
+            const desc = document.getElementById('tx_description').value.trim() || 'Lançamento Editado 📝';
+            const dateInput = document.getElementById('tx_date').value;
+
+            transactions = transactions.map(t => {
+                if (t.id === editingTransactionId) {
+                    return { ...t, amount: val, description: desc, date: dateInput };
+                }
+                return t;
+            });
+
+            cancelEdit();
+            saveAndReset();
+        }
+
+        function cancelEdit() {
+            editingTransactionId = null;
+            document.getElementById('containerFixedCheck').style.display = 'flex';
+            document.getElementById('editBadge').style.display = 'none';
+            document.getElementById('actionButtonsContainer').style.display = 'grid';
+            document.getElementById('editButtonsContainer').style.display = 'none';
+            saveAndReset();
+        }
+
+        /* --- SISTEMA DE EXCLUSÃO INTELIGENTE DE PARCELAMENTOS (Etapa 1) --- */
+        function deleteTransaction(id, event) {
+            if (event) event.stopPropagation();
+            
+            const target = transactions.find(t => t.id === id);
+            if (!target) return;
+
+            // Expressão regular para identificar o padrão (01/12) ou similares
+            const matchParcela = target.description.match(/\((\d+)\/(\d+)\)/);
+
+            if (matchParcela) {
+                pendingDeleteId = id;
+                document.getElementById('deleteParcelamentoModal').style.display = 'flex';
+            } else {
+                if(confirm("Tem certeza que deseja excluir permanentemente este valor?")) {
+                    transactions = transactions.filter(t => t.id !== id);
+                    safeLocalStorageSave();
+                    loadData();
+                }
             }
+        }
+
+        function executeSmartDelete(mode) {
+            const target = transactions.find(t => t.id === pendingDeleteId);
+            if (!target) return closeSmartDeleteModal();
+
+            if (mode === 'single') {
+                transactions = transactions.filter(t => t.id !== pendingDeleteId);
+            } else if (mode === 'future') {
+                const baseDescription = target.description.split('(')[0].trim();
+                const matchParcela = target.description.match(/\((\d+)\/(\d+)\)/);
+                const parcelaAtual = parseInt(matchParcela[1], 10);
+
+                transactions = transactions.filter(t => {
+                    // Mantém se não for o mesmo tipo/descrição
+                    if (!t.description.startsWith(baseDescription)) return true;
+                    
+                    const internalMatch = t.description.match(/\((\d+)\/(\d+)\)/);
+                    if (!internalMatch) return true;
+
+                    const internalParcela = parseInt(internalMatch[1], 10);
+                    // Remove apenas a parcela selecionada e as superiores
+                    return internalParcela < parcelaAtual;
+                });
+            }
+
+            closeSmartDeleteModal();
+            safeLocalStorageSave();
+            loadData();
+        }
+
+        function closeSmartDeleteModal() {
+            document.getElementById('deleteParcelamentoModal').style.display = 'none';
+            pendingDeleteId = null;
         }
 
         function checkLiveBudget() {
@@ -772,7 +903,6 @@
         }
 
         function exportBackup() {
-            // O backup unificado coleta os dados de todas as chaves criadas
             let backupData = { 
                 t_pessoal: JSON.parse(localStorage.getItem('transactions_pessoal')) || [],
                 c_pessoal: JSON.parse(localStorage.getItem('categories_pessoal')) || defaultCategoriesPessoal,
@@ -797,7 +927,6 @@
             reader.onload = function(e) {
                 try {
                     let imported = JSON.parse(e.target.result);
-                    // Suporta tanto o formato novo completo quanto o formato legado antigo
                     if (imported.t_pessoal || imported.transactions) {
                         if(imported.t_pessoal) {
                             localStorage.setItem('transactions_pessoal', JSON.stringify(imported.t_pessoal));
@@ -807,12 +936,10 @@
                             localStorage.setItem('categories_empresa', JSON.stringify(imported.c_empresa));
                             localStorage.setItem('cc_config_empresa', JSON.stringify(imported.cc_empresa));
                         } else {
-                            // Legado (Migra os dados antigos para a aba pessoal)
                             localStorage.setItem('transactions_pessoal', JSON.stringify(imported.transactions));
                             localStorage.setItem('categories_pessoal', JSON.stringify(imported.categories || defaultCategoriesPessoal));
                             if(imported.ccConfig) localStorage.setItem('cc_config_pessoal', JSON.stringify(imported.ccConfig));
                         }
-                        
                         alert('Backup restaurado com sucesso em ambos os perfis! 🎉');
                         window.location.reload();
                     } else {
@@ -899,7 +1026,6 @@
             let dadosGanhos = privacyMode ? ganhos.map(() => 0) : ganhos;
             let dadosGastos = privacyMode ? gastos.map(() => 0) : gastos;
 
-            // Altera a cor de destaque da legenda do gráfico baseado na identidade visual do perfil selecionado
             let corDestaqueGanhos = currentProfile === "pessoal" ? '#00C853' : '#00E5FF';
 
             instGraficoAnual = new Chart(ctx, {
@@ -1159,7 +1285,8 @@
                     amount: currentInstallmentAmount,
                     type: 'expense_cash',
                     description: `${desc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
-                    date: formatarDataISO(anoCalculado, mesCalculado, diaVencimento)
+                    date: formatarDataISO(anoCalculado, mesCalculado, diaVencimento),
+                    isCredit: true // Tag interna para identificar gastos no cartão no dashboard
                 });
             }
             closeCreditModal();
@@ -1209,6 +1336,9 @@
 
                 let item = document.createElement('div');
                 item.className = 'history-item';
+                // Ao clicar no item, o app entra em modo de edição
+                item.setAttribute('onclick', `editTransaction('${t.id}', event)`);
+                
                 let dateFormatted = t.date.split('-').reverse().join('/');
                 
                 let indicatorColor = 'var(--success)';
@@ -1219,11 +1349,11 @@
                 item.innerHTML = `
                     <div class="history-info">
                         <span class="history-desc">${t.description}</span>
-                        <span class="history-date">📅 ${dateFormatted}</span>
+                        <span class="history-date">📅 ${dateFormatted} (Toque para editar)</span>
                     </div>
                     <div class="history-right">
                         <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
-                        <button class="btn-delete-item" onclick="deleteTransaction('${t.id}')">🗑️</button>
+                        <button class="btn-delete-item" onclick="deleteTransaction('${t.id}', event)">🗑️</button>
                     </div>
                 `;
                 container.appendChild(item);
@@ -1238,6 +1368,24 @@
             document.getElementById('lblGastos').innerText = formatCurrency(totalExpense);
             document.getElementById('lblCaixinha').innerText = formatCurrency(totalSaving);
             document.getElementById('lblSobrou').innerText = formatCurrency(sobrou);
+
+            /* --- METRICAS ADICIONAIS: DASHBOARD DE CARTÃO E FLUXO FUTURO (Etapa 1) --- */
+            let totalFaturaCartao = 0;
+            targetMonthList.forEach(t => {
+                if(t.isCredit || t.description.includes('(')) {
+                    totalFaturaCartao += t.amount;
+                }
+            });
+            document.getElementById('dashFaturaCartao').innerText = formatCurrency(totalFaturaCartao);
+
+            let saldoFuturoAno = 0;
+            transactions.forEach(t => {
+                if(t.date.startsWith(selectedYear)) {
+                    if(t.type === 'income') saldoFuturoAno += t.amount;
+                    else saldoFuturoAno -= t.amount;
+                }
+            });
+            document.getElementById('dashCaixaFuturo').innerText = formatCurrency(saldoFuturoAno);
 
             const summaryCard = document.getElementById('summaryCard');
             const lblSobrou = document.getElementById('lblSobrou');
@@ -1255,5 +1403,4 @@
     </script>
 </body>
 </html>
-
 
