@@ -287,16 +287,6 @@
             transition: transform 0.15s ease, border-color 0.2s ease;
         }
 
-        .category-box-card.empty-box {
-            border: 1px dashed var(--border-color);
-            background: rgba(255,255,255,0.01);
-        }
-
-        .category-box-card.empty-box .category-box-title {
-            color: var(--text-muted);
-            font-style: italic;
-        }
-
         .category-box-card:active {
             transform: scale(0.98);
         }
@@ -401,8 +391,7 @@
         .category-main-info { display: flex; justify-content: space-between; align-items: center; }
         .category-budget-info { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
         .category-actions { display: flex; gap: 8px; }
-        .btn-delete-cat, .btn-edit-cat { background: none; border: none; color: var(--text-muted); font-size: 15px; cursor: pointer; padding: 4px; transition: color 0.2s; }
-        .btn-delete-cat:hover { color: var(--danger); }
+        .btn-edit-cat { background: none; border: none; color: var(--text-muted); font-size: 15px; cursor: pointer; padding: 4px; transition: color 0.2s; }
         .btn-edit-cat:hover { color: var(--warning); }
 
         .table-responsive { width: 100%; overflow-x: auto; scrollbar-width: none; }
@@ -626,9 +615,10 @@
 
         <div id="page-categorias" class="page-content">
             <div class="card">
-                <h3 id="categoryFormTitle" style="margin-top:0; color: var(--primary); font-size: 15px; font-weight: 700;">✨ Nova Categoria</h3>
+                <h3 id="categoryFormTitle" style="margin-top:0; color: var(--primary); font-size: 15px; font-weight: 700;">✨ Editar Caixa / Categoria</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Selecione uma caixa na lista inferior para alterar o nome, teto de gasto ou cor.</p>
                 
-                <div class="input-group">
+                <div class="input-group" style="display: none;">
                     <label>📊 Tipo de Categoria</label>
                     <select id="new_category_type" class="select-input" aria-label="Tipo de categoria">
                         <option value="expense">🔴 Categoria de Saída (Gasto)</option>
@@ -638,7 +628,7 @@
 
                 <div class="input-group">
                     <label>🏷️ Nome da Categoria</label>
-                    <input type="text" id="new_category_name" aria-label="Nome da Categoria" class="text-input" placeholder="Ex: Mercado, Aluguel, Farmácia, Combustível...">
+                    <input type="text" id="new_category_name" aria-label="Nome da Categoria" class="text-input" placeholder="Selecione uma categoria abaixo para editar...">
                 </div>
                 <div class="input-group">
                     <label>🎯 Teto de Gasto / Meta Mensal (Opcional)</label>
@@ -651,9 +641,9 @@
                         <span style="font-size: 13px; color: var(--text-muted)">Escolha uma cor para a caixa</span>
                     </div>
                 </div>
-                <div class="grid-2col">
-                    <button id="btnSaveCategory" class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">➕ Adicionar</button>
-                    <button id="btnCancelCategoryEdit" class="btn-secondary" style="display: none; padding: 12px 0;" onclick="cancelCategoryEdit()">❌ Cancelar</button>
+                <div style="display: block;">
+                    <button id="btnSaveCategory" class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">💾 Atualizar Nome / Configuração</button>
+                    <button id="btnCancelCategoryEdit" class="btn-secondary" style="display: none; width: 100%; margin-top: 8px; padding: 12px 0;" onclick="cancelCategoryEdit()">❌ Cancelar Ajuste</button>
                 </div>
             </div>
 
@@ -688,7 +678,7 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0; color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">📋 Nomes Cadastrados</h3>
+                <h3 style="margin-top:0; color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">📋 Gerenciar Estrutura das 8 Caixas</h3>
                 <div id="categoryListContainer"></div>
             </div>
         </div>
@@ -829,24 +819,12 @@
                 document.getElementById('businessCreditAlert').style.display = 'block';
             }
             
-            let alterouCategorias = false;
-            categories = categories.map((c, idx) => {
-                if(!c.id) { c.id = gerarIDUnico(); alterouCategorias = true; }
-                if(!c.type) { c.type = "expense"; alterouCategorias = true; }
-                if(!c.color) { 
-                    const fallbackColors = ["#bb86fc", "#2979ff", "#ffea00", "#ff1744", "#00e5ff"];
-                    c.color = fallbackColors[idx % fallbackColors.length]; 
-                    alterouCategorias = true; 
-                }
-                return c;
-            });
-
-            while(categories.filter(c => c.type !== 'income').length < 8) {
-                categories.push({ id: gerarIDUnico(), name: "[ Caixa Disponível ]", budget: 0, type: "expense", color: "#242428", isEmpty: true });
-                alterouCategorias = true;
+            // Travar estritamente a quantidade máxima e inicial das 8 categorias padrão
+            let fallbackDefaults = currentProfile === "pessoal" ? defaultCategoriesPessoal : defaultCategoriesEmpresa;
+            if (categories.length !== 8) {
+                categories = [...fallbackDefaults];
+                safeLocalStorageSave();
             }
-
-            if(alterouCategorias) { safeLocalStorageSave(); }
 
             processRecurrentEntries();
             rebuildTransactionIndex();
@@ -1162,7 +1140,6 @@
             if(!text) return null;
             let normalizedText = text.toLowerCase();
             return categories.find(c => {
-                if(c.isEmpty) return false;
                 let cleanCatName = c.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊/g, "").trim().toLowerCase();
                 return normalizedText.includes(cleanCatName) || cleanCatName.includes(normalizedText) || c.name.toLowerCase().includes(normalizedText);
             });
@@ -1181,7 +1158,7 @@
             let targetMonth = dateVal.substring(0, 7);
             let foundCat = findCategoryByText(desc);
 
-            if(foundCat && !foundCat.isEmpty && foundCat.budget > 0) {
+            if(foundCat && foundCat.budget > 0) {
                 let accumulatedSpent = 0;
                 const targetList = transactionIndexedMap.get(targetMonth) || [];
                 
@@ -1348,7 +1325,6 @@
             if(!container) return;
             container.innerHTML = '';
             categories.forEach(cat => {
-                if(cat.isEmpty) return;
                 let cleanedName = cat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊/g, "").trim();
                 let tagEl = document.createElement('div');
                 tagEl.className = 'tag';
@@ -1370,57 +1346,26 @@
             const container = document.getElementById('categoryVisualMonitorBoxes');
             if (!container) return;
 
-            const expenseCategories = categories.filter(c => c.type !== 'income');
-
-            if (expenseCategories.length === 0) {
-                container.innerHTML = '';
-                return;
-            }
-
             container.innerHTML = '';
 
             let categoryMapAmounts = new Map();
-            expenseCategories.forEach(c => categoryMapAmounts.set(c.id, 0));
-
-            let totalRealGastosMapeados = 0;
+            categories.forEach(c => categoryMapAmounts.set(c.id, 0));
 
             targetMonthList.forEach(t => {
                 if (t.type === 'expense_cash' || t.type === 'saving') {
                     if (t.categoryId && categoryMapAmounts.has(t.categoryId)) {
                         categoryMapAmounts.set(t.categoryId, categoryMapAmounts.get(t.categoryId) + t.amount);
-                        totalRealGastosMapeados += t.amount;
                     } else {
                         let matched = findCategoryByText(t.description);
-                        if (matched && matched.type !== 'income' && categoryMapAmounts.has(matched.id)) {
+                        if (matched && categoryMapAmounts.has(matched.id)) {
                             categoryMapAmounts.set(matched.id, categoryMapAmounts.get(matched.id) + t.amount);
-                            totalRealGastosMapeados += t.amount;
                         }
                     }
                 }
             });
 
-            expenseCategories.forEach(cat => {
-                if (cat.isEmpty) {
-                    let box = document.createElement('div');
-                    box.className = 'category-box-card empty-box';
-                    box.onclick = () => {
-                        switchPage('categorias');
-                        editCategory(cat.id);
-                    };
-                    box.innerHTML = `
-                        <div class="category-box-header">
-                            <span class="category-box-title">⚙️ Configurar</span>
-                        </div>
-                        <div class="category-box-footer">
-                            <span class="category-box-amount" style="font-size:11px; color:var(--text-muted);">Disponível</span>
-                        </div>
-                    `;
-                    container.appendChild(box);
-                    return;
-                }
-
+            categories.forEach(cat => {
                 let spent = categoryMapAmounts.get(cat.id) || 0;
-                
                 let pct = 0;
                 if (totalExpenseMonth > 0) {
                     pct = Math.round((spent / totalExpenseMonth) * 100);
@@ -1463,17 +1408,11 @@
                 let budgetText = cat.budget > 0 ? `🎯 Meta mensal: ${formatCurrency(cat.budget)}` : "♾️ Sem limite estipulado";
                 let badgeType = cat.type === "income" ? "🟢 Entrada" : "🔴 Saída";
                 
-                if (cat.isEmpty) {
-                    budgetText = "Caixa vazia aguardando personalização";
-                    badgeType = "⚪ Inativa";
-                }
-
                 div.innerHTML = `
                     <div class="category-main-info">
                         <strong>${cat.name} <span style="font-size:10px; color:var(--text-muted); padding-left:4px;">(${badgeType})</span></strong>
                         <div class="category-actions">
-                            <button class="btn-edit-cat" onclick="editCategory('${cat.id}')">✏️</button>
-                            ${!cat.isEmpty ? `<button class="btn-delete-cat" onclick="deleteCategory('${cat.id}')">🗑️</button>` : ''}
+                            <button class="btn-edit-cat" onclick="editCategory('${cat.id}')">✏️ Configurar</button>
                         </div>
                     </div>
                     <div class="category-budget-info">${budgetText}</div>
@@ -1500,7 +1439,7 @@
                             <strong>${rec.description}</strong>
                             <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Valor: ${formatCurrency(rec.amount)} | Todo dia: ${rec.dueDay}</div>
                         </div>
-                        <button class="btn-delete-cat" onclick="deleteRecurrent('${rec.id}')">🗑️</button>
+                        <button class="btn-edit-cat" style="color:var(--danger);" onclick="deleteRecurrent('${rec.id}')">🗑️ Cancelar</button>
                     </div>
                 `;
                 container.appendChild(div);
@@ -1533,21 +1472,21 @@
             if (editingCategoryId) {
                 categories = categories.map(c => {
                     if (c.id === editingCategoryId) {
-                        return { ...c, name: name, budget: budget, type: type, color: color, isEmpty: false };
+                        return { ...c, name: name, budget: budget, type: type, color: color };
                     }
                     return c;
                 });
                 editingCategoryId = null;
-                document.getElementById('categoryFormTitle').innerText = "✨ Nova Categoria";
-                document.getElementById('btnSaveCategory').innerText = "➕ Adicionar";
+                document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
                 document.getElementById('btnCancelCategoryEdit').style.display = "none";
+                
+                safeLocalStorageSave();
+                input.value = ''; budgetInput.value = '0'; colorInput.value = '#bb86fc';
+                renderCategoryManagement(); renderTags(); loadData();
+                alert('Configuração atualizada com sucesso! 👍');
             } else {
-                categories.push({ id: gerarIDUnico(), name: name, budget: budget, type: type, color: color });
+                alert('A edição deve ser feita selecionando uma caixa existente abaixo.');
             }
-            
-            safeLocalStorageSave();
-            input.value = ''; budgetInput.value = '0'; colorInput.value = '#bb86fc';
-            renderCategoryManagement(); renderTags(); loadData();
         }
 
         function editCategory(id) {
@@ -1555,13 +1494,12 @@
             if (!cat) return;
 
             editingCategoryId = id;
-            document.getElementById('new_category_name').value = cat.isEmpty ? "" : cat.name;
+            document.getElementById('new_category_name').value = cat.name;
             document.getElementById('new_category_budget').value = cat.budget;
             document.getElementById('new_category_type').value = cat.type || "expense";
-            document.getElementById('new_category_color').value = cat.isEmpty ? "#bb86fc" : (cat.color || "#bb86fc");
+            document.getElementById('new_category_color').value = cat.color || "#bb86fc";
 
             document.getElementById('categoryFormTitle').innerText = "✏️ Configurar Caixa / Categoria";
-            document.getElementById('btnSaveCategory').innerText = "💾 Salvar";
             document.getElementById('btnCancelCategoryEdit').style.display = "inline-block";
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1572,26 +1510,8 @@
             document.getElementById('new_category_name').value = '';
             document.getElementById('new_category_budget').value = '0';
             document.getElementById('new_category_color').value = '#bb86fc';
-            document.getElementById('categoryFormTitle').innerText = "✨ Nova Categoria";
-            document.getElementById('btnSaveCategory').innerText = "➕ Adicionar";
+            document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
             document.getElementById('btnCancelCategoryEdit').style.display = "none";
-        }
-
-        function deleteCategory(id) {
-            const cat = categories.find(c => c.id === id);
-            if (!cat) return;
-
-            if(confirm(`Deseja limpar e desativar a caixa "${cat.name}"? 🗑️`)) {
-                if (editingCategoryId === id) cancelCategoryEdit();
-                categories = categories.map(c => {
-                    if (c.id === id) {
-                        return { id: c.id, name: "[ Caixa Disponível ]", budget: 0, type: "expense", color: "#242428", isEmpty: true };
-                    }
-                    return c;
-                });
-                safeLocalStorageSave();
-                renderCategoryManagement(); renderTags(); loadData();
-            }
         }
 
         function updateAmountDisplay() {
@@ -1788,15 +1708,12 @@
 
             let targetMonthList = transactionIndexedMap.get(currentSelectedTarget) || [];
             
-            // Passo 1: Calcular o gasto absoluto bruto do mês antes de aplicar os filtros do extrato
             targetMonthList.forEach(t => {
                 if (t.type === 'expense_cash' || t.type === 'saving') totalExpense += t.amount;
             });
 
-            // Passa o total absoluto para renderizar as caixas visuais corretamente
             renderVisualCategoryBoxes(targetMonthList, totalExpense);
 
-            // Reinicia para computar o extrato filtrável na interface de listagem inferior
             totalExpense = 0;
 
             targetMonthList.forEach(t => {
