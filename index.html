@@ -698,7 +698,7 @@
             <button class="modal-btn" onclick="saveCreditTransaction(1)">1x (À Vista na Fatura)</button>
             <button class="modal-btn" onclick="saveCreditTransaction(2)">2 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(3)">3 meses seguintes</button>
-            <button class="modal-btn" onclick="saveCreditTransaction(4)">4 meses seguintes</button>
+            <button class="modal-btn" onclick="saveCreditTransaction(4)/">4 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(5)">5 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(6)">6 meses seguintes</button>
             <button class="modal-btn" onclick="saveCreditTransaction(10)">10 meses seguintes</button>
@@ -752,10 +752,10 @@
         let pendingDeleteId = null;
 
         const defaultCategoriesPessoal = [
-            { id: "cat_p_1", name: "🛒 Supermercado", budget: 1200, type: "expense", color: "#a370f7" },
-            { id: "cat_p_2", name: "🍔 Alimentação", budget: 600, type: "expense", color: "#ffea00" },
-            { id: "cat_p_3", name: "🚗 Transporte", budget: 400, type: "expense", color: "#00e5ff" },
-            { id: "cat_p_4", name: "🏠 Moradia / Aluguel", budget: 1500, type: "expense", color: "#2979ff" },
+            { id: "cat_p_1", name: "⛽ Combustível", budget: 1200, type: "expense", color: "#a370f7" },
+            { id: "cat_p_2", name: "🛒 Supermercado", budget: 600, type: "expense", color: "#ffea00" },
+            { id: "cat_p_3", name: "🍔 Alimentação", budget: 400, type: "expense", color: "#00e5ff" },
+            { id: "cat_p_4", name: "🚗 Transporte", budget: 1500, type: "expense", color: "#2979ff" },
             { id: "cat_p_5", name: "💊 Saúde & Cuidado", budget: 300, type: "expense", color: "#ff2a6d" },
             { id: "cat_p_6", name: "⚡ Contas & Boletos", budget: 500, type: "expense", color: "#ff9f43" },
             { id: "cat_p_7", name: "🍿 Lazer & Viagem", budget: 400, type: "expense", color: "#00e676" },
@@ -1114,7 +1114,7 @@
             if(!text) return null;
             let normalizedText = text.toLowerCase();
             return categories.find(c => {
-                let cleanCatName = c.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗/g, "").trim().toLowerCase();
+                let cleanCatName = c.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/g, "").trim().toLowerCase();
                 if (!cleanCatName) return false;
                 return normalizedText.includes(cleanCatName);
             });
@@ -1142,7 +1142,7 @@
                         if(t.categoryId === foundCat.id) {
                             accumulatedSpent += t.amount;
                         } else {
-                            let cleanCatName = foundCat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗/g, "").trim().toLowerCase();
+                            let cleanCatName = foundCat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/g, "").trim().toLowerCase();
                             if(t.description.toLowerCase().includes(cleanCatName)) {
                                 accumulatedSpent += t.amount;
                             }
@@ -1300,7 +1300,7 @@
             if(!container) return;
             container.innerHTML = '';
             categories.forEach(cat => {
-                let cleanedName = cat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗/g, "").trim();
+                let cleanedName = cat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/g, "").trim();
                 let tagEl = document.createElement('div');
                 tagEl.className = 'tag';
                 tagEl.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
@@ -1346,7 +1346,7 @@
                 }
 
                 let isExceeded = cat.budget > 0 && spent > cat.budget;
-                let cleanName = cat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗/g, "").trim();
+                let cleanName = cat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/g, "").trim();
 
                 let box = document.createElement('div');
                 box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
@@ -1440,7 +1440,7 @@
             let type = typeInput.value;
 
             if(!name) return alert('Por favor, digite um nome válido! ⚠️');
-            if(!name.match(/[\u1F600-\u1F64F]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹|🚗/)) { name = "🔹 " + name; }
+            if(!name.match(/[\u1F600-\u1F64F]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹|🚗|⛽/)) { name = "🔹 " + name; }
             
             if (editingCategoryId) {
                 categories = categories.map(c => {
@@ -1456,7 +1456,7 @@
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 renderCategoryManagement(); renderTags(); loadData();
-                alert('Configuração atualizada com sucesso! 👍');
+                alert('Configuração updated com sucesso! 👍');
             } else {
                 alert('A edição deve ser feita selecionando uma caixa existente na lista abaixo.');
             }
