@@ -357,7 +357,7 @@
         @keyframes blink { 0%, 100% { border-color: var(--danger); box-shadow: 0 0 12px rgba(255,23,68,0.15); } 50% { border-color: var(--border-color); box-shadow: none; } }
 
         .history-list { margin-top: 10px; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; border-left: 4px solid transparent; margin-bottom: 4px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.01); }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; margin-bottom: 4px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.01); }
         .history-item:last-child { border-bottom: 1px solid var(--border-color); }
         .history-info { display: flex; flex-direction: column; flex-grow: 1; padding-right: 10px; padding-left: 6px; }
         .history-desc { font-weight: 600; font-size: 14px; color: #f2f2f7; }
@@ -750,7 +750,7 @@
         let editingCategoryId = null;
         let pendingDeleteId = null;
 
-        // CORES ESTÁVEIS E FIXAS PARA AS 8 CAIXAS (Não mudam ao trocar o nome)
+        // PALETA COMPLETA DE CORES VIVAS NAS 8 CAIXAS PESSOAIS
         const defaultCategoriesPessoal = [
             { id: "cat_p_1", name: "🛒 Supermercado", budget: 1200, type: "expense", color: "#a370f7" },
             { id: "cat_p_2", name: "🍔 Alimentação", budget: 600, type: "expense", color: "#ffea00" },
@@ -762,6 +762,7 @@
             { id: "cat_p_8", name: "💸 Outros Gastos", budget: 300, type: "expense", color: "#b3b3b3" }
         ];
 
+        // PALETA COMPLETA DE CORES VIVAS NAS 8 CAIXAS DA EMPRESA
         const defaultCategoriesEmpresa = [
             { id: "cat_e_1", name: "🏭 Insumos / Matéria Prima", budget: 5000, type: "expense", color: "#2979ff" },
             { id: "cat_e_2", name: "🚚 Entregas / Frete", budget: 1500, type: "expense", color: "#00e5ff" },
@@ -794,7 +795,6 @@
                 document.getElementById('businessCreditAlert').style.display = 'block';
             }
             
-            // Força a manter exatamente a quantidade de 8 caixas fixas amarradas
             if (categories.length !== 8) {
                 let fallbackDefaults = currentProfile === "pessoal" ? defaultCategoriesPessoal : defaultCategoriesEmpresa;
                 categories = [...fallbackDefaults];
@@ -1111,15 +1111,13 @@
             pendingDeleteId = null;
         }
 
-        // AMARRAÇÃO DIRETA: Busca categoria por ID ou por palavra exata presente no texto do input
         function findCategoryByText(text) {
             if(!text) return null;
             let normalizedText = text.toLowerCase();
             return categories.find(c => {
-                let cleanCatName = c.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊/g, "").trim().toLowerCase();
+                let cleanCatName = c.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗/g, "").trim().toLowerCase();
                 if (!cleanCatName) return false;
-                let regex = new RegExp('\\b' + cleanCatName + '\\b', 'i');
-                return regex.test(normalizedText) || normalizedText.includes(cleanCatName);
+                return normalizedText.includes(cleanCatName);
             });
         }
 
@@ -1145,7 +1143,7 @@
                         if(t.categoryId === foundCat.id) {
                             accumulatedSpent += t.amount;
                         } else if (!t.categoryId) {
-                            let cleanCatName = foundCat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊/g, "").trim().toLowerCase();
+                            let cleanCatName = foundCat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗/g, "").trim().toLowerCase();
                             if(t.description.toLowerCase().includes(cleanCatName)) {
                                 accumulatedSpent += t.amount;
                             }
@@ -1303,7 +1301,7 @@
             if(!container) return;
             container.innerHTML = '';
             categories.forEach(cat => {
-                let cleanedName = cat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊/g, "").trim();
+                let cleanedName = cat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗/g, "").trim();
                 let tagEl = document.createElement('div');
                 tagEl.className = 'tag';
                 tagEl.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
@@ -1349,7 +1347,7 @@
                 }
 
                 let isExceeded = cat.budget > 0 && spent > cat.budget;
-                let cleanName = cat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊/g, "").trim();
+                let cleanName = cat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗/g, "").trim();
 
                 let box = document.createElement('div');
                 box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
@@ -1442,7 +1440,7 @@
             let type = typeInput.value;
 
             if(!name) return alert('Por favor, digite um nome válido! ⚠️');
-            if(!name.match(/[\u1F600-\u1F64F]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹/)) { name = "🔹 " + name; }
+            if(!name.match(/[\u1F600-\u1F64F]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹|🚗/)) { name = "🔹 " + name; }
             
             if (editingCategoryId) {
                 categories = categories.map(c => {
@@ -1458,7 +1456,7 @@
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 renderCategoryManagement(); renderTags(); loadData();
-                alert('Configuração atualizada com sucesso! 👍');
+                alert('Configuração updated com sucesso! 👍');
             } else {
                 alert('A edição deve ser feita selecionando uma caixa existente na lista abaixo.');
             }
@@ -1650,52 +1648,6 @@
             saveAndReset();
         }
 
-        function saveCreditTransaction(installments) {
-            const totalVal = getNumericValue();
-            let desc = document.getElementById('tx_description').value.trim() || 'Compra Cartão 💳';
-            const dateInput = document.getElementById('tx_date').value;
-            
-            let splitData = dateInput.split('-');
-            let anoCompra = parseInt(splitData[0], 10);
-            let mesCompra = parseInt(splitData[1], 10) - 1; 
-            let diaCompra = parseInt(splitData[2], 10);
-
-            let monthOffset = 0;
-            if (diaCompra >= ccConfig.closeDay) { monthOffset = 1; }
-
-            const baseAmount = Math.floor((totalVal / installments) * 100) / 100;
-            let remainder = Math.round((totalVal - (baseAmount * installments)) * 100) / 100;
-
-            let matchedCategory = findCategoryByText(desc);
-            let categoryId = matchedCategory ? matchedCategory.id : null;
-
-            for (let i = 0; i < installments; i++) {
-                let mesAlvo = mesCompra + i + monthOffset;
-                let dataReferencia = new Date(anoCompra, mesAlvo, 1, 12, 0, 0);
-                let anoCalculated = dataReferencia.getFullYear();
-                let mesCalculated = dataReferencia.getMonth() + 1;
-                let diaVencimento = obterUltimoDiaValido(anoCalculated, mesCalculated, ccConfig.dueDay);
-
-                let currentInstallmentAmount = baseAmount;
-                if (i === installments - 1) {
-                    currentInstallmentAmount = Math.round((baseAmount + remainder) * 100) / 100;
-                }
-
-                transactions.push({
-                    id: gerarIDUnico(),
-                    categoryId: categoryId,
-                    amount: currentInstallmentAmount,
-                    type: 'expense_cash',
-                    paymentMethod: 'cartao', 
-                    description: `${desc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
-                    date: formatarDataISO(anoCalculated, mesCalculated, diaVencimento),
-                    isCredit: true 
-                });
-            }
-            closeCreditModal();
-            saveAndReset();
-        }
-
         function saveAndReset() {
             safeLocalStorageSave();
             rawDigits = "0";
@@ -1737,8 +1689,7 @@
 
             targetMonthList.forEach(t => {
                 let matchesCategory = true; let matchesPayment = true;
-
-                let catObj = categories.find(c => c.id === t.categoryId);
+                let catObj = categories.find(c => c.id === t.categoryId) || findCategoryByText(t.description);
 
                 if (filtroCategoriaAtivo !== "") {
                     let matchByName = t.description.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase());
@@ -1766,7 +1717,6 @@
                 item.className = 'history-item';
                 item.setAttribute('onclick', `editTransaction('${t.id}', event)`);
                 
-                // MARCAÇÃO VISUAL FIXA: Insere a cor estável da categoria direto no item do extrato
                 if (catObj && catObj.color) {
                     item.style.borderLeft = `5px solid ${catObj.color}`;
                 } else {
@@ -1848,3 +1798,4 @@
     </script>
 </body>
 </html>
+
