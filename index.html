@@ -1115,11 +1115,13 @@
 
         function findCategoryByText(text) {
             if(!text) return null;
-            let normalizedText = text.toLowerCase();
+            // Normalização inteligente: remove qualquer caractere que não seja uma letra de a-z ou número
+            let cleanText = text.toLowerCase().replace(/[^a-z0-9]/gi, '');
+            
             return categories.find(c => {
-                let cleanCatName = c.name.replace(/[\u1F000-\u1FFFF]|🔸|🎁|✈️|⚽|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim().toLowerCase();
+                let cleanCatName = c.name.toLowerCase().replace(/[^a-z0-9]/gi, '');
                 if (!cleanCatName) return false;
-                return normalizedText.includes(cleanCatName);
+                return cleanText.includes(cleanCatName) || cleanCatName.includes(cleanText);
             });
         }
 
@@ -1145,8 +1147,8 @@
                         if(t.categoryId === foundCat.id) {
                             accumulatedSpent += t.amount;
                         } else {
-                            let cleanCatName = foundCat.name.replace(/[\u1F000-\u1FFFF]|🔸|🎁|✈️|⚽|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim().toLowerCase();
-                            if(t.description.toLowerCase().includes(cleanCatName)) {
+                            let matched = findCategoryByText(t.description);
+                            if (matched && matched.id === foundCat.id) {
                                 accumulatedSpent += t.amount;
                             }
                         }
@@ -1303,18 +1305,17 @@
             if(!container) return;
             container.innerHTML = '';
             categories.forEach(cat => {
-                let cleanedName = cat.name.replace(/[\u1F000-\u1FFFF]|🔸|🎁|✈️|⚽|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim();
                 let tagEl = document.createElement('div');
                 tagEl.className = 'tag';
                 tagEl.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
-                if (filtroCategoriaAtivo === cleanedName) tagEl.classList.add('active-filter');
+                if (filtroCategoriaAtivo === cat.name) tagEl.classList.add('active-filter');
                 tagEl.innerText = cat.name;
                 
                 tagEl.onclick = (e) => { 
                     e.stopPropagation();
                     fillDescription(cat.name); 
                     checkLiveBudget(); 
-                    filtrarExtratoPorTag(cleanedName, tagEl);
+                    filtrarExtratoPorTag(cat.name, tagEl);
                 };
                 container.appendChild(tagEl);
             });
@@ -1330,13 +1331,9 @@
 
             targetMonthList.forEach(t => {
                 if (t.type === 'expense_cash' || t.type === 'saving') {
-                    if (t.categoryId && categoryMapAmounts.has(t.categoryId)) {
-                        categoryMapAmounts.set(t.categoryId, categoryMapAmounts.get(t.categoryId) + t.amount);
-                    } else {
-                        let matched = findCategoryByText(t.description);
-                        if (matched && categoryMapAmounts.has(matched.id)) {
-                            categoryMapAmounts.set(matched.id, categoryMapAmounts.get(matched.id) + t.amount);
-                        }
+                    let matched = t.categoryId ? categories.find(c => c.id === t.categoryId) : findCategoryByText(t.description);
+                    if (matched && categoryMapAmounts.has(matched.id)) {
+                        categoryMapAmounts.set(matched.id, categoryMapAmounts.get(matched.id) + t.amount);
                     }
                 }
             });
@@ -1349,7 +1346,6 @@
                 }
 
                 let isExceeded = cat.budget > 0 && spent > cat.budget;
-                let cleanName = cat.name.replace(/[\u1F000-\u1FFFF]|🔸|🎁|✈️|⚽|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim();
 
                 let box = document.createElement('div');
                 box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
@@ -1357,7 +1353,7 @@
                 box.onclick = () => {
                     fillDescription(cat.name);
                     checkLiveBudget();
-                    filtrarExtratoPorTag(cleanName, null);
+                    filtrarExtratoPorTag(cat.name, null);
                 };
 
                 box.innerHTML = `
@@ -1459,7 +1455,7 @@
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 renderCategoryManagement(); renderTags(); loadData();
-                alert('Configuração atualizada com sucesso! 👍');
+                alert('Configuração updated com sucesso! 👍');
             } else {
                 alert('A edição deve ser feita selecionando uma caixa existente na lista abaixo.');
             }
@@ -1692,7 +1688,7 @@
 
             targetMonthList.forEach(t => {
                 let matchesCategory = true; let matchesPayment = true;
-                let catObj = categories.find(c => c.id === t.categoryId) || findCategoryByText(t.description);
+                let catObj = t.categoryId ? categories.find(c => c.id === t.categoryId) : findCategoryByText(t.description);
 
                 if (filtroCategoriaAtivo !== "") {
                     let matchByName = t.description.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase());
