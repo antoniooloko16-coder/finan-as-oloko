@@ -1733,10 +1733,15 @@
                 let indicatorColor = 'var(--success)'; let prefix = '+';
                 
                 if (t.type === 'expense_cash') { 
-                    indicatorColor = catColor; // Gasto assume a cor exata da caixa correspondente
+                    indicatorColor = catColor; 
                     prefix = '-'; 
+                } else if (t.type === 'saving') { 
+                    indicatorColor = 'var(--warning)'; 
+                    prefix = '💰'; 
+                } else if (t.type === 'income') {
+                    indicatorColor = 'var(--success)';
+                    prefix = '+';
                 }
-                if (t.type === 'saving') { indicatorColor = 'var(--warning)'; prefix = '💰'; }
 
                 let badgeMetodo = "";
                 if(t.type === 'expense_cash') {
