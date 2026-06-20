@@ -243,25 +243,6 @@
             outline: none;
         }
 
-        .color-picker-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            padding: 10px 14px;
-            border-radius: 12px;
-        }
-
-        .color-input {
-            border: none;
-            background: none;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            padding: 0;
-        }
-
         .tags-container { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
         .tags-container::-webkit-scrollbar { display: none; }
         .tag { background: var(--bg-input); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; color: var(--text); transition: all 0.2s; border-left: 4px solid transparent; }
@@ -376,9 +357,9 @@
         @keyframes blink { 0%, 100% { border-color: var(--danger); box-shadow: 0 0 12px rgba(255,23,68,0.15); } 50% { border-color: var(--border-color); box-shadow: none; } }
 
         .history-list { margin-top: 10px; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border-color); cursor: pointer; }
-        .history-item:last-child { border-bottom: none; }
-        .history-info { display: flex; flex-direction: column; flex-grow: 1; padding-right: 10px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; border-left: 4px solid transparent; margin-bottom: 4px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.01); }
+        .history-item:last-child { border-bottom: 1px solid var(--border-color); }
+        .history-info { display: flex; flex-direction: column; flex-grow: 1; padding-right: 10px; padding-left: 6px; }
         .history-desc { font-weight: 600; font-size: 14px; color: #f2f2f7; }
         .history-date { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
         .history-right { display: flex; align-items: center; gap: 12px; }
@@ -616,7 +597,7 @@
         <div id="page-categorias" class="page-content">
             <div class="card">
                 <h3 id="categoryFormTitle" style="margin-top:0; color: var(--primary); font-size: 15px; font-weight: 700;">✨ Editar Caixa / Categoria</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Selecione uma caixa na lista inferior para alterar o nome, teto de gasto ou cor.</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Selecione uma caixa na lista inferior para alterar o nome ou teto de gasto.</p>
                 
                 <div class="input-group" style="display: none;">
                     <label>📊 Tipo de Categoria</label>
@@ -634,15 +615,8 @@
                     <label>🎯 Teto de Gasto / Meta Mensal (Opcional)</label>
                     <input type="number" id="new_category_budget" aria-label="Teto de Gasto Mensal" class="text-input" placeholder="Ex: 500" value="0">
                 </div>
-                <div class="input-group">
-                    <label>🎨 Cor da Categoria</label>
-                    <div class="color-picker-container">
-                        <input type="color" id="new_category_color" class="color-input" value="#bb86fc">
-                        <span style="font-size: 13px; color: var(--text-muted)">Escolha uma cor para a caixa</span>
-                    </div>
-                </div>
                 <div style="display: block;">
-                    <button id="btnSaveCategory" class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">💾 Atualizar Nome / Configuração</button>
+                    <button id="btnSaveCategory" class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">💾 Atualizar Configuração da Caixa</button>
                     <button id="btnCancelCategoryEdit" class="btn-secondary" style="display: none; width: 100%; margin-top: 8px; padding: 12px 0;" onclick="cancelCategoryEdit()">❌ Cancelar Ajuste</button>
                 </div>
             </div>
@@ -776,6 +750,7 @@
         let editingCategoryId = null;
         let pendingDeleteId = null;
 
+        // CORES ESTÁVEIS E FIXAS PARA AS 8 CAIXAS (Não mudam ao trocar o nome)
         const defaultCategoriesPessoal = [
             { id: "cat_p_1", name: "🛒 Supermercado", budget: 1200, type: "expense", color: "#a370f7" },
             { id: "cat_p_2", name: "🍔 Alimentação", budget: 600, type: "expense", color: "#ffea00" },
@@ -783,7 +758,7 @@
             { id: "cat_p_4", name: "🏠 Moradia / Aluguel", budget: 1500, type: "expense", color: "#2979ff" },
             { id: "cat_p_5", name: "💊 Saúde & Cuidado", budget: 300, type: "expense", color: "#ff2a6d" },
             { id: "cat_p_6", name: "⚡ Contas & Boletos", budget: 500, type: "expense", color: "#ff9f43" },
-            { id: "cat_p_7", name: "🍿 Lazer & Viagem", budget: 400, type: "expense", color: "#05dfd7" },
+            { id: "cat_p_7", name: "🍿 Lazer & Viagem", budget: 400, type: "expense", color: "#00e676" },
             { id: "cat_p_8", name: "💸 Outros Gastos", budget: 300, type: "expense", color: "#b3b3b3" }
         ];
 
@@ -819,8 +794,9 @@
                 document.getElementById('businessCreditAlert').style.display = 'block';
             }
             
-            let fallbackDefaults = currentProfile === "pessoal" ? defaultCategoriesPessoal : defaultCategoriesEmpresa;
+            // Força a manter exatamente a quantidade de 8 caixas fixas amarradas
             if (categories.length !== 8) {
+                let fallbackDefaults = currentProfile === "pessoal" ? defaultCategoriesPessoal : defaultCategoriesEmpresa;
                 categories = [...fallbackDefaults];
                 safeLocalStorageSave();
             }
@@ -1047,7 +1023,7 @@
 
             transactions = transactions.map(t => {
                 if (t.id === editingTransactionId) {
-                    return { ...t, amount: val, description: desc, date: dateInput, categoryId: categoryId };
+                    return { ...t, amount: val, description: desc, date: dateInput, categoryId: categoryId || t.categoryId };
                 }
                 return t;
             });
@@ -1135,17 +1111,15 @@
             pendingDeleteId = null;
         }
 
-        // CORREÇÃO AQUI: Correspondência exata por palavra inteira com limite de borda (\b) para evitar sobreposições incorretas de caixa
+        // AMARRAÇÃO DIRETA: Busca categoria por ID ou por palavra exata presente no texto do input
         function findCategoryByText(text) {
             if(!text) return null;
             let normalizedText = text.toLowerCase();
             return categories.find(c => {
                 let cleanCatName = c.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊/g, "").trim().toLowerCase();
                 if (!cleanCatName) return false;
-                
-                // Cria regex procurando a categoria como palavra inteira isolada
                 let regex = new RegExp('\\b' + cleanCatName + '\\b', 'i');
-                return regex.test(normalizedText) || c.name.toLowerCase() === normalizedText;
+                return regex.test(normalizedText) || normalizedText.includes(cleanCatName);
             });
         }
 
@@ -1168,13 +1142,11 @@
                 
                 targetList.forEach(t => {
                     if(t.type === 'expense_cash' || t.type === 'saving') {
-                        // CORREÇÃO: Comparar estritamente por ID antes de tentar adivinhar pelo texto
                         if(t.categoryId === foundCat.id) {
                             accumulatedSpent += t.amount;
                         } else if (!t.categoryId) {
                             let cleanCatName = foundCat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊/g, "").trim().toLowerCase();
-                            let regex = new RegExp('\\b' + cleanCatName + '\\b', 'i');
-                            if(regex.test(t.description.toLowerCase())) {
+                            if(t.description.toLowerCase().includes(cleanCatName)) {
                                 accumulatedSpent += t.amount;
                             }
                         }
@@ -1351,7 +1323,6 @@
         function renderVisualCategoryBoxes(targetMonthList, totalExpenseMonth) {
             const container = document.getElementById('categoryVisualMonitorBoxes');
             if (!container) return;
-
             container.innerHTML = '';
 
             let categoryMapAmounts = new Map();
@@ -1359,7 +1330,6 @@
 
             targetMonthList.forEach(t => {
                 if (t.type === 'expense_cash' || t.type === 'saving') {
-                    // CORREÇÃO: Mapear estritamente por ID ou por palavra inteira correta
                     if (t.categoryId && categoryMapAmounts.has(t.categoryId)) {
                         categoryMapAmounts.set(t.categoryId, categoryMapAmounts.get(t.categoryId) + t.amount);
                     } else {
@@ -1419,7 +1389,7 @@
                     <div class="category-main-info">
                         <strong>${cat.name} <span style="font-size:10px; color:var(--text-muted); padding-left:4px;">(${badgeType})</span></strong>
                         <div class="category-actions">
-                            <button class="btn-edit-cat" onclick="editCategory('${cat.id}')">✏️ Configurar</button>
+                            <button class="btn-edit-cat" onclick="editCategory('${cat.id}')">✏️ Configurar Nome / Limite</button>
                         </div>
                     </div>
                     <div class="category-budget-info">${budgetText}</div>
@@ -1467,11 +1437,9 @@
             let input = document.getElementById('new_category_name');
             let budgetInput = document.getElementById('new_category_budget');
             let typeInput = document.getElementById('new_category_type');
-            let colorInput = document.getElementById('new_category_color');
             let name = input.value.trim();
             let budget = parseFloat(budgetInput.value) || 0;
             let type = typeInput.value;
-            let color = colorInput.value;
 
             if(!name) return alert('Por favor, digite um nome válido! ⚠️');
             if(!name.match(/[\u1F600-\u1F64F]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹/)) { name = "🔹 " + name; }
@@ -1479,7 +1447,7 @@
             if (editingCategoryId) {
                 categories = categories.map(c => {
                     if (c.id === editingCategoryId) {
-                        return { ...c, name: name, budget: budget, type: type, color: color };
+                        return { ...c, name: name, budget: budget, type: type };
                     }
                     return c;
                 });
@@ -1488,11 +1456,11 @@
                 document.getElementById('btnCancelCategoryEdit').style.display = "none";
                 
                 safeLocalStorageSave();
-                input.value = ''; budgetInput.value = '0'; colorInput.value = '#bb86fc';
+                input.value = ''; budgetInput.value = '0';
                 renderCategoryManagement(); renderTags(); loadData();
                 alert('Configuração atualizada com sucesso! 👍');
             } else {
-                alert('A edição deve ser feita selecionando uma caixa existente abaixo.');
+                alert('A edição deve ser feita selecionando uma caixa existente na lista abaixo.');
             }
         }
 
@@ -1504,7 +1472,6 @@
             document.getElementById('new_category_name').value = cat.name;
             document.getElementById('new_category_budget').value = cat.budget;
             document.getElementById('new_category_type').value = cat.type || "expense";
-            document.getElementById('new_category_color').value = cat.color || "#bb86fc";
 
             document.getElementById('categoryFormTitle').innerText = "✏️ Configurar Caixa / Categoria";
             document.getElementById('btnCancelCategoryEdit').style.display = "inline-block";
@@ -1516,7 +1483,6 @@
             editingCategoryId = null;
             document.getElementById('new_category_name').value = '';
             document.getElementById('new_category_budget').value = '0';
-            document.getElementById('new_category_color').value = '#bb86fc';
             document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
             document.getElementById('btnCancelCategoryEdit').style.display = "none";
         }
@@ -1684,6 +1650,52 @@
             saveAndReset();
         }
 
+        function saveCreditTransaction(installments) {
+            const totalVal = getNumericValue();
+            let desc = document.getElementById('tx_description').value.trim() || 'Compra Cartão 💳';
+            const dateInput = document.getElementById('tx_date').value;
+            
+            let splitData = dateInput.split('-');
+            let anoCompra = parseInt(splitData[0], 10);
+            let mesCompra = parseInt(splitData[1], 10) - 1; 
+            let diaCompra = parseInt(splitData[2], 10);
+
+            let monthOffset = 0;
+            if (diaCompra >= ccConfig.closeDay) { monthOffset = 1; }
+
+            const baseAmount = Math.floor((totalVal / installments) * 100) / 100;
+            let remainder = Math.round((totalVal - (baseAmount * installments)) * 100) / 100;
+
+            let matchedCategory = findCategoryByText(desc);
+            let categoryId = matchedCategory ? matchedCategory.id : null;
+
+            for (let i = 0; i < installments; i++) {
+                let mesAlvo = mesCompra + i + monthOffset;
+                let dataReferencia = new Date(anoCompra, mesAlvo, 1, 12, 0, 0);
+                let anoCalculated = dataReferencia.getFullYear();
+                let mesCalculated = dataReferencia.getMonth() + 1;
+                let diaVencimento = obterUltimoDiaValido(anoCalculated, mesCalculated, ccConfig.dueDay);
+
+                let currentInstallmentAmount = baseAmount;
+                if (i === installments - 1) {
+                    currentInstallmentAmount = Math.round((baseAmount + remainder) * 100) / 100;
+                }
+
+                transactions.push({
+                    id: gerarIDUnico(),
+                    categoryId: categoryId,
+                    amount: currentInstallmentAmount,
+                    type: 'expense_cash',
+                    paymentMethod: 'cartao', 
+                    description: `${desc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
+                    date: formatarDataISO(anoCalculated, mesCalculated, diaVencimento),
+                    isCredit: true 
+                });
+            }
+            closeCreditModal();
+            saveAndReset();
+        }
+
         function saveAndReset() {
             safeLocalStorageSave();
             rawDigits = "0";
@@ -1726,10 +1738,11 @@
             targetMonthList.forEach(t => {
                 let matchesCategory = true; let matchesPayment = true;
 
+                let catObj = categories.find(c => c.id === t.categoryId);
+
                 if (filtroCategoriaAtivo !== "") {
-                    let matchObj = categories.find(c => c.id === t.categoryId);
                     let matchByName = t.description.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase());
-                    let matchByID = matchObj && matchObj.name.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase());
+                    let matchByID = catObj && catObj.name.toLowerCase().includes(filtroCategoriaAtivo.toLowerCase());
                     if (!matchByName && !matchByID) matchesCategory = false;
                 }
 
@@ -1752,6 +1765,13 @@
                 let item = document.createElement('div');
                 item.className = 'history-item';
                 item.setAttribute('onclick', `editTransaction('${t.id}', event)`);
+                
+                // MARCAÇÃO VISUAL FIXA: Insere a cor estável da categoria direto no item do extrato
+                if (catObj && catObj.color) {
+                    item.style.borderLeft = `5px solid ${catObj.color}`;
+                } else {
+                    item.style.borderLeft = `5px solid var(--border-color)`;
+                }
                 
                 let dateFormatted = t.date.split('-').reverse().join('/');
                 let indicatorColor = 'var(--success)'; let prefix = '+';
@@ -1828,4 +1848,3 @@
     </script>
 </body>
 </html>
-
