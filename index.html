@@ -754,11 +754,11 @@
         const defaultCategoriesPessoal = [
             { id: "cat_p_1", name: "⛽ Combustível", budget: 1200, type: "expense", color: "#a370f7" },
             { id: "cat_p_2", name: "🛒 Supermercado", budget: 600, type: "expense", color: "#ffea00" },
-            { id: "cat_p_3", name: "🍔 Alimentação", budget: 400, type: "expense", color: "#00e5ff" },
-            { id: "cat_p_4", name: "🚗 Transporte", budget: 1500, type: "expense", color: "#2979ff" },
-            { id: "cat_p_5", name: "💊 Saúde & Cuidado", budget: 300, type: "expense", color: "#ff2a6d" },
+            { id: "cat_p_3", name: "🎁 Presentes", budget: 300, type: "expense", color: "#ff2a6d" },
+            { id: "cat_p_4", name: "✈️ Viagens", budget: 1500, type: "expense", color: "#00e676" },
+            { id: "cat_p_5", name: "⚽ Esportes", budget: 400, type: "expense", color: "#2979ff" },
             { id: "cat_p_6", name: "⚡ Contas & Boletos", budget: 500, type: "expense", color: "#ff9f43" },
-            { id: "cat_p_7", name: "🍿 Lazer & Viagem", budget: 400, type: "expense", color: "#00e676" },
+            { id: "cat_p_7", name: "🍔 Alimentação", budget: 400, type: "expense", color: "#00e5ff" },
             { id: "cat_p_8", name: "💸 Outros Gastos", budget: 300, type: "expense", color: "#b3b3b3" }
         ];
 
@@ -1114,7 +1114,7 @@
             if(!text) return null;
             let normalizedText = text.toLowerCase();
             return categories.find(c => {
-                let cleanCatName = c.name.replace(/[\u1F000-\u1FFFF]|🔸|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim().toLowerCase();
+                let cleanCatName = c.name.replace(/[\u1F000-\u1FFFF]|🔸|🎁|✈️|⚽|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim().toLowerCase();
                 if (!cleanCatName) return false;
                 return normalizedText.includes(cleanCatName);
             });
@@ -1142,7 +1142,7 @@
                         if(t.categoryId === foundCat.id) {
                             accumulatedSpent += t.amount;
                         } else {
-                            let cleanCatName = foundCat.name.replace(/[\u1F000-\u1FFFF]|🔸|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim().toLowerCase();
+                            let cleanCatName = foundCat.name.replace(/[\u1F000-\u1FFFF]|🔸|🎁|✈️|⚽|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim().toLowerCase();
                             if(t.description.toLowerCase().includes(cleanCatName)) {
                                 accumulatedSpent += t.amount;
                             }
@@ -1203,7 +1203,7 @@
                             localStorage.setItem('transactions_empresa', JSON.stringify(imported.t_empresa));
                             localStorage.setItem('categories_empresa', JSON.stringify(imported.c_empresa));
                             localStorage.setItem('recurrent_empresa', JSON.stringify(imported.r_empresa || []));
-                            localStorage.setItem('cc_config_empresa', JSON.stringify(imported.cc_empresa));
+                            localStorage.setItem('cc_config_empresa', JSON.stringify(imported.cc_config_empresa));
                         }
                         alert('Backup restaurado com sucesso! 🎉');
                         window.location.reload();
@@ -1300,7 +1300,7 @@
             if(!container) return;
             container.innerHTML = '';
             categories.forEach(cat => {
-                let cleanedName = cat.name.replace(/[\u1F000-\u1FFFF]|🔸|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim();
+                let cleanedName = cat.name.replace(/[\u1F000-\u1FFFF]|🔸|🎁|✈️|⚽|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim();
                 let tagEl = document.createElement('div');
                 tagEl.className = 'tag';
                 tagEl.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
@@ -1346,7 +1346,7 @@
                 }
 
                 let isExceeded = cat.budget > 0 && spent > cat.budget;
-                let cleanName = cat.name.replace(/[\u1F000-\u1FFFF]|🔸|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim();
+                let cleanName = cat.name.replace(/[\u1F000-\u1FFFF]|🔸|🎁|✈️|⚽|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗|⛽/gu, "").trim();
 
                 let box = document.createElement('div');
                 box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
@@ -1440,7 +1440,7 @@
             let type = typeInput.value;
 
             if(!name) return alert('Por favor, digite um nome válido! ⚠️');
-            if(!name.match(/[\u1F000-\u1FFFF]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹|🚗|⛽/)) { name = "🔹 " + name; }
+            if(!name.match(/[\u1F000-\u1FFFF]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹|🚗|⛽|🎁|✈️|⚽/)) { name = "🔹 " + name; }
             
             if (editingCategoryId) {
                 categories = categories.map(c => {
