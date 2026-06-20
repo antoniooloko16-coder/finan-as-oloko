@@ -288,6 +288,16 @@
             transition: transform 0.15s ease, border-color 0.2s ease;
         }
 
+        .category-box-card.empty-box {
+            border: 1px dashed var(--border-color);
+            background: rgba(255,255,255,0.01);
+        }
+
+        .category-box-card.empty-box .category-box-title {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
         .category-box-card:active {
             transform: scale(0.98);
         }
@@ -777,7 +787,6 @@
         let editingCategoryId = null;
         let pendingDeleteId = null;
 
-        // Base de categorias pré-definidas otimizadas para 8 itens em cada perfil
         const defaultCategoriesPessoal = [
             { id: "cat_p_1", name: "🛒 Supermercado", budget: 1200, type: "expense", color: "#a370f7" },
             { id: "cat_p_2", name: "🍔 Alimentação", budget: 600, type: "expense", color: "#ffea00" },
@@ -832,6 +841,13 @@
                 }
                 return c;
             });
+
+            // Garante que a lista tenha sempre o tamanho ideal de 8 caixas completando com vazias se necessário
+            while(categories.filter(c => c.type !== 'income').length < 8) {
+                categories.push({ id: gerarIDUnico(), name: "[ Caixa Disponível ]", budget: 0, type: "expense", color: "#242428", isEmpty: true });
+                alterouCategorias = true;
+            }
+
             if(alterouCategorias) { safeLocalStorageSave(); }
 
             processRecurrentEntries();
@@ -1148,6 +1164,7 @@
             if(!text) return null;
             let normalizedText = text.toLowerCase();
             return categories.find(c => {
+                if(c.isEmpty) return false;
                 let cleanCatName = c.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊/g, "").trim().toLowerCase();
                 return normalizedText.includes(cleanCatName) || cleanCatName.includes(normalizedText) || c.name.toLowerCase().includes(normalizedText);
             });
@@ -1166,7 +1183,7 @@
             let targetMonth = dateVal.substring(0, 7);
             let foundCat = findCategoryByText(desc);
 
-            if(foundCat && foundCat.budget > 0) {
+            if(foundCat && !foundCat.isEmpty && foundCat.budget > 0) {
                 let accumulatedSpent = 0;
                 const targetList = transactionIndexedMap.get(targetMonth) || [];
                 
@@ -1333,6 +1350,7 @@
             if(!container) return;
             container.innerHTML = '';
             categories.forEach(cat => {
+                if(cat.isEmpty) return;
                 let cleanedName = cat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊/g, "").trim();
                 let tagEl = document.createElement('div');
                 tagEl.className = 'tag';
@@ -1350,12 +1368,10 @@
             });
         }
 
-        // Renderização Nova e Modificada: Painel com exatamente 8 Caixas de Categorias de Gastos
         function renderVisualCategoryBoxes(targetMonthList, totalExpenseMonth) {
             const container = document.getElementById('categoryVisualMonitorBoxes');
             if (!container) return;
 
-            // Filtramos estritamente as categorias do tipo saída (gastos)
             const expenseCategories = categories.filter(c => c.type !== 'income');
 
             if (expenseCategories.length === 0) {
@@ -1365,11 +1381,9 @@
 
             container.innerHTML = '';
 
-            // Mapeamento limpo dos gastos reais por categoria no mês corrente
             let categoryMapAmounts = new Map();
             expenseCategories.forEach(c => categoryMapAmounts.set(c.id, 0));
 
-            // Variável local para acumular apenas gastos mapeados por categoria no mês
             let totalRealGastosMapeados = 0;
 
             targetMonthList.forEach(t => {
@@ -1387,11 +1401,28 @@
                 }
             });
 
-            // Criação das caixas grid dinâmicas baseadas nas configurações salvas de gastos
             expenseCategories.forEach(cat => {
+                if (cat.isEmpty) {
+                    let box = document.createElement('div');
+                    box.className = 'category-box-card empty-box';
+                    box.onclick = () => {
+                        switchPage('categorias');
+                        editCategory(cat.id);
+                    };
+                    box.innerHTML = `
+                        <div class="category-box-header">
+                            <span class="category-box-title">⚙️ Configurar</span>
+                        </div>
+                        <div class="category-box-footer">
+                            <span class="category-box-amount" style="font-size:11px; color:var(--text-muted);">Disponível</span>
+                        </div>
+                    `;
+                    container.appendChild(box);
+                    return;
+                }
+
                 let spent = categoryMapAmounts.get(cat.id) || 0;
                 
-                // Cálculo de porcentagem real baseado no total gasto do mês corrente
                 let pct = 0;
                 if (totalRealGastosMapeados > 0) {
                     pct = Math.round((spent / totalRealGastosMapeados) * 100);
@@ -1430,14 +1461,21 @@
                 let div = document.createElement('div');
                 div.className = 'category-item';
                 div.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
+                
                 let budgetText = cat.budget > 0 ? `🎯 Meta mensal: ${formatCurrency(cat.budget)}` : "♾️ Sem limite estipulado";
                 let badgeType = cat.type === "income" ? "🟢 Entrada" : "🔴 Saída";
+                
+                if (cat.isEmpty) {
+                    budgetText = "Caixa vazia aguardando personalização";
+                    badgeType = "⚪ Inativa";
+                }
+
                 div.innerHTML = `
                     <div class="category-main-info">
                         <strong>${cat.name} <span style="font-size:10px; color:var(--text-muted); padding-left:4px;">(${badgeType})</span></strong>
                         <div class="category-actions">
                             <button class="btn-edit-cat" onclick="editCategory('${cat.id}')">✏️</button>
-                            <button class="btn-delete-cat" onclick="deleteCategory('${cat.id}')">🗑️</button>
+                            ${!cat.isEmpty ? `<button class="btn-delete-cat" onclick="deleteCategory('${cat.id}')">🗑️</button>` : ''}
                         </div>
                     </div>
                     <div class="category-budget-info">${budgetText}</div>
@@ -1497,7 +1535,7 @@
             if (editingCategoryId) {
                 categories = categories.map(c => {
                     if (c.id === editingCategoryId) {
-                        return { ...c, name: name, budget: budget, type: type, color: color };
+                        return { ...c, name: name, budget: budget, type: type, color: color, isEmpty: false };
                     }
                     return c;
                 });
@@ -1519,12 +1557,12 @@
             if (!cat) return;
 
             editingCategoryId = id;
-            document.getElementById('new_category_name').value = cat.name;
+            document.getElementById('new_category_name').value = cat.isEmpty ? "" : cat.name;
             document.getElementById('new_category_budget').value = cat.budget;
             document.getElementById('new_category_type').value = cat.type || "expense";
-            document.getElementById('new_category_color').value = cat.color || "#bb86fc";
+            document.getElementById('new_category_color').value = cat.isEmpty ? "#bb86fc" : (cat.color || "#bb86fc");
 
-            document.getElementById('categoryFormTitle').innerText = "✏️ Editar Categoria";
+            document.getElementById('categoryFormTitle').innerText = "✏️ Configurar Caixa / Categoria";
             document.getElementById('btnSaveCategory').innerText = "💾 Salvar";
             document.getElementById('btnCancelCategoryEdit').style.display = "inline-block";
 
@@ -1545,9 +1583,14 @@
             const cat = categories.find(c => c.id === id);
             if (!cat) return;
 
-            if(confirm(`Deseja mesmo excluir o nome "${cat.name}"? 🗑️`)) {
+            if(confirm(`Deseja limpar e desativar a caixa "${cat.name}"? 🗑️`)) {
                 if (editingCategoryId === id) cancelCategoryEdit();
-                categories = categories.filter(c => c.id !== id);
+                categories = categories.map(c => {
+                    if (c.id === id) {
+                        return { id: c.id, name: "[ Caixa Disponível ]", budget: 0, type: "expense", color: "#242428", isEmpty: true };
+                    }
+                    return c;
+                });
                 safeLocalStorageSave();
                 renderCategoryManagement(); renderTags(); loadData();
             }
@@ -1747,15 +1790,12 @@
 
             let targetMonthList = transactionIndexedMap.get(currentSelectedTarget) || [];
             
-            // Processa inicialmente a soma total pura do mês para alimentar a proporcionalidade das caixas
             targetMonthList.forEach(t => {
                 if (t.type === 'expense_cash') totalExpense += t.amount;
             });
 
-            // Renderiza o novo painel modular contendo as caixas correspondentes
             renderVisualCategoryBoxes(targetMonthList, totalExpense);
 
-            // Reseta a contagem para aplicar filtros subsequentes no extrato físico
             totalExpense = 0;
 
             targetMonthList.forEach(t => {
@@ -1863,4 +1903,3 @@
     </script>
 </body>
 </html>
-
