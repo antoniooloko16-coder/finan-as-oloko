@@ -361,6 +361,7 @@
         .history-item:last-child { border-bottom: 1px solid var(--border-color); }
         .history-info { display: flex; flex-direction: column; flex-grow: 1; padding-right: 10px; padding-left: 6px; }
         .history-desc { font-weight: 600; font-size: 14px; color: #f2f2f7; }
+        .history-cat-badge { font-size: 10px; font-weight: 700; margin-top: 3px; display: inline-block; text-transform: uppercase; letter-spacing: 0.3px; }
         .history-date { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
         .history-right { display: flex; align-items: center; gap: 12px; }
         .history-val { font-weight: 700; font-size: 14px; }
@@ -750,7 +751,6 @@
         let editingCategoryId = null;
         let pendingDeleteId = null;
 
-        // PALETA COMPLETA DE CORES VIVAS NAS 8 CAIXAS PESSOAIS
         const defaultCategoriesPessoal = [
             { id: "cat_p_1", name: "🛒 Supermercado", budget: 1200, type: "expense", color: "#a370f7" },
             { id: "cat_p_2", name: "🍔 Alimentação", budget: 600, type: "expense", color: "#ffea00" },
@@ -762,7 +762,6 @@
             { id: "cat_p_8", name: "💸 Outros Gastos", budget: 300, type: "expense", color: "#b3b3b3" }
         ];
 
-        // PALETA COMPLETA DE CORES VIVAS NAS 8 CAIXAS DA EMPRESA
         const defaultCategoriesEmpresa = [
             { id: "cat_e_1", name: "🏭 Insumos / Matéria Prima", budget: 5000, type: "expense", color: "#2979ff" },
             { id: "cat_e_2", name: "🚚 Entregas / Frete", budget: 1500, type: "expense", color: "#00e5ff" },
@@ -1142,7 +1141,7 @@
                     if(t.type === 'expense_cash' || t.type === 'saving') {
                         if(t.categoryId === foundCat.id) {
                             accumulatedSpent += t.amount;
-                        } else if (!t.categoryId) {
+                        } else {
                             let cleanCatName = foundCat.name.replace(/[\u1F600-\u1F64F]|🔹|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🚗/g, "").trim().toLowerCase();
                             if(t.description.toLowerCase().includes(cleanCatName)) {
                                 accumulatedSpent += t.amount;
@@ -1456,7 +1455,7 @@
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 renderCategoryManagement(); renderTags(); loadData();
-                alert('Configuração updated com sucesso! 👍');
+                alert('Configuração atualizada com sucesso! 👍');
             } else {
                 alert('A edição deve ser feita selecionando uma caixa existente na lista abaixo.');
             }
@@ -1717,11 +1716,14 @@
                 item.className = 'history-item';
                 item.setAttribute('onclick', `editTransaction('${t.id}', event)`);
                 
-                if (catObj && catObj.color) {
-                    item.style.borderLeft = `5px solid ${catObj.color}`;
-                } else {
-                    item.style.borderLeft = `5px solid var(--border-color)`;
+                let catColor = 'var(--border-color)';
+                let catLabel = 'Sem Categoria 📝';
+                if (catObj) {
+                    catColor = catObj.color || 'var(--primary)';
+                    catLabel = catObj.name;
                 }
+                
+                item.style.borderLeft = `5px solid ${catColor}`;
                 
                 let dateFormatted = t.date.split('-').reverse().join('/');
                 let indicatorColor = 'var(--success)'; let prefix = '+';
@@ -1737,6 +1739,7 @@
                 item.innerHTML = `
                     <div class="history-info">
                         <span class="history-desc">${t.description}${badgeMetodo}</span>
+                        <span class="history-cat-badge" style="color: ${catColor};">${catLabel}</span>
                         <span class="history-date">📅 ${dateFormatted}</span>
                     </div>
                     <div class="history-right">
