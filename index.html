@@ -396,7 +396,7 @@
         .modal-btn:active { background: var(--border-color); }
         
         .custom-installments-container { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
-        .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #00e676; color: #000; padding: 10px 24px; border-radius: 30px; font-weight: 700; font-size: 14px; z-index: 2000; display: none; box-shadow: 0 4px 166px rgba(0,230,118,0.3); }
+        .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #00e676; color: #000; padding: 10px 24px; border-radius: 30px; font-weight: 700; font-size: 14px; z-index: 2000; display: none; box-shadow: 0 4px 166 rgba(0,230,118,0.3); }
         
         .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: 700; text-transform: uppercase; display: none; }
@@ -678,6 +678,12 @@
                         <tbody id="annualTableBody"></tbody>
                     </table>
                 </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0; color: var(--accent); font-size: 14px; font-weight: 700; margin-bottom: 4px;">📦 Gastos Acumulados por Caixa (Ano Todo)</h3>
+                <p style="font-size: 11px; color: var(--text-muted); margin: 0 0 15px 0;">Soma de todos os meses do ano por categoria.</p>
+                <div class="grid-categories-panel" id="annualCategoryBoxes" style="display: grid; margin: 0;"></div>
             </div>
         </div>
     </div>
@@ -1237,6 +1243,11 @@
             tbody.innerHTML = '';
             let grandTotalIncome = 0; let grandTotalExpense = 0;
 
+            // Variável para armazenar o acumulado anual de cada categoria
+            let annualCategoryAmounts = new Map();
+            categories.forEach(c => annualCategoryAmounts.set(c.id, 0));
+            let grandTotalExpenseAllYear = 0;
+
             for (let m = 1; m <= 12; m++) {
                 let monthStr = String(m).padStart(2, '0');
                 let targetYearMonth = `${selectedYear}-${monthStr}`;
@@ -1245,7 +1256,16 @@
                 const currentMonthList = transactionIndexedMap.get(targetYearMonth) || [];
                 currentMonthList.forEach(t => {
                     if (t.type === 'income') monthlyIncome += t.amount;
-                    if (t.type === 'expense_cash' || t.type === 'saving') monthlyExpense += t.amount;
+                    if (t.type === 'expense_cash' || t.type === 'saving') {
+                        monthlyExpense += t.amount;
+                        grandTotalExpenseAllYear += t.amount;
+
+                        // Vincula o gasto à sua respectiva categoria para o painel anual
+                        let matched = t.categoryId ? categories.find(c => c.id === t.categoryId) : findCategoryByText(t.description);
+                        if (matched && annualCategoryAmounts.has(matched.id)) {
+                            annualCategoryAmounts.set(matched.id, annualCategoryAmounts.get(matched.id) + t.amount);
+                        }
+                    }
                 });
 
                 grandTotalIncome += monthlyIncome; grandTotalExpense += monthlyExpense;
@@ -1274,6 +1294,47 @@
                 <td style="color: ${totalBalanceColor}; font-weight: 700;">${formatCurrency(yearBalance)}</td>
             `;
             tbody.appendChild(totalTr);
+
+            // Renderização das 8 Caixas Acumuladas no Balanço Anual
+            renderAnnualCategoryBoxes(annualCategoryAmounts, grandTotalExpenseAllYear);
+        }
+
+        function renderAnnualCategoryBoxes(annualAmountsMap, totalExpenseYear) {
+            const container = document.getElementById('annualCategoryBoxes');
+            if (!container) return;
+            container.innerHTML = '';
+
+            categories.forEach(cat => {
+                let spent = annualAmountsMap.get(cat.id) || 0;
+                let pct = 0;
+                if (totalExpenseYear > 0) {
+                    pct = Math.round((spent / totalExpenseYear) * 100);
+                }
+
+                // Cálculo proporcional do teto anual (Meta mensal * 12)
+                let annualBudget = (cat.budget || 0) * 12;
+                let isExceeded = annualBudget > 0 && spent > annualBudget;
+
+                let box = document.createElement('div');
+                box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
+                box.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
+                box.style.cursor = 'default'; // Sem ação de clique no extrato mensal na aba anual
+
+                box.innerHTML = `
+                    <div class="category-box-header">
+                        <span class="category-box-title">${cat.name}</span>
+                        <div class="category-box-dot" style="background-color: ${cat.color || 'var(--primary)'};"></div>
+                    </div>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 500;">
+                        ${annualBudget > 0 ? 'Meta Ano: ' + formatCurrency(annualBudget) : 'Sem Teto Fixo'}
+                    </div>
+                    <div class="category-box-footer">
+                        <span class="category-box-amount">${formatCurrency(spent)}</span>
+                        <span class="category-box-pct">${pct}%</span>
+                    </div>
+                `;
+                container.appendChild(box);
+            });
         }
 
         function filtrarExtratoPorTag(nomeTag, elementoTag) {
@@ -1334,7 +1395,6 @@
             const container = document.getElementById('categoryVisualMonitorBoxes');
             if (!container) return;
             
-            // Mantém o estado atual de exibição (se o usuário abriu ou fechou o painel)
             const currentDisplay = container.style.display;
             container.innerHTML = '';
 
@@ -1381,7 +1441,6 @@
                 container.appendChild(box);
             });
             
-            // Restaura o display atual para evitar que mude sozinho ao recarregar dados
             container.style.display = currentDisplay || 'none';
         }
 
@@ -1470,7 +1529,7 @@
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 renderCategoryManagement(); renderTags(); loadData();
-                alert('Configuração updated com sucesso! 👍');
+                alert('Configuração atualizada com sucesso! 👍');
             } else {
                 alert('A edição deve ser feita selecionando uma caixa existente na lista abaixo.');
             }
@@ -1535,6 +1594,12 @@
             document.getElementById('btnCortina').innerText = privacyMode ? '🙈' : '👁️';
             loadData();
             if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
+        }
+
+        // Correção de bug estrutural: força a atualização do balanço anual caso a cortina seja ativada de dentro dele
+        function switchPageWithCallback(pageId) {
+            switchPage(pageId);
+            if(pageId === 'anual') renderAnnualBalance();
         }
 
         function showBanner() {
@@ -1823,7 +1888,11 @@
                     summaryCard.classList.add('alert-blink');
                 }
             }
+            
+            // Força a atualização do painel anual caso o usuário altere o seletor de data de dentro da aba anual
+            if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
         }
     </script>
 </body>
 </html>
+
