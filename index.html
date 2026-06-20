@@ -653,7 +653,7 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0; color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">📋 Gerenciar Estrutura das 8 Caixas</h3>
+                <h3 style="margin-top:0; color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">📋 Gerenciar Estrutura das Caixas</h3>
                 <div id="categoryListContainer"></div>
             </div>
         </div>
@@ -752,14 +752,10 @@
         let pendingDeleteId = null;
 
         const defaultCategoriesPessoal = [
-            { id: "cat_p_1", name: "⛽ Combustível", budget: 1200, type: "expense", color: "#a370f7" },
-            { id: "cat_p_2", name: "🛒 Supermercado", budget: 600, type: "expense", color: "#ffea00" },
-            { id: "cat_p_3", name: "🎁 Presentes", budget: 300, type: "expense", color: "#ff2a6d" },
-            { id: "cat_p_4", name: "✈️ Viagens", budget: 1500, type: "expense", color: "#00e676" },
-            { id: "cat_p_5", name: "⚽ Esportes", budget: 400, type: "expense", color: "#2979ff" },
-            { id: "cat_p_6", name: "⚡ Contas & Boletos", budget: 500, type: "expense", color: "#ff9f43" },
-            { id: "cat_p_7", name: "🍔 Alimentação", budget: 400, type: "expense", color: "#00e5ff" },
-            { id: "cat_p_8", name: "💸 Outros Gastos", budget: 300, type: "expense", color: "#b3b3b3" }
+            { id: "cat_p_1", name: "🛒 Supermercado", budget: 600, type: "expense", color: "#ffea00" },
+            { id: "cat_p_2", name: "🍔 Restaurante", budget: 400, type: "expense", color: "#00e5ff" },
+            { id: "cat_p_3", name: "💸 Outros Gastos", budget: 300, type: "expense", color: "#b3b3b3" },
+            { id: "cat_p_4", name: "⚽ Lazer", budget: 400, type: "expense", color: "#2979ff" }
         ];
 
         const defaultCategoriesEmpresa = [
@@ -794,9 +790,11 @@
                 document.getElementById('businessCreditAlert').style.display = 'block';
             }
             
-            if (categories.length !== 8) {
-                let fallbackDefaults = currentProfile === "pessoal" ? defaultCategoriesPessoal : defaultCategoriesEmpresa;
-                categories = [...fallbackDefaults];
+            if (currentProfile === "pessoal" && categories.length !== 4) {
+                categories = [...defaultCategoriesPessoal];
+                safeLocalStorageSave();
+            } else if (currentProfile === "empresa" && categories.length !== 8) {
+                categories = [...defaultCategoriesEmpresa];
                 safeLocalStorageSave();
             }
 
@@ -1456,7 +1454,7 @@
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 renderCategoryManagement(); renderTags(); loadData();
-                alert('Configuração atualizada com sucesso! 👍');
+                alert('Configuração updated com sucesso! 👍');
             } else {
                 alert('A edição deve ser feita selecionando uma caixa existente na lista abaixo.');
             }
