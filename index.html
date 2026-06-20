@@ -356,7 +356,8 @@
         @keyframes blink { 0%, 100% { border-color: var(--danger); box-shadow: 0 0 12px rgba(255,23,68,0.15); } 50% { border-color: var(--border-color); box-shadow: none; } }
 
         .history-list { margin-top: 10px; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; margin-bottom: 4px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.01); }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; margin-bottom: 4px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.01); transition: background 0.2s; }
+        .history-item:hover { background: rgba(255,255,255,0.03); }
         .history-item:last-child { border-bottom: 1px solid var(--border-color); }
         .history-info { display: flex; flex-direction: column; flex-grow: 1; padding-right: 10px; padding-left: 6px; }
         .history-desc { font-weight: 600; font-size: 14px; color: #f2f2f7; display: flex; align-items: center; gap: 6px; }
@@ -751,7 +752,6 @@
         let editingCategoryId = null;
         let pendingDeleteId = null;
 
-        // Atualizado com 8 caixas fixas para o perfil pessoal (Cores exclusivas)
         const defaultCategoriesPessoal = [
             { id: "cat_p_1", name: "🛒 Supermercado", budget: 600, type: "expense", color: "#ffea00" },
             { id: "cat_p_2", name: "🍔 Restaurante", budget: 400, type: "expense", color: "#00e5ff" },
@@ -795,7 +795,6 @@
                 document.getElementById('businessCreditAlert').style.display = 'block';
             }
             
-            // Força a reinicialização caso a quantidade de caixas padrão tenha mudado no código
             if (currentProfile === "pessoal" && categories.length !== 8) {
                 categories = [...defaultCategoriesPessoal];
                 safeLocalStorageSave();
@@ -1733,7 +1732,10 @@
                 let dateFormatted = t.date.split('-').reverse().join('/');
                 let indicatorColor = 'var(--success)'; let prefix = '+';
                 
-                if (t.type === 'expense_cash') { indicatorColor = 'var(--danger)'; prefix = '-'; }
+                if (t.type === 'expense_cash') { 
+                    indicatorColor = catColor; // Gasto assume a cor exata da caixa correspondente
+                    prefix = '-'; 
+                }
                 if (t.type === 'saving') { indicatorColor = 'var(--warning)'; prefix = '💰'; }
 
                 let badgeMetodo = "";
