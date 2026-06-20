@@ -267,7 +267,6 @@
         .tag { background: var(--bg-input); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; color: var(--text); transition: all 0.2s; border-left: 4px solid transparent; }
         .tag.active-filter { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
 
-        /* Painel Modular de 8 Caixas de Gastos */
         .grid-categories-panel {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -1187,7 +1186,7 @@
                 const targetList = transactionIndexedMap.get(targetMonth) || [];
                 
                 targetList.forEach(t => {
-                    if(t.type === 'expense_cash') {
+                    if(t.type === 'expense_cash' || t.type === 'saving') {
                         if(t.categoryId === foundCat.id) {
                             accumulatedSpent += t.amount;
                         } else {
@@ -1386,7 +1385,7 @@
             let totalRealGastosMapeados = 0;
 
             targetMonthList.forEach(t => {
-                if (t.type === 'expense_cash') {
+                if (t.type === 'expense_cash' || t.type === 'saving') {
                     if (t.categoryId && categoryMapAmounts.has(t.categoryId)) {
                         categoryMapAmounts.set(t.categoryId, categoryMapAmounts.get(t.categoryId) + t.amount);
                         totalRealGastosMapeados += t.amount;
@@ -1423,8 +1422,8 @@
                 let spent = categoryMapAmounts.get(cat.id) || 0;
                 
                 let pct = 0;
-                if (totalRealGastosMapeados > 0) {
-                    pct = Math.round((spent / totalRealGastosMapeados) * 100);
+                if (totalExpenseMonth > 0) {
+                    pct = Math.round((spent / totalExpenseMonth) * 100);
                 }
 
                 let isExceeded = cat.budget > 0 && spent > cat.budget;
@@ -1789,12 +1788,15 @@
 
             let targetMonthList = transactionIndexedMap.get(currentSelectedTarget) || [];
             
+            // Passo 1: Calcular o gasto absoluto bruto do mês antes de aplicar os filtros do extrato
             targetMonthList.forEach(t => {
-                if (t.type === 'expense_cash') totalExpense += t.amount;
+                if (t.type === 'expense_cash' || t.type === 'saving') totalExpense += t.amount;
             });
 
+            // Passa o total absoluto para renderizar as caixas visuais corretamente
             renderVisualCategoryBoxes(targetMonthList, totalExpense);
 
+            // Reinicia para computar o extrato filtrável na interface de listagem inferior
             totalExpense = 0;
 
             targetMonthList.forEach(t => {
