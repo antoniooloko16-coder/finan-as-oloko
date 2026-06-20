@@ -249,7 +249,7 @@
         .tag.active-filter { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
 
         .grid-categories-panel {
-            display: grid;
+            display: none; /* Escondido por padrão */
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin: 15px 15px 0 15px;
@@ -437,6 +437,7 @@
         <div class="top-bar">
             <h2 id="appTitle">💰 Finanças Pro</h2>
             <div class="top-actions">
+                <button class="icon-btn" id="btnToggleBoxes" onclick="toggleCategoryBoxes()" title="Ver caixas de gastos">📊</button>
                 <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
                 
                 <select class="date-select" id="monthSelector" aria-label="selecione o mês" onchange="loadData()">
@@ -773,6 +774,15 @@
             { id: "cat_e_7", name: "🏛️ Impostos & Taxas", budget: 1200, type: "expense", color: "#ff2a6d" },
             { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 500, type: "expense", color: "#b3b3b3" }
         ];
+
+        function toggleCategoryBoxes() {
+            const panel = document.getElementById('categoryVisualMonitorBoxes');
+            if (panel.style.display === 'grid') {
+                panel.style.display = 'none';
+            } else {
+                panel.style.display = 'grid';
+            }
+        }
 
         function switchProfileData() {
             if (currentProfile === "pessoal") {
@@ -1115,7 +1125,6 @@
 
         function findCategoryByText(text) {
             if(!text) return null;
-            // Normalização inteligente: remove qualquer caractere que não seja uma letra de a-z ou número
             let cleanText = text.toLowerCase().replace(/[^a-z0-9]/gi, '');
             
             return categories.find(c => {
@@ -1324,6 +1333,9 @@
         function renderVisualCategoryBoxes(targetMonthList, totalExpenseMonth) {
             const container = document.getElementById('categoryVisualMonitorBoxes');
             if (!container) return;
+            
+            // Mantém o estado atual de exibição (se o usuário abriu ou fechou o painel)
+            const currentDisplay = container.style.display;
             container.innerHTML = '';
 
             let categoryMapAmounts = new Map();
@@ -1368,6 +1380,9 @@
                 `;
                 container.appendChild(box);
             });
+            
+            // Restaura o display atual para evitar que mude sozinho ao recarregar dados
+            container.style.display = currentDisplay || 'none';
         }
 
         function renderCategoryManagement() {
@@ -1812,4 +1827,3 @@
     </script>
 </body>
 </html>
-
