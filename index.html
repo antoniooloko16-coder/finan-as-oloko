@@ -249,7 +249,7 @@
         .tag.active-filter { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
 
         .grid-categories-panel {
-            display: none; /* Escondido por padrão */
+            display: none; 
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin: 15px 15px 0 15px;
@@ -374,8 +374,8 @@
         .category-main-info { display: flex; justify-content: space-between; align-items: center; }
         .category-budget-info { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
         .category-actions { display: flex; gap: 8px; }
-        .btn-edit-cat { background: none; border: none; color: var(--text-muted); font-size: 15px; cursor: pointer; padding: 4px; transition: color 0.2s; }
-        .btn-edit-cat:hover { color: var(--warning); }
+        .btn-edit-cat { background: none; border: none; color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer; padding: 6px 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; transition: all 0.2s; }
+        .btn-edit-cat:hover { color: var(--warning); border-color: var(--warning); background: rgba(255, 234, 0, 0.05); }
 
         .table-responsive { width: 100%; overflow-x: auto; scrollbar-width: none; }
         .table-responsive::-webkit-scrollbar { display: none; }
@@ -598,9 +598,11 @@
         </div>
 
         <div id="page-categorias" class="page-content">
-            <div class="card">
+            <div class="card" style="border: 1px solid var(--primary);">
                 <h3 id="categoryFormTitle" style="margin-top:0; color: var(--primary); font-size: 15px; font-weight: 700;">✨ Editar Caixa / Categoria</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Selecione uma caixa na lista inferior para alterar o nome ou teto de gasto.</p>
+                <p id="categoryFormInstructions" style="font-size: 13px; color: var(--text); margin-bottom: 16px; background: rgba(187, 134, 252, 0.08); padding: 10px; border-radius: 8px; border-left: 3px solid var(--primary);">
+                    ℹ️ <strong>Como Ajustar:</strong> Role até o fim desta página, localize a caixa desejada na lista e clique em <strong>"✏️ Configurar Nome / Limite"</strong> para carregá-la aqui em cima.
+                </p>
                 
                 <div class="input-group" style="display: none;">
                     <label>📊 Tipo de Categoria</label>
@@ -612,7 +614,7 @@
 
                 <div class="input-group">
                     <label>🏷️ Nome da Categoria</label>
-                    <input type="text" id="new_category_name" aria-label="Nome da Categoria" class="text-input" placeholder="Selecione uma categoria abaixo para editar...">
+                    <input type="text" id="new_category_name" aria-label="Nome da Categoria" class="text-input" placeholder="Selecione uma caixa na lista abaixo para começar...">
                 </div>
                 <div class="input-group">
                     <label>🎯 Teto de Gasto / Meta Mensal (Opcional)</label>
@@ -620,19 +622,20 @@
                 </div>
                 <div style="display: block;">
                     <button id="btnSaveCategory" class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">💾 Atualizar Configuração da Caixa</button>
-                    <button id="btnCancelCategoryEdit" class="btn-secondary" style="display: none; width: 100%; margin-top: 8px; padding: 12px 0;" onclick="cancelCategoryEdit()">❌ Cancelar Ajuste</button>
+                    <button id="btnCancelCategoryEdit" class="btn-secondary" style="display: none; width: 100%; margin-top: 8px; padding: 12px 0; border-color: var(--danger); color: var(--danger);" onclick="cancelCategoryEdit()">❌ Cancelar Ajuste</button>
                 </div>
             </div>
 
             <div class="card">
                 <h3 style="margin-top:0; color: var(--accent); font-size: 15px; font-weight: 700;">💳 Ciclo da Fatura</h3>
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Defina o comportamento inteligente das parcelas do cartão de crédito baseado nas datas reais de fechamento e vencimento.</p>
                 <div class="grid-2col">
                     <div class="input-group">
-                        <label>🔓 Fechamento</label>
+                        <label>🔓 Melhor Dia Compra (Fechamento)</label>
                         <input type="number" id="cc_close_day" aria-label="Dia de fechamento" class="text-input" min="1" max="31" value="25" onchange="saveCCConfig()">
                     </div>
                     <div class="input-group">
-                        <label>🔒 Vencimento</label>
+                        <label>🔒 Dia de Vencimento Fatura</label>
                         <input type="number" id="cc_due_day" aria-label="Dia de Vencimento" class="text-input" min="1" max="31" value="5" onchange="saveCCConfig()">
                     </div>
                 </div>
@@ -760,28 +763,35 @@
         let pendingDeleteId = null;
 
         const defaultCategoriesPessoal = [
-            { id: "cat_p_1", name: "🛒 Supermercado", budget: 600, type: "expense", color: "#ffea00" },
-            { id: "cat_p_2", name: "🍔 Restaurante", budget: 400, type: "expense", color: "#00e5ff" },
-            { id: "cat_p_3", name: "💸 Outros Gastos", budget: 300, type: "expense", color: "#b3b3b3" },
-            { id: "cat_p_4", name: "⚽ Lazer", budget: 400, type: "expense", color: "#2979ff" },
-            { id: "cat_p_5", name: "✈️ Viagens", budget: 500, type: "expense", color: "#ff9f43" },
-            { id: "cat_p_6", name: "🎁 Presentes", budget: 200, type: "expense", color: "#e040fb" },
-            { id: "cat_p_7", name: "🚗 Combustível", budget: 350, type: "expense", color: "#00e676" },
-            { id: "cat_p_8", name: "🏋️ Esportes", budget: 150, type: "expense", color: "#ff1744" }
+            { id: "cat_p_1", name: "🛒 Supermercado", budget: 60000, type: "expense", color: "#ffea00" },
+            { id: "cat_p_2", name: "🍔 Restaurante", budget: 40000, type: "expense", color: "#00e5ff" },
+            { id: "cat_p_3", name: "💸 Outros Gastos", budget: 30000, type: "expense", color: "#b3b3b3" },
+            { id: "cat_p_4", name: "⚽ Lazer", budget: 40000, type: "expense", color: "#2979ff" },
+            { id: "cat_p_5", name: "✈️ Viagens", budget: 50000, type: "expense", color: "#ff9f43" },
+            { id: "cat_p_6", name: "🎁 Presentes", budget: 20000, type: "expense", color: "#e040fb" },
+            { id: "cat_p_7", name: "🚗 Combustível", budget: 35000, type: "expense", color: "#00e676" },
+            { id: "cat_p_8", name: "🏋️ Esportes", budget: 15000, type: "expense", color: "#ff1744" }
         ];
 
         const defaultCategoriesEmpresa = [
-            { id: "cat_e_1", name: "🏭 Insumos / Matéria Prima", budget: 5000, type: "expense", color: "#2979ff" },
-            { id: "cat_e_2", name: "🚚 Entregas / Frete", budget: 1500, type: "expense", color: "#00e5ff" },
-            { id: "cat_e_3", name: "🔧 Manutenção Fábrica", budget: 1000, type: "expense", color: "#ffea00" },
-            { id: "cat_e_4", name: "⚡ Água e Luz Industrial", budget: 800, type: "expense", color: "#ff9f43" },
-            { id: "cat_e_5", name: "👥 Pró-Labore / Salários", budget: 4000, type: "expense", color: "#a370f7" },
-            { id: "cat_e_6", name: "📢 Marketing & Anúncios", budget: 600, type: "expense", color: "#05dfd7" },
-            { id: "cat_e_7", name: "🏛️ Impostos & Taxas", budget: 1200, type: "expense", color: "#ff2a6d" },
-            { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 500, type: "expense", color: "#b3b3b3" }
+            { id: "cat_e_1", name: "🏭 Insumos / Matéria Prima", budget: 500000, type: "expense", color: "#2979ff" },
+            { id: "cat_e_2", name: "🚚 Entregas / Frete", budget: 150000, type: "expense", color: "#00e5ff" },
+            { id: "cat_e_3", name: "🔧 Manutenção Fábrica", budget: 100000, type: "expense", color: "#ffea00" },
+            { id: "cat_e_4", name: "⚡ Água e Luz Industrial", budget: 80000, type: "expense", color: "#ff9f43" },
+            { id: "cat_e_5", name: "👥 Pró-Labore / Salários", budget: 400000, type: "expense", color: "#a370f7" },
+            { id: "cat_e_6", name: "📢 Marketing & Anúncios", budget: 60000, type: "expense", color: "#05dfd7" },
+            { id: "cat_e_7", name: "🏛️ Impostos & Taxas", budget: 120000, type: "expense", color: "#ff2a6d" },
+            { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 50000, type: "expense", color: "#b3b3b3" }
         ];
 
+        function triggerHapticFeedback() {
+            if (navigator.vibrate) {
+                navigator.vibrate(15);
+            }
+        }
+
         function toggleCategoryBoxes() {
+            triggerHapticFeedback();
             const panel = document.getElementById('categoryVisualMonitorBoxes');
             if (panel.style.display === 'grid') {
                 panel.style.display = 'none';
@@ -811,6 +821,16 @@
                 document.getElementById('businessCreditAlert').style.display = 'block';
             }
             
+            // Corrige limites salvos em formato antigo (ponto flutuante) para inteiros centavos caso necessário
+            categories = categories.map(c => {
+                if(c.budget < 1000 && c.budget > 0 && !Number.isInteger(c.budget * 100)) {
+                    c.budget = Math.round(c.budget * 100);
+                } else if (c.budget > 0 && c.budget < 50000 && Number.isInteger(c.budget) && String(c.budget).length <= 4) {
+                    c.budget = c.budget * 100; // migração segura de dados antigos
+                }
+                return c;
+            });
+
             if (currentProfile === "pessoal" && categories.length !== 8) {
                 categories = [...defaultCategoriesPessoal];
                 safeLocalStorageSave();
@@ -833,12 +853,12 @@
                 if (targetKey >= startKey) {
                     let jaExiste = transactions.some(t => t.recurrentId === rec.id && t.date.startsWith(targetKey));
                     if (!jaExiste) {
-                        let diaFixo = obterUltimoDiaValido(parseInt(ySel), parseInt(mSel), rec.dueDay);
+                        let diaFixo = obterUltimoDiaValido(parseInt(ySel, 10), parseInt(mSel, 10), rec.dueDay);
                         transactions.push({
                             id: gerarIDUnico(),
                             recurrentId: rec.id,
                             categoryId: rec.categoryId,
-                            amount: rec.amount,
+                            amount: Math.round(rec.amount), // Salva estritamente como inteiro (centavos)
                             type: rec.type,
                             paymentMethod: 'dinheiro',
                             description: rec.description + " 🔄 [Fixo]",
@@ -850,6 +870,7 @@
         }
 
         function setProfile(profile) {
+            triggerHapticFeedback();
             if (currentProfile === profile) return;
             currentProfile = profile;
             cancelEdit();
@@ -886,6 +907,10 @@
             transactionIndexedMap.clear();
             transactions.forEach(t => {
                 if (t && t.date) {
+                    // Garante conversão segura para inteiro de registros antigos legados em float
+                    if(t.amount < 10000 && String(t.amount).includes('.')) {
+                        t.amount = Math.round(t.amount * 100);
+                    }
                     const key = t.date.substring(0, 7); 
                     if (!transactionIndexedMap.has(key)) {
                         transactionIndexedMap.set(key, []);
@@ -894,7 +919,7 @@
                 }
             });
             transactionIndexedMap.forEach((list) => {
-                list.sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
+                list.sort((a, b) => b.date.localeCompare(a.date));
             });
         }
 
@@ -955,6 +980,7 @@
             if (!dateStr) return new Date();
             const parts = dateStr.split('-');
             if (parts.length === 3) {
+                // Força tratamento estrito da data ao meio dia para evitar pulos de fuso horário local do navegador
                 return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 12, 0, 0);
             }
             return new Date(dateStr);
@@ -990,6 +1016,7 @@
         }
 
         function switchPage(pageId) {
+            triggerHapticFeedback();
             document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             
@@ -1014,7 +1041,7 @@
             if (!target) return;
 
             editingTransactionId = id;
-            rawDigits = String(Math.round(target.amount * 100));
+            rawDigits = String(Math.round(target.amount));
             updateAmountDisplay();
 
             document.getElementById('tx_description').value = target.description;
@@ -1030,8 +1057,8 @@
         }
 
         function confirmEdit() {
-            const val = getNumericValue();
-            if (val <= 0) return dispararErroVisor();
+            const valInt = parseInt(rawDigits, 10);
+            if (valInt <= 0) return dispararErroVisor();
             
             const desc = document.getElementById('tx_description').value.trim() || 'Lançamento Editado 📝';
             const dateInput = document.getElementById('tx_date').value;
@@ -1041,7 +1068,7 @@
 
             transactions = transactions.map(t => {
                 if (t.id === editingTransactionId) {
-                    return { ...t, amount: val, description: desc, date: dateInput, categoryId: categoryId || t.categoryId };
+                    return { ...t, amount: valInt, description: desc, date: dateInput, categoryId: categoryId || t.categoryId };
                 }
                 return t;
             });
@@ -1052,6 +1079,7 @@
             document.getElementById('actionButtonsContainer').style.display = 'grid';
             document.getElementById('editButtonsContainer').style.display = 'none';
             
+            triggerHapticFeedback();
             safeLocalStorageSave();
             rawDigits = "0";
             document.getElementById('tx_description').value = '';
@@ -1131,10 +1159,10 @@
 
         function findCategoryByText(text) {
             if(!text) return null;
-            let cleanText = text.toLowerCase().replace(/[^a-z0-9]/gi, '');
+            let cleanText = text.toLowerCase().replace(/[^a-z0-9áéíóúçãõ]/gi, '');
             
             return categories.find(c => {
-                let cleanCatName = c.name.toLowerCase().replace(/[^a-z0-9]/gi, '');
+                let cleanCatName = c.name.toLowerCase().replace(/[^a-z0-9áéíóúçãõ]/gi, '');
                 if (!cleanCatName) return false;
                 return cleanText.includes(cleanCatName) || cleanCatName.includes(cleanText);
             });
@@ -1143,7 +1171,7 @@
         function checkLiveBudget() {
             let desc = document.getElementById('tx_description').value.trim();
             let dateVal = document.getElementById('tx_date').value;
-            let currentAmount = getNumericValue();
+            let currentAmountInt = parseInt(rawDigits, 10);
             
             if(!desc || !dateVal) {
                 document.getElementById('budgetMonitor').style.display = 'none';
@@ -1154,34 +1182,34 @@
             let foundCat = findCategoryByText(desc);
 
             if(foundCat && foundCat.budget > 0) {
-                let accumulatedSpent = 0;
+                let accumulatedSpentInt = 0;
                 const targetList = transactionIndexedMap.get(targetMonth) || [];
                 
                 targetList.forEach(t => {
                     if(t.type === 'expense_cash' || t.type === 'saving') {
                         if(t.categoryId === foundCat.id) {
-                            accumulatedSpent += t.amount;
+                            accumulatedSpentInt += t.amount;
                         } else {
                             let matched = findCategoryByText(t.description);
                             if (matched && matched.id === foundCat.id) {
-                                accumulatedSpent += t.amount;
+                                accumulatedSpentInt += t.amount;
                             }
                         }
                     }
                 });
 
-                let totalProjected = accumulatedSpent + currentAmount;
-                let percentage = Math.min((totalProjected / foundCat.budget) * 100, 100);
+                let totalProjectedInt = accumulatedSpentInt + currentAmountInt;
+                let percentage = Math.min((totalProjectedInt / foundCat.budget) * 100, 100);
 
                 document.getElementById('budgetMonitor').style.display = 'block';
                 document.getElementById('budgetLabelTarget').innerText = `🎯 Meta de ${foundCat.name}`;
-                document.getElementById('budgetLabelValues').innerText = `${formatCurrency(totalProjected)} / ${formatCurrency(foundCat.budget)}`;
+                document.getElementById('budgetLabelValues').innerText = `${formatCurrency(totalProjectedInt / 100)} / ${formatCurrency(foundCat.budget / 100)}`;
                 
                 let fill = document.getElementById('budgetBarFill');
                 fill.style.width = `${percentage}%`;
 
-                if(totalProjected > foundCat.budget) fill.style.background = 'var(--danger)';
-                else if (totalProjected > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
+                if(totalProjectedInt > foundCat.budget) fill.style.background = 'var(--danger)';
+                else if (totalProjectedInt > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
                 else fill.style.background = 'var(--success)';
             } else {
                 document.getElementById('budgetMonitor').style.display = 'none';
@@ -1241,26 +1269,24 @@
             if(document.getElementById('lblAnualHeader')) document.getElementById('lblAnualHeader').innerText = selectedYear;
             
             tbody.innerHTML = '';
-            let grandTotalIncome = 0; let grandTotalExpense = 0;
+            let grandTotalIncomeInt = 0; let grandTotalExpenseInt = 0;
 
-            // Variável para armazenar o acumulado anual de cada categoria
             let annualCategoryAmounts = new Map();
             categories.forEach(c => annualCategoryAmounts.set(c.id, 0));
-            let grandTotalExpenseAllYear = 0;
+            let grandTotalExpenseAllYearInt = 0;
 
             for (let m = 1; m <= 12; m++) {
                 let monthStr = String(m).padStart(2, '0');
                 let targetYearMonth = `${selectedYear}-${monthStr}`;
-                let monthlyIncome = 0; let monthlyExpense = 0;
+                let monthlyIncomeInt = 0; let monthlyExpenseInt = 0;
 
                 const currentMonthList = transactionIndexedMap.get(targetYearMonth) || [];
                 currentMonthList.forEach(t => {
-                    if (t.type === 'income') monthlyIncome += t.amount;
+                    if (t.type === 'income') monthlyIncomeInt += t.amount;
                     if (t.type === 'expense_cash' || t.type === 'saving') {
-                        monthlyExpense += t.amount;
-                        grandTotalExpenseAllYear += t.amount;
+                        monthlyExpenseInt += t.amount;
+                        grandTotalExpenseAllYearInt += t.amount;
 
-                        // Vincula o gasto à sua respectiva categoria para o painel anual
                         let matched = t.categoryId ? categories.find(c => c.id === t.categoryId) : findCategoryByText(t.description);
                         if (matched && annualCategoryAmounts.has(matched.id)) {
                             annualCategoryAmounts.set(matched.id, annualCategoryAmounts.get(matched.id) + t.amount);
@@ -1268,57 +1294,55 @@
                     }
                 });
 
-                grandTotalIncome += monthlyIncome; grandTotalExpense += monthlyExpense;
-                let monthlyBalance = monthlyIncome - monthlyExpense;
-                let balanceColor = monthlyBalance >= 0 ? 'var(--success)' : 'var(--danger)';
+                grandTotalIncomeInt += monthlyIncomeInt; grandTotalExpenseInt += monthlyExpenseInt;
+                let monthlyBalanceInt = monthlyIncomeInt - monthlyExpenseInt;
+                let balanceColor = monthlyBalanceInt >= 0 ? 'var(--success)' : 'var(--danger)';
 
                 let tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="font-weight:500;">📅 ${monthNames[monthStr]}</td>
-                    <td style="color: var(--success); font-weight: 600;">${formatCurrency(monthlyIncome)}</td>
-                    <td style="color: var(--danger); font-weight: 600;">${formatCurrency(monthlyExpense)}</td>
-                    <td style="color: ${balanceColor}; font-weight: bold;">${formatCurrency(monthlyBalance)}</td>
+                    <td style="color: var(--success); font-weight: 600;">${formatCurrency(monthlyIncomeInt / 100)}</td>
+                    <td style="color: var(--danger); font-weight: 600;">${formatCurrency(monthlyExpenseInt / 100)}</td>
+                    <td style="color: ${balanceColor}; font-weight: bold;">${formatCurrency(monthlyBalanceInt / 100)}</td>
                 `;
                 tbody.appendChild(tr);
             }
 
-            let yearBalance = grandTotalIncome - grandTotalExpense;
-            let totalBalanceColor = yearBalance >= 0 ? 'var(--success)' : 'var(--danger)';
+            let yearBalanceInt = grandTotalIncomeInt - grandTotalExpenseInt;
+            let totalBalanceColor = yearBalanceInt >= 0 ? 'var(--success)' : 'var(--danger)';
 
             let totalTr = document.createElement('tr');
             totalTr.className = 'total-row';
             totalTr.innerHTML = `
                 <td>🏁 TOTAL ANO</td>
-                <td style="color: var(--success);">${formatCurrency(grandTotalIncome)}</td>
-                <td style="color: var(--danger);">${formatCurrency(grandTotalExpense)}</td>
-                <td style="color: ${totalBalanceColor}; font-weight: 700;">${formatCurrency(yearBalance)}</td>
+                <td style="color: var(--success);">${formatCurrency(grandTotalIncomeInt / 100)}</td>
+                <td style="color: var(--danger);">${formatCurrency(grandTotalExpenseInt / 100)}</td>
+                <td style="color: ${totalBalanceColor}; font-weight: 700;">${formatCurrency(yearBalanceInt / 100)}</td>
             `;
             tbody.appendChild(totalTr);
 
-            // Renderização das 8 Caixas Acumuladas no Balanço Anual
-            renderAnnualCategoryBoxes(annualCategoryAmounts, grandTotalExpenseAllYear);
+            renderAnnualCategoryBoxes(annualCategoryAmounts, grandTotalExpenseAllYearInt);
         }
 
-        function renderAnnualCategoryBoxes(annualAmountsMap, totalExpenseYear) {
+        function renderAnnualCategoryBoxes(annualAmountsMap, totalExpenseYearInt) {
             const container = document.getElementById('annualCategoryBoxes');
             if (!container) return;
             container.innerHTML = '';
 
             categories.forEach(cat => {
-                let spent = annualAmountsMap.get(cat.id) || 0;
+                let spentInt = annualAmountsMap.get(cat.id) || 0;
                 let pct = 0;
-                if (totalExpenseYear > 0) {
-                    pct = Math.round((spent / totalExpenseYear) * 100);
+                if (totalExpenseYearInt > 0) {
+                    pct = Math.round((spentInt / totalExpenseYearInt) * 100);
                 }
 
-                // Cálculo proporcional do teto anual (Meta mensal * 12)
-                let annualBudget = (cat.budget || 0) * 12;
-                let isExceeded = annualBudget > 0 && spent > annualBudget;
+                let annualBudgetInt = (cat.budget || 0) * 12;
+                let isExceeded = annualBudgetInt > 0 && spentInt > annualBudgetInt;
 
                 let box = document.createElement('div');
                 box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
                 box.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
-                box.style.cursor = 'default'; // Sem ação de clique no extrato mensal na aba anual
+                box.style.cursor = 'default'; 
 
                 box.innerHTML = `
                     <div class="category-box-header">
@@ -1326,10 +1350,10 @@
                         <div class="category-box-dot" style="background-color: ${cat.color || 'var(--primary)'};"></div>
                     </div>
                     <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 500;">
-                        ${annualBudget > 0 ? 'Meta Ano: ' + formatCurrency(annualBudget) : 'Sem Teto Fixo'}
+                        ${annualBudgetInt > 0 ? 'Meta Ano: ' + formatCurrency(annualBudgetInt / 100) : 'Sem Teto Fixo'}
                     </div>
                     <div class="category-box-footer">
-                        <span class="category-box-amount">${formatCurrency(spent)}</span>
+                        <span class="category-box-amount">${formatCurrency(spentInt / 100)}</span>
                         <span class="category-box-pct">${pct}%</span>
                     </div>
                 `;
@@ -1338,6 +1362,7 @@
         }
 
         function filtrarExtratoPorTag(nomeTag, elementoTag) {
+            triggerHapticFeedback();
             if (filtroCategoriaAtivo === nomeTag) {
                 clearExtratoFilter();
             } else {
@@ -1350,6 +1375,7 @@
         }
 
         function setPaymentFilter(type) {
+            triggerHapticFeedback();
             filtroPagamentoAtivo = type;
             actualizarBotoesFiltroPagamento();
             loadData();
@@ -1391,7 +1417,7 @@
             });
         }
 
-        function renderVisualCategoryBoxes(targetMonthList, totalExpenseMonth) {
+        function renderVisualCategoryBoxes(targetMonthList, totalExpenseMonthInt) {
             const container = document.getElementById('categoryVisualMonitorBoxes');
             if (!container) return;
             
@@ -1411,13 +1437,13 @@
             });
 
             categories.forEach(cat => {
-                let spent = categoryMapAmounts.get(cat.id) || 0;
+                let spentInt = categoryMapAmounts.get(cat.id) || 0;
                 let pct = 0;
-                if (totalExpenseMonth > 0) {
-                    pct = Math.round((spent / totalExpenseMonth) * 100);
+                if (totalExpenseMonthInt > 0) {
+                    pct = Math.round((spentInt / totalExpenseMonthInt) * 100);
                 }
 
-                let isExceeded = cat.budget > 0 && spent > cat.budget;
+                let isExceeded = cat.budget > 0 && spentInt > cat.budget;
 
                 let box = document.createElement('div');
                 box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
@@ -1434,7 +1460,7 @@
                         <div class="category-box-dot" style="background-color: ${cat.color || 'var(--primary)'};"></div>
                     </div>
                     <div class="category-box-footer">
-                        <span class="category-box-amount">${formatCurrency(spent)}</span>
+                        <span class="category-box-amount">${formatCurrency(spentInt / 100)}</span>
                         <span class="category-box-pct">${pct}%</span>
                     </div>
                 `;
@@ -1453,7 +1479,7 @@
                 div.className = 'category-item';
                 div.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
                 
-                let budgetText = cat.budget > 0 ? `🎯 Meta mensal: ${formatCurrency(cat.budget)}` : "♾️ Sem limite estipulado";
+                let budgetText = cat.budget > 0 ? `🎯 Meta mensal: ${formatCurrency(cat.budget / 100)}` : "♾️ Sem limite estipulado";
                 let badgeType = cat.type === "income" ? "🟢 Entrada" : "🔴 Saída";
                 
                 div.innerHTML = `
@@ -1485,9 +1511,9 @@
                     <div class="category-main-info">
                         <div>
                             <strong>${rec.description}</strong>
-                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Valor: ${formatCurrency(rec.amount)} | Todo dia: ${rec.dueDay}</div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Valor: ${formatCurrency(rec.amount / 100)} | Todo dia: ${rec.dueDay}</div>
                         </div>
-                        <button class="btn-edit-cat" style="color:var(--danger);" onclick="deleteRecurrent('${rec.id}')">🗑️ Cancelar</button>
+                        <button class="btn-edit-cat" style="color:var(--danger); border-color: transparent;" onclick="deleteRecurrent('${rec.id}')">🗑️ Cancelar</button>
                     </div>
                 `;
                 container.appendChild(div);
@@ -1508,30 +1534,45 @@
             let input = document.getElementById('new_category_name');
             let budgetInput = document.getElementById('new_category_budget');
             let typeInput = document.getElementById('new_category_type');
-            let name = input.value.trim();
-            let budget = parseFloat(budgetInput.value) || 0;
+            
+            // Tratamento contra caracteres especiais que quebram filtros
+            let rawName = input.value.trim();
+            let name = rawName.replace(/[^a-zA-Z0-9\s🛒🍔💸🏭🚚🔧📈⚡🍿🏠💊🔹🚗⛽🎁✈️⚽áéíóúçãõÁÉÍÓÚÇÃÕ]/g, '');
+
+            let budgetFloat = parseFloat(budgetInput.value) || 0;
+            // Armazena com precisão absoluta de inteiro centavos
+            let budgetInt = Math.round(budgetFloat * 100);
             let type = typeInput.value;
 
-            if(!name) return alert('Por favor, digite um nome válido! ⚠️');
+            if(!name) return alert('Por favor, digite um nome válido! Sem caracteres especiais. ⚠️');
+            
+            // Garante o ícone básico padrão caso o usuário limpe sem querer
             if(!name.match(/[\u1F000-\u1FFFF]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹|🚗|⛽|🎁|✈️|⚽/)) { name = "🔹 " + name; }
             
             if (editingCategoryId) {
                 categories = categories.map(c => {
                     if (c.id === editingCategoryId) {
-                        return { ...c, name: name, budget: budget, type: type };
+                        return { ...c, name: name, budget: budgetInt, type: type };
                     }
                     return c;
                 });
                 editingCategoryId = null;
-                document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
-                document.getElementById('btnCancelCategoryEdit').style.display = "none";
                 
+                // Restaura estado inicial visual da interface eliminando barreira cognitiva
+                document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
+                document.getElementById('categoryFormInstructions').style.background = "rgba(187, 134, 252, 0.08)";
+                document.getElementById('categoryFormInstructions').style.borderColor = "var(--primary)";
+                document.getElementById('categoryFormInstructions').innerHTML = `ℹ️ <strong>Como Ajustar:</strong> Role até o fim desta página, locate a caixa desejada na lista e clique em <strong>"✏️ Configurar Nome / Limite"</strong> para carregá-la aqui em cima.`;
+                document.getElementById('btnCancelCategoryEdit').style.display = "none";
+                document.getElementById('new_category_name').placeholder = "Selecione uma caixa na lista abaixo para começar...";
+                
+                triggerHapticFeedback();
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 renderCategoryManagement(); renderTags(); loadData();
                 alert('Configuração atualizada com sucesso! 👍');
             } else {
-                alert('A edição deve ser feita selecionando uma caixa existente na lista abaixo.');
+                alert('A edição deve ser feita selecionando uma caixa existente na lista localizada logo abaixo.');
             }
         }
 
@@ -1541,10 +1582,16 @@
 
             editingCategoryId = id;
             document.getElementById('new_category_name').value = cat.name;
-            document.getElementById('new_category_budget').value = cat.budget;
+            // Converte inteiro centavos de volta para float visível apenas no input do usuário
+            document.getElementById('new_category_budget').value = cat.budget / 100;
             document.getElementById('new_category_type').value = cat.type || "expense";
 
-            document.getElementById('categoryFormTitle').innerText = "✏️ Configurar Caixa / Categoria";
+            // Elimina barreira cognitiva: Altera texto explicativo e foca a atenção visual do usuário no topo
+            document.getElementById('categoryFormTitle').innerText = "✏️ Configurar Caixa: " + cat.name;
+            document.getElementById('new_category_name').placeholder = "Altere o nome da caixa aqui...";
+            document.getElementById('categoryFormInstructions').style.background = "rgba(255, 1ea, 0, 0.04)";
+            document.getElementById('categoryFormInstructions').style.borderColor = "var(--warning)";
+            document.getElementById('categoryFormInstructions').innerHTML = `⚡ <strong>Você está Editando:</strong> Altere os campos abaixo e clique em <strong>"Atualizar Configuração"</strong> para salvar, ou clique no botão vermelho para desistir.`;
             document.getElementById('btnCancelCategoryEdit').style.display = "inline-block";
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1554,18 +1601,23 @@
             editingCategoryId = null;
             document.getElementById('new_category_name').value = '';
             document.getElementById('new_category_budget').value = '0';
+            document.getElementById('new_category_name').placeholder = "Selecione uma caixa na lista abaixo para começar...";
             document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
+            document.getElementById('categoryFormInstructions').style.background = "rgba(187, 134, 252, 0.08)";
+            document.getElementById('categoryFormInstructions').style.borderColor = "var(--primary)";
+            document.getElementById('categoryFormInstructions').innerHTML = `ℹ️ <strong>Como Ajustar:</strong> Role até o fim desta página, localize a caixa desejada na lista e clique em <strong>"✏️ Configurar Nome / Limite"</strong> para carregá-la aqui em cima.`;
             document.getElementById('btnCancelCategoryEdit').style.display = "none";
         }
 
         function updateAmountDisplay() {
-            let numericValue = parseInt(rawDigits, 10) / 100;
+            let numericValueFloat = parseInt(rawDigits, 10) / 100;
             if(document.getElementById('amountDisplay')) {
-                document.getElementById('amountDisplay').innerText = formatCurrency(numericValue);
+                document.getElementById('amountDisplay').innerText = formatCurrency(numericValueFloat);
             }
         }
 
         function pressKey(key) {
+            triggerHapticFeedback();
             if (key === 'C') { rawDigits = "0"; } 
             else if (key === 'back') {
                 rawDigits = rawDigits.slice(0, -1);
@@ -1585,18 +1637,14 @@
             }
         }
 
-        let getNumericValue = () => parseInt(rawDigits, 10) / 100;
-        function fillDescription(text) { document.getElementById('tx_description').value = text; }
-        function toggleConditionalFields() { document.getElementById('conditionalFields').style.display = document.getElementById('is_fixed').checked ? 'block' : 'none'; }
-
         function togglePrivacyMode() {
+            triggerHapticFeedback();
             privacyMode = !privacyMode;
             document.getElementById('btnCortina').innerText = privacyMode ? '🙈' : '👁️';
             loadData();
             if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
         }
 
-        // Correção de bug estrutural: força a atualização do balanço anual caso a cortina seja ativada de dentro dele
         function switchPageWithCallback(pageId) {
             switchPage(pageId);
             if(pageId === 'anual') renderAnnualBalance();
@@ -1615,9 +1663,13 @@
             return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
+        document.querySelectorAll('.key').forEach(button => {
+            button.setAttribute('onclick', `pressKey('${button.innerText === '⌫' ? 'back' : button.innerText}')`);
+        });
+
         function openExpenseModal() {
-            const val = getNumericValue();
-            if (val <= 0) { dispararErroVisor(); return; }
+            const valInt = parseInt(rawDigits, 10);
+            if (valInt <= 0) { dispararErroVisor(); return; }
             document.getElementById('expenseModal').style.display = 'flex';
         }
 
@@ -1629,8 +1681,8 @@
         }
 
         function saveTransaction(type, paymentMethod = 'dinheiro') {
-            const val = getNumericValue();
-            if (val <= 0) { dispararErroVisor(); return; }
+            const valInt = parseInt(rawDigits, 10);
+            if (valInt <= 0) { dispararErroVisor(); return; }
             let desc = document.getElementById('tx_description').value.trim();
             if(!desc) {
                 if(type === 'saving') desc = 'Depósito Caixinha 💰';
@@ -1644,12 +1696,14 @@
             let matchedCategory = findCategoryByText(desc);
             let categoryId = matchedCategory ? matchedCategory.id : null;
 
+            triggerHapticFeedback();
+
             if (isFixed) {
                 const dueDay = parseInt(document.getElementById('due_day').value, 10) || 10;
                 recurrentExpenses.push({
                     id: gerarIDUnico(),
                     categoryId: categoryId,
-                    amount: val,
+                    amount: valInt, 
                     type: type,
                     description: desc,
                     dueDay: dueDay,
@@ -1657,7 +1711,7 @@
                 });
             } else {
                 transactions.push({ 
-                    id: gerarIDUnico(), categoryId: categoryId, amount: val, 
+                    id: gerarIDUnico(), categoryId: categoryId, amount: valInt, 
                     type: type, paymentMethod: paymentMethod, description: desc, date: dateInput 
                 });
             }
@@ -1665,8 +1719,8 @@
         }
 
         function openCreditModal() {
-            const val = getNumericValue();
-            if (val <= 0) { dispararErroVisor(); return; }
+            const valInt = parseInt(rawDigits, 10);
+            if (valInt <= 0) { dispararErroVisor(); return; }
             document.getElementById('creditModal').style.display = 'flex';
         }
 
@@ -1677,12 +1731,12 @@
 
         function saveCustomCredit() {
             const num = parseInt(document.getElementById('custom_installments').value, 10);
-            if (isNaN(num) || num <= 0) return alert('Insira um número válido ⚠️');
+            if (isNaN(num) || num <= 0) return alert('Insira um número de parcelas válido ⚠️');
             saveCreditTransaction(num);
         }
 
         function saveCreditTransaction(installments) {
-            const totalVal = getNumericValue();
+            const totalValInt = parseInt(rawDigits, 10);
             let desc = document.getElementById('tx_description').value.trim() || 'Compra Cartão 💳';
             const dateInput = document.getElementById('tx_date').value;
             
@@ -1694,11 +1748,14 @@
             let monthOffset = 0;
             if (diaCompra >= ccConfig.closeDay) { monthOffset = 1; }
 
-            const baseAmount = Math.floor((totalVal / installments) * 100) / 100;
-            let remainder = Math.round((totalVal - (baseAmount * installments)) * 100) / 100;
+            // Lógica matemática estritamente baseada em inteiros centavos eliminando erros JS float
+            const baseAmountInt = Math.floor(totalValInt / installments);
+            let remainderInt = totalValInt - (baseAmountInt * installments);
 
             let matchedCategory = findCategoryByText(desc);
             let categoryId = matchedCategory ? matchedCategory.id : null;
+
+            triggerHapticFeedback();
 
             for (let i = 0; i < installments; i++) {
                 let mesAlvo = mesCompra + i + monthOffset;
@@ -1707,15 +1764,15 @@
                 let mesCalculated = dataReferencia.getMonth() + 1;
                 let diaVencimento = obterUltimoDiaValido(anoCalculated, mesCalculated, ccConfig.dueDay);
 
-                let currentInstallmentAmount = baseAmount;
+                let currentInstallmentAmountInt = baseAmountInt;
                 if (i === installments - 1) {
-                    currentInstallmentAmount = Math.round((baseAmount + remainder) * 100) / 100;
+                    currentInstallmentAmountInt = baseAmountInt + remainderInt;
                 }
 
                 transactions.push({
                     id: gerarIDUnico(),
                     categoryId: categoryId,
-                    amount: currentInstallmentAmount,
+                    amount: currentInstallmentAmountInt, 
                     type: 'expense_cash',
                     paymentMethod: 'cartao', 
                     description: `${desc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
@@ -1753,18 +1810,18 @@
             if(!container) return;
             container.innerHTML = '';
             
-            let totalIncome = 0; let totalExpense = 0; let totalSaving = 0;
-            let countItems = 0; let totalFaturaCartao = 0;
+            let totalIncomeInt = 0; let totalExpenseInt = 0; let totalSavingInt = 0;
+            let countItems = 0; let totalFaturaCartaoInt = 0;
 
             let targetMonthList = transactionIndexedMap.get(currentSelectedTarget) || [];
             
             targetMonthList.forEach(t => {
-                if (t.type === 'expense_cash' || t.type === 'saving') totalExpense += t.amount;
+                if (t.type === 'expense_cash' || t.type === 'saving') totalExpenseInt += t.amount;
             });
 
-            renderVisualCategoryBoxes(targetMonthList, totalExpense);
+            renderVisualCategoryBoxes(targetMonthList, totalExpenseInt);
 
-            totalExpense = 0;
+            totalExpenseInt = 0;
 
             targetMonthList.forEach(t => {
                 let matchesCategory = true; let matchesPayment = true;
@@ -1782,15 +1839,15 @@
                 }
 
                 if (t.paymentMethod === 'cartao' || t.isCredit || t.description.includes('(')) {
-                    totalFaturaCartao += t.amount;
+                    totalFaturaCartaoInt += t.amount;
                 }
 
                 if (!matchesCategory || !matchesPayment) return;
 
                 countItems++;
-                if (t.type === 'income') totalIncome += t.amount;
-                if (t.type === 'expense_cash') totalExpense += t.amount;
-                if (t.type === 'saving') totalSaving += t.amount;
+                if (t.type === 'income') totalIncomeInt += t.amount;
+                if (t.type === 'expense_cash') totalExpenseInt += t.amount;
+                if (t.type === 'saving') totalSavingInt += t.amount;
 
                 let item = document.createElement('div');
                 item.className = 'history-item';
@@ -1834,7 +1891,7 @@
                         <span class="history-date">📅 ${dateFormatted}</span>
                     </div>
                     <div class="history-right">
-                        <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
+                        <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount / 100)}</span>
                         <button class="btn-delete-item" onclick="deleteTransaction('${t.id}', event)">🗑️</button>
                     </div>
                 `;
@@ -1845,42 +1902,42 @@
                 container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhum lançamento registrado. 📭</div>`;
             }
 
-            let sobrou = totalIncome - totalExpense;
+            let sobrouInt = totalIncomeInt - totalExpenseInt;
             
-            document.getElementById('lblGanhos').innerText = formatCurrency(totalIncome);
-            document.getElementById('lblGastos').innerText = formatCurrency(totalExpense);
-            document.getElementById('lblCaixinha').innerText = formatCurrency(totalSaving);
-            document.getElementById('lblSobrou').innerText = formatCurrency(sobrou);
-            document.getElementById('dashFaturaCartao').innerText = formatCurrency(totalFaturaCartao);
+            document.getElementById('lblGanhos').innerText = formatCurrency(totalIncomeInt / 100);
+            document.getElementById('lblGastos').innerText = formatCurrency(totalExpenseInt / 100);
+            document.getElementById('lblCaixinha').innerText = formatCurrency(totalSavingInt / 100);
+            document.getElementById('lblSobrou').innerText = formatCurrency(sobrouInt / 100);
+            document.getElementById('dashFaturaCartao').innerText = formatCurrency(totalFaturaCartaoInt / 100);
 
-            let macroBudgetLimit = categories.reduce((acc, curr) => acc + (curr.budget || 0), 0);
-            if (macroBudgetLimit > 0) {
+            let macroBudgetLimitInt = categories.reduce((acc, curr) => acc + (curr.budget || 0), 0);
+            if (macroBudgetLimitInt > 0) {
                 document.getElementById('macroBudgetCard').style.display = 'block';
-                document.getElementById('macroBudgetValues').innerText = `${formatCurrency(totalExpense)} / ${formatCurrency(macroBudgetLimit)}`;
-                let macroPct = Math.min((totalExpense / macroBudgetLimit) * 100, 100);
+                document.getElementById('macroBudgetValues').innerText = `${formatCurrency(totalExpenseInt / 100)} / ${formatCurrency(macroBudgetLimitInt / 100)}`;
+                let macroPct = Math.min((totalExpenseInt / macroBudgetLimitInt) * 100, 100);
                 let macroBar = document.getElementById('macroBudgetBarFill');
                 macroBar.style.width = `${macroPct}%`;
-                if(totalExpense > macroBudgetLimit) macroBar.style.background = 'var(--danger)';
-                else if (totalExpense > macroBudgetLimit * 0.8) macroBar.style.background = 'var(--warning)';
+                if(totalExpenseInt > macroBudgetLimitInt) macroBar.style.background = 'var(--danger)';
+                else if (totalExpenseInt > macroBudgetLimitInt * 0.8) macroBar.style.background = 'var(--warning)';
                 else macroBar.style.background = 'var(--success)';
             } else {
                 document.getElementById('macroBudgetCard').style.display = 'none';
             }
 
-            let saldoFuturoAno = 0;
+            let saldoFuturoAnoInt = 0;
             transactions.forEach(t => {
                 if(t.date.startsWith(selectedYear)) {
-                    if(t.type === 'income') saldoFuturoAno += t.amount;
-                    else saldoFuturoAno -= t.amount;
+                    if(t.type === 'income') saldoFuturoAnoInt += t.amount;
+                    else saldoFuturoAnoInt -= t.amount;
                 }
             });
-            document.getElementById('dashCaixaFutFuture').innerText = formatCurrency(saldoFuturoAno);
+            document.getElementById('dashCaixaFutFuture').innerText = formatCurrency(saldoFuturoAnoInt / 100);
 
             const summaryCard = document.getElementById('summaryCard');
             const lblSobrou = document.getElementById('lblSobrou');
             
             if (summaryCard && lblSobrou) {
-                if (sobrou >= 0) {
+                if (sobrouInt >= 0) {
                     lblSobrou.style.color = currentProfile === 'pessoal' ? 'var(--primary)' : '#00e5ff';
                     summaryCard.classList.remove('alert-blink');
                 } else {
@@ -1889,7 +1946,6 @@
                 }
             }
             
-            // Força a atualização do painel anual caso o usuário altere o seletor de data de dentro da aba anual
             if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
         }
     </script>
