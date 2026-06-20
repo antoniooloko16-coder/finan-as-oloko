@@ -751,11 +751,16 @@
         let editingCategoryId = null;
         let pendingDeleteId = null;
 
+        // Atualizado com 8 caixas fixas para o perfil pessoal (Cores exclusivas)
         const defaultCategoriesPessoal = [
             { id: "cat_p_1", name: "🛒 Supermercado", budget: 600, type: "expense", color: "#ffea00" },
             { id: "cat_p_2", name: "🍔 Restaurante", budget: 400, type: "expense", color: "#00e5ff" },
             { id: "cat_p_3", name: "💸 Outros Gastos", budget: 300, type: "expense", color: "#b3b3b3" },
-            { id: "cat_p_4", name: "⚽ Lazer", budget: 400, type: "expense", color: "#2979ff" }
+            { id: "cat_p_4", name: "⚽ Lazer", budget: 400, type: "expense", color: "#2979ff" },
+            { id: "cat_p_5", name: "✈️ Viagens", budget: 500, type: "expense", color: "#ff9f43" },
+            { id: "cat_p_6", name: "🎁 Presentes", budget: 200, type: "expense", color: "#e040fb" },
+            { id: "cat_p_7", name: "🚗 Combustível", budget: 350, type: "expense", color: "#00e676" },
+            { id: "cat_p_8", name: "🏋️ Esportes", budget: 150, type: "expense", color: "#ff1744" }
         ];
 
         const defaultCategoriesEmpresa = [
@@ -790,7 +795,8 @@
                 document.getElementById('businessCreditAlert').style.display = 'block';
             }
             
-            if (currentProfile === "pessoal" && categories.length !== 4) {
+            // Força a reinicialização caso a quantidade de caixas padrão tenha mudado no código
+            if (currentProfile === "pessoal" && categories.length !== 8) {
                 categories = [...defaultCategoriesPessoal];
                 safeLocalStorageSave();
             } else if (currentProfile === "empresa" && categories.length !== 8) {
@@ -1454,7 +1460,7 @@
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 renderCategoryManagement(); renderTags(); loadData();
-                alert('Configuração updated com sucesso! 👍');
+                alert('Configuração atualizada com sucesso! 👍');
             } else {
                 alert('A edição deve ser feita selecionando uma caixa existente na lista abaixo.');
             }
