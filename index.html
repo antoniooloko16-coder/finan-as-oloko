@@ -785,6 +785,9 @@
         </div>
 
         <div id="page-agenda" class="page-content">
+            
+            <div class="grid-categories-panel" id="categoryAgendaBoxes" style="display: grid;"></div>
+
             <div class="card">
                 <div class="agenda-switcher">
                     <button class="agenda-type-btn active inc-type" id="agenda-tab-income" onclick="switchAgendaFormType('income')">🟢 Agendar Recebimento</button>
@@ -1013,7 +1016,10 @@
 
         function toggleCategoryBoxes() {
             const panel = document.getElementById('categoryVisualMonitorBoxes');
-            panel.style.display = panel.style.display === 'grid' ? 'none' : 'grid';
+            const agendaPanel = document.getElementById('categoryAgendaBoxes');
+            const isDisplaying = panel.style.display === 'grid';
+            panel.style.display = isDisplaying ? 'none' : 'grid';
+            agendaPanel.style.display = isDisplaying ? 'none' : 'grid';
         }
 
         function setCategoryFormType(type) {
@@ -1089,6 +1095,7 @@
             processRecurrentEntries();
             rebuildTransactionIndex();
             checkAgendaNotifications(); 
+            renderAgendaCategoryBoxes();
         }
 
         function processRecurrentEntries() {
@@ -1350,6 +1357,27 @@
             renderAgendaList();
             checkAgendaNotifications();
             alert(flowType === 'income' ? "📅 Recebimento futuro agendado!" : "📅 Pagamento futuro agendado!");
+        }
+
+        function renderAgendaCategoryBoxes() {
+            const container = document.getElementById('categoryAgendaBoxes');
+            if (!container) return;
+            container.innerHTML = '';
+            categories.forEach(cat => {
+                let box = document.createElement('div');
+                box.className = 'category-box-card';
+                box.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
+                box.onclick = () => {
+                    document.getElementById('agenda_category').value = cat.id;
+                };
+                box.innerHTML = `
+                    <div class="category-box-header">
+                        <span class="category-box-title">${cat.name}</span>
+                        <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
+                    </div>
+                `;
+                container.appendChild(box);
+            });
         }
 
         function renderAgendaList() {
@@ -2006,7 +2034,7 @@
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 populateCategorySelector();
-                renderCategoryManagement(); renderTags(); loadData();
+                renderCategoryManagement(); renderTags(); loadData(); renderAgendaCategoryBoxes();
                 alert('Configuração actualizada com sucesso! 👍');
             } else {
                 let newId = "cat_custom_" + gerarIDUnico();
@@ -2016,7 +2044,7 @@
                 input.value = ''; budgetInput.value = '0';
                 setCategoryFormType('expense');
                 populateCategorySelector();
-                renderCategoryManagement(); renderTags(); loadData();
+                renderCategoryManagement(); renderTags(); loadData(); renderAgendaCategoryBoxes();
                 alert('Nova Caixa cadastrada com sucesso! 🎉');
             }
         }
@@ -2391,4 +2419,3 @@
     </script>
 </body>
 </html>
-
