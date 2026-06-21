@@ -144,7 +144,7 @@
 
         .tab-navigation {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: repeat(4, 1fr);
             padding: 0 12px;
             gap: 4px;
         }
@@ -153,9 +153,9 @@
             background: none;
             border: none;
             color: var(--text-muted);
-            padding: 12px 5px;
+            padding: 12px 2px;
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             text-align: center;
             transition: all 0.2s;
@@ -404,7 +404,7 @@
         .metric-box p { margin: 0; font-weight: 700; font-size: 15px; white-space: nowrap; }
 
         .alert-blink { animation: blink 2s infinite; background: rgba(255, 23, 68, 0.02) !important; }
-        @keyframes blink { 0%, 100+ { border-color: var(--danger); box-shadow: 0 0 12px rgba(255,23,68,0.15); } 50% { border-color: var(--border-color); box-shadow: none; } }
+        @keyframes blink { 0%, 100% { border-color: var(--danger); box-shadow: 0 0 12px rgba(255,23,68,0.15); } 50% { border-color: var(--border-color); box-shadow: none; } }
 
         .history-list { margin-top: 10px; }
         .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; margin-bottom: 4px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.01); transition: background 0.2s; }
@@ -447,7 +447,7 @@
         .modal-btn:active { background: var(--border-color); }
         
         .custom-installments-container { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
-        .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #00e676; color: #000; padding: 10px 24px; border-radius: 30px; font-weight: 700; font-size: 14px; z-index: 2000; display: none; box-shadow: 0 4px 166 rgba(0,230,118,0.3); }
+        .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #00e676; color: #000; padding: 10px 24px; border-radius: 30px; font-weight: 700; font-size: 14px; z-index: 2000; display: none; box-shadow: 0 4px 16px rgba(0,230,118,0.3); }
         
         .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: 700; text-transform: uppercase; display: none; }
@@ -472,6 +472,45 @@
             color: #fff;
             margin-bottom: 10px;
             display: none;
+        }
+
+        /* Novas Classes para os Alertas de Recebimento Agendado */
+        .notification-bell-panel {
+            background: linear-gradient(90deg, #1e1b4b 0%, #311042 100%);
+            border: 1px solid var(--primary);
+            margin: 15px 15px 0 15px;
+            padding: 14px;
+            border-radius: 14px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .notification-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--warning);
+        }
+        .notification-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        .btn-notification-action {
+            background: var(--success);
+            border: none;
+            color: #000;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
         }
     </style>
 </head>
@@ -512,6 +551,7 @@
         
         <div class="tab-navigation">
             <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">📝 Lançamentos</button>
+            <button class="tab-btn" id="tab-agenda" onclick="switchPage('agenda')">📅 Agenda</button>
             <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Ajustes</button>
             <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Anual</button>
         </div>
@@ -521,6 +561,11 @@
 
         <div id="page-lançamentos" class="page-content active">
             
+            <div class="notification-bell-panel" id="agendaAlertPanel">
+                <div class="notification-header">🔔 Alerta de Valores a Receber Hoje!</div>
+                <div id="agendaAlertList"></div>
+            </div>
+
             <div class="card-dash-container">
                 <div class="card-dash" style="border-left: 3px solid var(--accent); cursor: pointer;" onclick="setPaymentFilter('cartao')">
                     <h3>💳 Fatura Cartão</h3>
@@ -648,6 +693,36 @@
                     <button class="btn-clear-filter" id="btnClearFilter" onclick="clearExtratoFilter()">❌ Limpar</button>
                 </div>
                 <div class="history-list" id="historyContainer"></div>
+            </div>
+        </div>
+
+        <div id="page-agenda" class="page-content">
+            <div class="card">
+                <h3 style="margin-top:0; color: var(--success); font-size: 15px; font-weight: 700;">📅 Agendar Futuro Recebimento</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Cadastre valores que você tem previsão de receber para ser alertado no dia exato.</p>
+                
+                <div class="input-group">
+                    <label>🔍 Descrição do Recebimento</label>
+                    <input type="text" id="agenda_description" class="text-input" placeholder="Ex: Pagamento Cliente X, Venda de Sofá...">
+                </div>
+
+                <div class="grid-2col">
+                    <div class="input-group">
+                        <label>💰 Valor Esperado (R$)</label>
+                        <input type="number" id="agenda_amount" class="text-input" placeholder="0.00" step="0.01">
+                    </div>
+                    <div class="input-group">
+                        <label>📅 Data do Recebimento</label>
+                        <input type="date" id="agenda_date" class="text-input">
+                    </div>
+                </div>
+
+                <button class="btn-action" style="background: var(--success); width: 100%; font-size: 14px; padding: 12px 0; margin-top: 5px;" onclick="saveAgendaItem()">➕ Agendar Recebimento</button>
+            </div>
+
+            <div class="card">
+                <label style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; display: block; margin-bottom: 10px;">📋 Lista de Previsões Agendadas</label>
+                <div id="agendaListContainer" class="history-list"></div>
             </div>
         </div>
 
@@ -807,6 +882,7 @@
         let transactions = [];
         let categories = [];
         let recurrentExpenses = []; 
+        let agendaItems = []; // Vetor para armazenar os recebimentos agendados
         let ccConfig = { closeDay: 25, dueDay: 5 };
         let transactionIndexedMap = new Map();
 
@@ -859,6 +935,7 @@
                 transactions = JSON.parse(localStorage.getItem('transactions_pessoal')) || [];
                 categories = JSON.parse(localStorage.getItem('categories_pessoal')) || defaultCategoriesPessoal;
                 recurrentExpenses = JSON.parse(localStorage.getItem('recurrent_pessoal')) || [];
+                agendaItems = JSON.parse(localStorage.getItem('agenda_pessoal')) || [];
                 ccConfig = JSON.parse(localStorage.getItem('cc_config_pessoal')) || { closeDay: 25, dueDay: 5 };
                 document.getElementById('appTitle').innerText = "👤 Finanças Pessoais";
                 document.getElementById('lblTitleGanhos').innerText = "🟢 Ganhos";
@@ -868,6 +945,7 @@
                 transactions = JSON.parse(localStorage.getItem('transactions_empresa')) || [];
                 categories = JSON.parse(localStorage.getItem('categories_empresa')) || defaultCategoriesEmpresa;
                 recurrentExpenses = JSON.parse(localStorage.getItem('recurrent_empresa')) || [];
+                agendaItems = JSON.parse(localStorage.getItem('agenda_empresa')) || [];
                 ccConfig = JSON.parse(localStorage.getItem('cc_config_empresa')) || { closeDay: 25, dueDay: 5 };
                 document.getElementById('appTitle').innerText = "🏢 Finanças Business";
                 document.getElementById('lblTitleGanhos').innerText = "🟢 Faturamento";
@@ -885,6 +963,7 @@
 
             processRecurrentEntries();
             rebuildTransactionIndex();
+            checkAgendaNotifications(); // Verifica alertas ao trocar perfil
         }
 
         function processRecurrentEntries() {
@@ -944,6 +1023,7 @@
             const activeTab = document.querySelector('.tab-btn.active').id;
             if (activeTab === 'tab-categorias') { renderCategoryManagement(); renderRecurrentManagement(); }
             if (activeTab === 'tab-anual') renderAnnualBalance();
+            if (activeTab === 'tab-agenda') renderAgendaList();
         }
 
         function rebuildTransactionIndex() {
@@ -968,10 +1048,12 @@
                     localStorage.setItem('transactions_pessoal', JSON.stringify(transactions));
                     localStorage.setItem('categories_pessoal', JSON.stringify(categories));
                     localStorage.setItem('recurrent_pessoal', JSON.stringify(recurrentExpenses));
+                    localStorage.setItem('agenda_pessoal', JSON.stringify(agendaItems));
                 } else {
                     localStorage.setItem('transactions_empresa', JSON.stringify(transactions));
                     localStorage.setItem('categories_empresa', JSON.stringify(categories));
                     localStorage.setItem('recurrent_empresa', JSON.stringify(recurrentExpenses));
+                    localStorage.setItem('agenda_empresa', JSON.stringify(agendaItems));
                 }
                 rebuildTransactionIndex();
             } catch (e) {
@@ -995,6 +1077,7 @@
             if(document.getElementById('cc_close_day')) document.getElementById('cc_close_day').value = ccConfig.closeDay;
             if(document.getElementById('cc_due_day')) document.getElementById('cc_due_day').value = ccConfig.dueDay;
             if(document.getElementById('tx_date')) document.getElementById('tx_date').value = `${anoCorrente}-${mesCorrente}-${diaCorrente}`;
+            if(document.getElementById('agenda_date')) document.getElementById('agenda_date').value = `${anoCorrente}-${mesCorrente}-${diaCorrente}`;
             
             updateAmountDisplay();
             renderTags();
@@ -1068,10 +1151,139 @@
                 renderRecurrentManagement();
             } else if (pageId === 'anual') {
                 renderAnnualBalance();
+            } else if (pageId === 'agenda') {
+                renderAgendaList();
             }
             window.scrollTo(0,0);
         }
 
+        /* LÓGICA DE GERENCIAMENTO DA AGENDA / VALORES FUTUROS */
+        function saveAgendaItem() {
+            const desc = document.getElementById('agenda_description').value.trim();
+            const amount = parseFloat(document.getElementById('agenda_amount').value);
+            const date = document.getElementById('agenda_date').value;
+
+            if (!desc || isNaN(amount) || amount <= 0 || !date) {
+                alert("⚠️ Preencha todos os campos corretamente!");
+                return;
+            }
+
+            agendaItems.push({
+                id: gerarIDUnico(),
+                description: desc,
+                amount: amount,
+                date: date
+            });
+
+            safeLocalStorageSave();
+            document.getElementById('agenda_description').value = '';
+            document.getElementById('agenda_amount').value = '';
+            renderAgendaList();
+            checkAgendaNotifications();
+            alert("📅 Recebimento futuro agendado com sucesso!");
+        }
+
+        function renderAgendaList() {
+            const container = document.getElementById('agendaListContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (agendaItems.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhuma previsão de recebimento cadastrada. 📭</div>`;
+                return;
+            }
+
+            // Ordena os itens agendados por data mais próxima
+            agendaItems.sort((a,b) => parseSafeDate(a.date) - parseSafeDate(b.date));
+
+            agendaItems.forEach(item => {
+                let dateFormatted = item.date.split('-').reverse().join('/');
+                let div = document.createElement('div');
+                div.className = 'history-item';
+                div.style.borderLeft = `5px solid var(--success)`;
+                div.style.cursor = 'default';
+
+                div.innerHTML = `
+                    <div class="history-info">
+                        <span class="history-desc">🔮 ${item.description}</span>
+                        <span class="history-date">📅 Data Prevista: ${dateFormatted}</span>
+                    </div>
+                    <div class="history-right">
+                        <span class="history-val" style="color: var(--success)">+ ${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        <button class="btn-delete-item" onclick="deleteAgendaItem('${item.id}', event)">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteAgendaItem(id, event) {
+            if(event) event.stopPropagation();
+            agendaItems = agendaItems.filter(i => i.id !== id);
+            safeLocalStorageSave();
+            renderAgendaList();
+            checkAgendaNotifications();
+        }
+
+        // Sistema Automático de Alertas e Recebimento Direto no Painel Principal
+        function checkAgendaNotifications() {
+            const alertPanel = document.getElementById('agendaAlertPanel');
+            const alertList = document.getElementById('agendaAlertList');
+            if (!alertPanel || !alertList) return;
+
+            const hojeStr = new Date().toISOString().substring(0, 10);
+            // Filtra os agendamentos cuja data seja hoje ou já tenha passado (atrasados)
+            const pendentes = agendaItems.filter(item => item.date <= hojeStr);
+
+            if (pendentes.length === 0) {
+                alertPanel.style.display = 'none';
+                return;
+            }
+
+            alertPanel.style.display = 'flex';
+            alertList.innerHTML = '';
+
+            pendentes.forEach(item => {
+                let row = document.createElement('div');
+                row.className = 'notification-item-row';
+                row.innerHTML = `
+                    <span><strong>${item.description}</strong> (${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
+                    <button class="btn-notification-action" onclick="claimAgendaAmount('${item.id}')">💰 Receber</button>
+                `;
+                alertList.appendChild(row);
+            });
+        }
+
+        // Injeta o valor da previsão diretamente na sua conta corrente real (Ganhos)
+        function claimAgendaAmount(id) {
+            const item = agendaItems.find(i => i.id === id);
+            if (!item) return;
+
+            // Insere nas transações reais
+            let matchedCategory = findCategoryByText(item.description);
+            let categoryId = matchedCategory ? matchedCategory.id : null;
+
+            transactions.push({ 
+                id: gerarIDUnico(), 
+                categoryId: categoryId, 
+                amount: item.amount, 
+                type: 'income', 
+                paymentMethod: 'dinheiro', 
+                description: item.description, 
+                date: new Date().toISOString().substring(0, 10) // Data atual da efetivação
+            });
+
+            // Remove da agenda de previsão futura
+            agendaItems = agendaItems.filter(i => i.id !== id);
+
+            safeLocalStorageSave();
+            loadData();
+            checkAgendaNotifications();
+            showBanner();
+        }
+
+
+        /* RESTANTE DAS FUNÇÕES ORIGINAIS DO APP */
         function editTransaction(id, event) {
             if (event) event.stopPropagation();
             const target = transactions.find(t => t.id === id);
@@ -1618,7 +1830,6 @@
                 alert('Configuração actualizada com sucesso! 👍');
             } else {
                 let newId = "cat_custom_" + gerarIDUnico();
-                // Gera cores dinâmicas e únicas para caixas criadas em runtime
                 let randomColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
                 categories.push({ id: newId, name: name, budget: budget, type: type, color: type === 'income' ? '#00e676' : randomColor });
                 safeLocalStorageSave();
@@ -1834,6 +2045,7 @@
             showBanner();
             processRecurrentEntries();
             clearExtratoFilter();
+            checkAgendaNotifications(); // Atualiza alertas após modificações
         }
 
         function loadData() {
@@ -1865,7 +2077,6 @@
             targetMonthList.forEach(t => {
                 let matchesCategory = true; let matchesPayment = true;
                 
-                // Mapeamento à prova de balas por Id estável ou Cor fixa secundária
                 let catObj = t.categoryId ? categories.find(c => c.id === t.categoryId) : findCategoryByText(t.description);
 
                 if (filtroCategoriaAtivo !== "") {
@@ -1995,8 +2206,8 @@
             }
             
             if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
+            checkAgendaNotifications(); // Roda a verificação de alertas
         }
     </script>
 </body>
 </html>
-
