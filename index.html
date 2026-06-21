@@ -275,7 +275,7 @@
 
         .tags-container { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
         .tags-container::-webkit-scrollbar { display: none; }
-        .tag { background: var(--bg-input); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; color: var(--text); transition: all 0.2s; border-left: 4px solid transparent; }
+        .tag { background: var(--bg-input); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; color: var(--text); transition: all 0.2s; border-left: 4px solid transparent; user-select: none; -webkit-user-select: none; }
         .tag.active-filter { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
 
         .grid-categories-panel {
@@ -296,6 +296,8 @@
             cursor: pointer;
             position: relative;
             transition: transform 0.15s ease, border-color 0.2s ease;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .category-box-card:active {
@@ -407,17 +409,21 @@
         @keyframes blink { 0%, 100% { border-color: var(--danger); box-shadow: 0 0 12px rgba(255,23,68,0.15); } 50% { border-color: var(--border-color); box-shadow: none; } }
 
         .history-list { margin-top: 10px; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; margin-bottom: 4px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.01); transition: background 0.2s; }
+        .history-item { display: flex; flex-direction: column; padding: 14px 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; margin-bottom: 6px; border-radius: 8px; background: rgba(255,255,255,0.01); transition: background 0.2s; }
         .history-item:hover { background: rgba(255,255,255,0.03); }
         .history-item:last-child { border-bottom: 1px solid var(--border-color); }
-        .history-info { display: flex; flex-direction: column; flex-grow: 1; padding-right: 10px; padding-left: 6px; }
-        .history-desc { font-weight: 600; font-size: 14px; color: #f2f2f7; display: flex; align-items: center; gap: 6px; }
-        .history-cat-badge { font-size: 10px; font-weight: 700; margin-top: 3px; display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+        
+        .history-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .history-info { display: flex; flex-direction: column; flex-grow: 1; padding-right: 10px; }
+        
+        .history-cat-badge { font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
         .history-cat-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
         .history-date { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
         .history-right { display: flex; align-items: center; gap: 12px; }
         .history-val { font-weight: 700; font-size: 14px; }
         
+        .history-bottom-description { font-size: 13px; font-weight: 500; color: #f2f2f7; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.03); word-break: break-word; text-align: left; width: 100%; display: block; }
+
         .btn-delete-item { background: none; border: none; color: var(--text-muted); font-size: 15px; cursor: pointer; padding: 5px; transition: color 0.2s; }
         .btn-delete-item:hover { color: var(--danger); }
 
@@ -474,7 +480,6 @@
             display: none;
         }
 
-        /* Novas Classes para os Alertas de Recebimento Agendado */
         .notification-bell-panel {
             background: linear-gradient(90deg, #1e1b4b 0%, #311042 100%);
             border: 1px solid var(--primary);
@@ -513,7 +518,6 @@
             font-size: 11px;
         }
 
-        /* Classes Novas para Abas de Sub-tipo da Agenda */
         .agenda-switcher {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -933,14 +937,14 @@
         ];
 
         const defaultCategoriesEmpresa = [
-            { id: "cat_e_1", name: "🏭 Insumos / Matéria Prima", budget: 5000, type: "expense", color: "#2979ff" },
-            { id: "cat_e_2", name: "🚚 Entregas / Frete", budget: 1500, type: "expense", color: "#00e5ff" },
-            { id: "cat_e_3", name: "🔧 Manutenção Fábrica", budget: 1000, type: "expense", color: "#ffea00" },
-            { id: "cat_e_4", name: "⚡ Água e Luz Industrial", budget: 800, type: "expense", color: "#ff9f43" },
-            { id: "cat_e_5", name: "👥 Pró-Labore / Salários", budget: 4000, type: "expense", color: "#a370f7" },
-            { id: "cat_e_6", name: "📢 Marketing & Anúncios", budget: 600, type: "expense", color: "#05dfd7" },
-            { id: "cat_e_7", name: "🏛️ Impostos & Taxas", budget: 1200, type: "expense", color: "#ff2a6d" },
-            { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 500, type: "expense", color: "#b3b3b3" }
+            { id: "cat_e_1", name: "🏭 Insumos", budget: 5000, type: "expense", color: "#2979ff" },
+            { id: "cat_e_2", name: "🚚 Frete", budget: 1500, type: "expense", color: "#00e5ff" },
+            { id: "cat_e_3", name: "🔧 Manutenção", budget: 1000, type: "expense", color: "#ffea00" },
+            { id: "cat_e_4", name: "⚡ Utilidades", budget: 800, type: "expense", color: "#ff9f43" },
+            { id: "cat_e_5", name: "👥 Pró-Labore", budget: 4000, type: "expense", color: "#a370f7" },
+            { id: "cat_e_6", name: "📢 Marketing", budget: 600, type: "expense", color: "#05dfd7" },
+            { id: "cat_e_7", name: "🏛️ Impostos", budget: 1200, type: "expense", color: "#ff2a6d" },
+            { id: "cat_e_8", name: "📦 Embalagens", budget: 500, type: "expense", color: "#b3b3b3" }
         ];
 
         function toggleCategoryBoxes() {
@@ -1188,7 +1192,6 @@
             window.scrollTo(0,0);
         }
 
-        /* LÓGICA DE GERENCIAMENTO DA AGENDA (RECEBIMENTOS E PAGAMENTOS FUTUROS) */
         function switchAgendaFormType(flowType) {
             document.getElementById('agenda_flow_type').value = flowType;
             document.querySelectorAll('.agenda-type-btn').forEach(btn => btn.classList.remove('active'));
@@ -1244,7 +1247,7 @@
                 description: desc,
                 amount: amount,
                 date: date,
-                type: flowType // 'income' ou 'expense'
+                type: flowType
             });
 
             safeLocalStorageSave();
@@ -1277,16 +1280,22 @@
                 div.style.cursor = 'default';
 
                 div.innerHTML = `
-                    <div class="history-info">
-                        <span class="history-desc">${isInc ? '🔮' : '💸'} ${item.description}</span>
-                        <span class="history-date">📅 Previsão: ${dateFormatted} (${isInc ? 'Recebimento' : 'Pagamento'})</span>
+                    <div class="history-top-row">
+                        <div class="history-info">
+                            <span class="history-cat-badge" style="color: ${isInc ? 'var(--success)' : 'var(--danger)'};">
+                                <span class="history-cat-dot" style="background-color: ${isInc ? 'var(--success)' : 'var(--danger)'};"></span>
+                                ${isInc ? 'Recebimento' : 'Pagamento'}
+                            </span>
+                            <span class="history-date">📅 Previsão: ${dateFormatted}</span>
+                        </div>
+                        <div class="history-right">
+                            <span class="history-val" style="color: ${isInc ? 'var(--success)' : 'var(--danger)'}">
+                                ${isInc ? '+' : '-'} ${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </span>
+                            <button class="btn-delete-item" onclick="deleteAgendaItem('${item.id}', event)">🗑️</button>
+                        </div>
                     </div>
-                    <div class="history-right">
-                        <span class="history-val" style="color: ${isInc ? 'var(--success)' : 'var(--danger)'}">
-                            ${isInc ? '+' : '-'} ${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>
-                        <button class="btn-delete-item" onclick="deleteAgendaItem('${item.id}', event)">🗑️</button>
-                    </div>
+                    <div class="history-bottom-description">${isInc ? '🔮' : '💸'} ${item.description}</div>
                 `;
                 container.appendChild(div);
             });
@@ -1357,8 +1366,6 @@
             showBanner();
         }
 
-
-        /* RESTANTE DAS FUNÇÕES ORIGINAIS DO APP */
         function editTransaction(id, event) {
             if (event) event.stopPropagation();
             const target = transactions.find(t => t.id === id);
@@ -1729,6 +1736,32 @@
             loadData();
         }
 
+        function bindLongPress(element, callbackLong, callbackShort) {
+            let timer;
+            let isLongPress = false;
+
+            function start(e) {
+                isLongPress = false;
+                timer = setTimeout(() => {
+                    isLongPress = true;
+                    callbackLong();
+                }, 600); // 600 milissegundos pressionado ativa o filtro
+            }
+
+            function cancel(e) {
+                clearTimeout(timer);
+                if (!isLongPress && e.type === 'touchend') {
+                    callbackShort();
+                }
+            }
+
+            element.addEventListener('mousedown', start);
+            element.addEventListener('touchstart', start, { passive: true });
+            element.addEventListener('mouseup', (e) => { clearTimeout(timer); if(!isLongPress) callbackShort(); });
+            element.addEventListener('touchend', cancel);
+            element.addEventListener('mouseleave', () => clearTimeout(timer));
+        }
+
         function renderTags() {
             const container = document.getElementById('tagsContainer');
             if(!container) return;
@@ -1740,12 +1773,11 @@
                 if (filtroCategoriaAtivo === cat.name) tagEl.classList.add('active-filter');
                 tagEl.innerText = cat.name;
                 
-                tagEl.onclick = (e) => { 
-                    e.stopPropagation();
-                    fillDescription(cat.name); 
-                    checkLiveBudget(); 
-                    filtrarExtratoPorTag(cat.name, tagEl);
-                };
+                bindLongPress(tagEl, 
+                    () => { filtrarExtratoPorTag(cat.name, tagEl); }, 
+                    () => { fillDescription(cat.name); checkLiveBudget(); }
+                );
+
                 container.appendChild(tagEl);
             });
         }
@@ -1787,11 +1819,11 @@
                 let box = document.createElement('div');
                 box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
                 box.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
-                box.onclick = () => {
-                    fillDescription(cat.name);
-                    checkLiveBudget();
-                    filtrarExtratoPorTag(cat.name, null);
-                };
+                
+                bindLongPress(box, 
+                    () => { filtrarExtratoPorTag(cat.name, null); },
+                    () => { fillDescription(cat.name); checkLiveBudget(); }
+                );
 
                 box.innerHTML = `
                     <div class="category-box-header">
@@ -2214,18 +2246,20 @@
                 }
 
                 item.innerHTML = `
-                    <div class="history-info">
-                        <span class="history-desc">${t.description}${badgeMetodo}</span>
-                        <span class="history-cat-badge" style="color: ${catColor};">
-                            <span class="history-cat-dot" style="background-color: ${catColor};"></span>
-                            ${catLabel}
-                        </span>
-                        <span class="history-date">📅 ${dateFormatted}</span>
+                    <div class="history-top-row">
+                        <div class="history-info">
+                            <span class="history-cat-badge" style="color: ${catColor};">
+                                <span class="history-cat-dot" style="background-color: ${catColor};"></span>
+                                ${catLabel}
+                            </span>
+                            <span class="history-date">📅 ${dateFormatted}</span>
+                        </div>
+                        <div class="history-right">
+                            <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
+                            <button class="btn-delete-item" onclick="deleteTransaction('${t.id}', event)">🗑️</button>
+                        </div>
                     </div>
-                    <div class="history-right">
-                        <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
-                        <button class="btn-delete-item" onclick="deleteTransaction('${t.id}', event)">🗑️</button>
-                    </div>
+                    <div class="history-bottom-description">${t.description}${badgeMetodo}</div>
                 `;
                 container.appendChild(item);
             });
@@ -2286,4 +2320,3 @@
     </script>
 </body>
 </html>
-
