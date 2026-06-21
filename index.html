@@ -243,13 +243,44 @@
             outline: none;
         }
 
+        /* Chave seletora estilizada para Gastos / Ganhos */
+        .type-toggle-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: #0b0b0c;
+            padding: 4px;
+            gap: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+        .type-toggle-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 7px;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .type-toggle-btn.active.expense-type {
+            color: #fff;
+            background: var(--danger);
+        }
+        .type-toggle-btn.active.income-type {
+            color: #000;
+            background: var(--success);
+        }
+
         .tags-container { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
         .tags-container::-webkit-scrollbar { display: none; }
         .tag { background: var(--bg-input); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; color: var(--text); transition: all 0.2s; border-left: 4px solid transparent; }
         .tag.active-filter { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
 
         .grid-categories-panel {
-            display: none; /* Escondido por padrão */
+            display: none;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin: 15px 15px 0 15px;
@@ -624,14 +655,15 @@
         <div id="page-categorias" class="page-content">
             <div class="card">
                 <h3 id="categoryFormTitle" style="margin-top:0; color: var(--primary); font-size: 15px; font-weight: 700;">✨ Editar Caixa / Categoria</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Selecione uma caixa na lista inferior para alterar o nome ou teto de gasto.</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Selecione uma caixa na lista inferior para alterar o nome, tipo ou teto/meta.</p>
                 
-                <div class="input-group" style="display: none;">
-                    <label>📊 Tipo de Categoria</label>
-                    <select id="new_category_type" class="select-input" aria-label="Tipo de categoria">
-                        <option value="expense">🔴 Categoria de Saída (Gasto)</option>
-                        <option value="income">🟢 Categoria de Entrada (Receita/Ganho)</option>
-                    </select>
+                <div class="input-group">
+                    <label>📊 Tipo de Categoria (Fluxo)</label>
+                    <div class="type-toggle-container">
+                        <button class="type-toggle-btn active expense-type" id="type-btn-expense" onclick="setCategoryFormType('expense')">🔴 Gasto (Saída)</button>
+                        <button class="type-toggle-btn income-type" id="type-btn-income" onclick="setCategoryFormType('income')">🟢 Ganho (Entrada)</button>
+                    </div>
+                    <input type="hidden" id="new_category_type" value="expense">
                 </div>
 
                 <div class="input-group">
@@ -639,7 +671,7 @@
                     <input type="text" id="new_category_name" aria-label="Nome da Categoria" class="text-input" placeholder="Selecione uma categoria abaixo para editar...">
                 </div>
                 <div class="input-group">
-                    <label>🎯 Teto de Gasto / Meta Mensal (Opcional)</label>
+                    <label id="lblCategoryBudgetLimit">🎯 Teto de Gasto / Meta Mensal (Opcional)</label>
                     <input type="number" id="new_category_budget" aria-label="Teto de Gasto Mensal" class="text-input" placeholder="Ex: 500" value="0">
                 </div>
                 <div style="display: block;">
@@ -814,6 +846,19 @@
             }
         }
 
+        function setCategoryFormType(type) {
+            document.getElementById('new_category_type').value = type;
+            document.querySelectorAll('.type-toggle-btn').forEach(btn => btn.classList.remove('active'));
+            
+            if(type === 'expense') {
+                document.getElementById('type-btn-expense').classList.add('active');
+                document.getElementById('lblCategoryBudgetLimit').innerText = "🎯 Teto de Gasto Mensal (Opcional)";
+            } else {
+                document.getElementById('type-btn-income').classList.add('active');
+                document.getElementById('lblCategoryBudgetLimit').innerText = "🎯 Meta de Ganho Mensal (Opcional)";
+            }
+        }
+
         function switchProfileData() {
             if (currentProfile === "pessoal") {
                 transactions = JSON.parse(localStorage.getItem('transactions_pessoal')) || [];
@@ -835,10 +880,10 @@
                 document.getElementById('businessCreditAlert').style.display = 'block';
             }
             
-            if (currentProfile === "pessoal" && categories.length !== 8) {
+            if (currentProfile === "pessoal" && categories.length !== 8 && !localStorage.getItem('categories_pessoal')) {
                 categories = [...defaultCategoriesPessoal];
                 safeLocalStorageSave();
-            } else if (currentProfile === "empresa" && categories.length !== 8) {
+            } else if (currentProfile === "empresa" && categories.length !== 8 && !localStorage.getItem('categories_empresa')) {
                 categories = [...defaultCategoriesEmpresa];
                 safeLocalStorageSave();
             }
@@ -1182,12 +1227,15 @@
                 const targetList = transactionIndexedMap.get(targetMonth) || [];
                 
                 targetList.forEach(t => {
-                    if(t.type === 'expense_cash' || t.type === 'saving') {
-                        if(t.categoryId === foundCat.id) {
-                            accumulatedSpent += t.amount;
-                        } else {
-                            let matched = findCategoryByText(t.description);
-                            if (matched && matched.id === foundCat.id) {
+                    if(foundCat.type === 'income') {
+                        if(t.type === 'income') {
+                            if(t.categoryId === foundCat.id || findCategoryByText(t.description)?.id === foundCat.id) {
+                                accumulatedSpent += t.amount;
+                            }
+                        }
+                    } else {
+                        if(t.type === 'expense_cash' || t.type === 'saving') {
+                            if(t.categoryId === foundCat.id || findCategoryByText(t.description)?.id === foundCat.id) {
                                 accumulatedSpent += t.amount;
                             }
                         }
@@ -1198,15 +1246,20 @@
                 let percentage = Math.min((totalProjected / foundCat.budget) * 100, 100);
 
                 document.getElementById('budgetMonitor').style.display = 'block';
-                document.getElementById('budgetLabelTarget').innerText = `🎯 Meta de ${foundCat.name}`;
+                if(foundCat.type === 'income') {
+                    document.getElementById('budgetLabelTarget').innerText = `🎯 Meta de ${foundCat.name}`;
+                    let fill = document.getElementById('budgetBarFill');
+                    fill.style.width = `${percentage}%`;
+                    fill.style.background = totalProjected >= foundCat.budget ? 'var(--success)' : 'var(--warning)';
+                } else {
+                    document.getElementById('budgetLabelTarget').innerText = `🎯 Teto de ${foundCat.name}`;
+                    let fill = document.getElementById('budgetBarFill');
+                    fill.style.width = `${percentage}%`;
+                    if(totalProjected > foundCat.budget) fill.style.background = 'var(--danger)';
+                    else if (totalProjected > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
+                    else fill.style.background = 'var(--success)';
+                }
                 document.getElementById('budgetLabelValues').innerText = `${formatCurrency(totalProjected)} / ${formatCurrency(foundCat.budget)}`;
-                
-                let fill = document.getElementById('budgetBarFill');
-                fill.style.width = `${percentage}%`;
-
-                if(totalProjected > foundCat.budget) fill.style.background = 'var(--danger)';
-                else if (totalProjected > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
-                else fill.style.background = 'var(--success)';
             } else {
                 document.getElementById('budgetMonitor').style.display = 'none';
             }
@@ -1282,11 +1335,10 @@
                     if (t.type === 'expense_cash' || t.type === 'saving') {
                         monthlyExpense += t.amount;
                         grandTotalExpenseAllYear += t.amount;
-
-                        let matched = t.categoryId ? categories.find(c => c.id === t.categoryId) : findCategoryByText(t.description);
-                        if (matched && annualCategoryAmounts.has(matched.id)) {
-                            annualCategoryAmounts.set(matched.id, annualCategoryAmounts.get(matched.id) + t.amount);
-                        }
+                    }
+                    let matched = t.categoryId ? categories.find(c => c.id === t.categoryId) : findCategoryByText(t.description);
+                    if (matched && annualCategoryAmounts.has(matched.id)) {
+                        annualCategoryAmounts.set(matched.id, annualCategoryAmounts.get(matched.id) + t.amount);
                     }
                 });
 
@@ -1328,25 +1380,28 @@
             categories.forEach(cat => {
                 let spent = annualAmountsMap.get(cat.id) || 0;
                 let pct = 0;
-                if (totalExpenseYear > 0) {
-                    pct = Math.round((spent / totalExpenseYear) * 100);
+                if (cat.type === 'income') {
+                    let totalIncomeYear = transactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc, 0);
+                    pct = totalIncomeYear > 0 ? Math.round((spent / totalIncomeYear) * 100) : 0;
+                } else {
+                    pct = totalExpenseYear > 0 ? Math.round((spent / totalExpenseYear) * 100) : 0;
                 }
 
                 let annualBudget = (cat.budget || 0) * 12;
-                let isExceeded = annualBudget > 0 && spent > annualBudget;
+                let isExceeded = cat.type === 'expense' && annualBudget > 0 && spent > annualBudget;
 
                 let box = document.createElement('div');
                 box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
-                box.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
+                box.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
                 box.style.cursor = 'default'; 
 
                 box.innerHTML = `
                     <div class="category-box-header">
                         <span class="category-box-title">${cat.name}</span>
-                        <div class="category-box-dot" style="background-color: ${cat.color || 'var(--primary)'};"></div>
+                        <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
                     </div>
                     <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 500;">
-                        ${annualBudget > 0 ? 'Meta Ano: ' + formatCurrency(annualBudget) : 'Sem Teto Fixo'}
+                        ${annualBudget > 0 ? (cat.type === 'income' ? 'Meta Ano: ' : 'Teto Ano: ') + formatCurrency(annualBudget) : 'Sem Fluxo Fixo'}
                     </div>
                     <div class="category-box-footer">
                         <span class="category-box-amount">${formatCurrency(spent)}</span>
@@ -1397,7 +1452,7 @@
             categories.forEach(cat => {
                 let tagEl = document.createElement('div');
                 tagEl.className = 'tag';
-                tagEl.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
+                tagEl.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
                 if (filtroCategoriaAtivo === cat.name) tagEl.classList.add('active-filter');
                 tagEl.innerText = cat.name;
                 
@@ -1422,26 +1477,32 @@
             categories.forEach(c => categoryMapAmounts.set(c.id, 0));
 
             targetMonthList.forEach(t => {
-                if (t.type === 'expense_cash' || t.type === 'saving') {
-                    let matched = t.categoryId ? categories.find(c => c.id === t.categoryId) : findCategoryByText(t.description);
-                    if (matched && categoryMapAmounts.has(matched.id)) {
+                let matched = t.categoryId ? categories.find(c => c.id === t.categoryId) : findCategoryByText(t.description);
+                if (matched && categoryMapAmounts.has(matched.id)) {
+                    if (matched.type === 'income' && t.type === 'income') {
+                        categoryMapAmounts.set(matched.id, categoryMapAmounts.get(matched.id) + t.amount);
+                    } else if (matched.type !== 'income' && (t.type === 'expense_cash' || t.type === 'saving')) {
                         categoryMapAmounts.set(matched.id, categoryMapAmounts.get(matched.id) + t.amount);
                     }
                 }
             });
 
+            let totalIncomeMonth = targetMonthList.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
+
             categories.forEach(cat => {
                 let spent = categoryMapAmounts.get(cat.id) || 0;
                 let pct = 0;
-                if (totalExpenseMonth > 0) {
-                    pct = Math.round((spent / totalExpenseMonth) * 100);
+                if(cat.type === 'income') {
+                    pct = totalIncomeMonth > 0 ? Math.round((spent / totalIncomeMonth) * 100) : 0;
+                } else {
+                    pct = totalExpenseMonth > 0 ? Math.round((spent / totalExpenseMonth) * 100) : 0;
                 }
 
-                let isExceeded = cat.budget > 0 && spent > cat.budget;
+                let isExceeded = cat.type === 'expense' && cat.budget > 0 && spent > cat.budget;
 
                 let box = document.createElement('div');
                 box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
-                box.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
+                box.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
                 box.onclick = () => {
                     fillDescription(cat.name);
                     checkLiveBudget();
@@ -1451,7 +1512,7 @@
                 box.innerHTML = `
                     <div class="category-box-header">
                         <span class="category-box-title">${cat.name}</span>
-                        <div class="category-box-dot" style="background-color: ${cat.color || 'var(--primary)'};"></div>
+                        <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
                     </div>
                     <div class="category-box-footer">
                         <span class="category-box-amount">${formatCurrency(spent)}</span>
@@ -1471,16 +1532,20 @@
             categories.forEach((cat) => {
                 let div = document.createElement('div');
                 div.className = 'category-item';
-                div.style.borderLeft = `4px solid ${cat.color || 'var(--primary)'}`;
                 
-                let budgetText = cat.budget > 0 ? `🎯 Meta mensal: ${formatCurrency(cat.budget)}` : "♾️ Sem limite estipulado";
-                let badgeType = cat.type === "income" ? "🟢 Entrada" : "🔴 Saída";
+                let isIncome = cat.type === "income";
+                div.style.borderLeft = `4px solid ${cat.color || (isIncome ? 'var(--success)' : 'var(--primary)')}`;
+                
+                let budgetText = cat.budget > 0 ? 
+                    `${isIncome ? '🟢 Meta mensal' : '🎯 Teto mensal'}: ${formatCurrency(cat.budget)}` : 
+                    "♾️ Sem limite estipulado";
+                let badgeType = isIncome ? "🟢 Entrada / Ganho" : "🔴 Saída / Gasto";
                 
                 div.innerHTML = `
                     <div class="category-main-info">
                         <strong>${cat.name} <span style="font-size:10px; color:var(--text-muted); padding-left:4px;">(${badgeType})</span></strong>
                         <div class="category-actions">
-                            <button class="btn-edit-cat" onclick="editCategory('${cat.id}')">✏️ Configurar Nome / Limite</button>
+                            <button class="btn-edit-cat" onclick="editCategory('${cat.id}')">✏️ Ajustar</button>
                         </div>
                     </div>
                     <div class="category-budget-info">${budgetText}</div>
@@ -1533,7 +1598,9 @@
             let type = typeInput.value;
 
             if(!name) return alert('Por favor, digite um nome válido! ⚠️');
-            if(!name.match(/[\u1F000-\u1FFFF]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹|🚗|⛽|🎁|✈️|⚽/)) { name = "🔹 " + name; }
+            if(!name.match(/[\u1F000-\u1FFFF]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹|🚗|⛽|🎁|✈️|⚽/)) { 
+                name = (type === 'income' ? "📈 " : "🔹 ") + name; 
+            }
             
             if (editingCategoryId) {
                 categories = categories.map(c => {
@@ -1546,12 +1613,22 @@
                 document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
                 document.getElementById('btnCancelCategoryEdit').style.display = "none";
                 
+                // Reseta a chave seletora para o padrão Gasto
+                setCategoryFormType('expense');
+                
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 renderCategoryManagement(); renderTags(); loadData();
-                alert('Configuração updated com sucesso! 👍');
+                alert('Configuração atualizada com sucesso! 👍');
             } else {
-                alert('A edição deve ser feita selecionando uma caixa existente na lista abaixo.');
+                // Caso queira adicionar uma nova dinamicamente
+                let newId = "cat_custom_" + gerarIDUnico();
+                categories.push({ id: newId, name: name, budget: budget, type: type, color: type === 'income' ? '#00e676' : '#bb86fc' });
+                safeLocalStorageSave();
+                input.value = ''; budgetInput.value = '0';
+                setCategoryFormType('expense');
+                renderCategoryManagement(); renderTags(); loadData();
+                alert('Nova Caixa cadastrada com sucesso! 🎉');
             }
         }
 
@@ -1562,7 +1639,8 @@
             editingCategoryId = id;
             document.getElementById('new_category_name').value = cat.name;
             document.getElementById('new_category_budget').value = cat.budget;
-            document.getElementById('new_category_type').value = cat.type || "expense";
+            
+            setCategoryFormType(cat.type || "expense");
 
             document.getElementById('categoryFormTitle').innerText = "✏️ Configurar Caixa / Categoria";
             document.getElementById('btnCancelCategoryEdit').style.display = "inline-block";
@@ -1576,6 +1654,7 @@
             document.getElementById('new_category_budget').value = '0';
             document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
             document.getElementById('btnCancelCategoryEdit').style.display = "none";
+            setCategoryFormType('expense');
         }
 
         function updateAmountDisplay() {
@@ -1811,7 +1890,6 @@
                 if (t.type === 'income') totalIncome += t.amount;
                 if (t.type === 'expense_cash') totalExpense += t.amount;
                 
-                // Lógica de Caixinha Líquida acumulada: depósitos somam, resgates subtraem
                 if (t.type === 'saving') totalSaving += t.amount;
                 if (t.type === 'saving_withdrawal') totalSaving -= t.amount;
 
@@ -1822,7 +1900,7 @@
                 let catColor = 'var(--border-color)';
                 let catLabel = 'Sem Categoria 📝';
                 if (catObj) {
-                    catColor = catObj.color || 'var(--primary)';
+                    catColor = catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)');
                     catLabel = catObj.name;
                 }
                 
@@ -1871,8 +1949,6 @@
                 container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhum lançamento registrado. 📭</div>`;
             }
 
-            // O Saldo livre agora deduz o que foi guardado e recupera o que foi resgatado da caixinha
-            // Calculado a partir de todas as transações reais da lista filtrada do mês
             let totalWithdrawals = targetMonthList.filter(t => t.type === 'saving_withdrawal').reduce((acc, curr) => acc + curr.amount, 0);
             let totalSavingsDeposited = targetMonthList.filter(t => t.type === 'saving').reduce((acc, curr) => acc + curr.amount, 0);
             let sobrou = totalIncome - totalExpense - totalSavingsDeposited + totalWithdrawals;
@@ -1883,7 +1959,7 @@
             document.getElementById('lblSobrou').innerText = formatCurrency(sobrou);
             document.getElementById('dashFaturaCartao').innerText = formatCurrency(totalFaturaCartao);
 
-            let macroBudgetLimit = categories.reduce((acc, curr) => acc + (curr.budget || 0), 0);
+            let macroBudgetLimit = categories.filter(c => c.type !== 'income').reduce((acc, curr) => acc + (curr.budget || 0), 0);
             if (macroBudgetLimit > 0) {
                 document.getElementById('macroBudgetCard').style.display = 'block';
                 document.getElementById('macroBudgetValues').innerText = `${formatCurrency(totalExpense)} / ${formatCurrency(macroBudgetLimit)}`;
@@ -1924,4 +2000,3 @@
     </script>
 </body>
 </html>
-
