@@ -410,7 +410,6 @@
 
         .history-list { margin-top: 10px; }
         
-        /* CORREÇÃO FIXA PARA O LAYOUT DO EXTRATO */
         .history-item { 
             display: flex; 
             justify-content: space-between; 
@@ -432,13 +431,13 @@
             display: flex; 
             flex-direction: column; 
             flex: 1;
-            min-width: 0; /* Permite o correto funcionamento do truncamento flexbox */
+            min-width: 0;
         }
         .history-desc { 
             font-weight: 600; 
             font-size: 14px; 
             color: #f2f2f7; 
-            word-break: break-word; /* Evita estouro de texto contínuo */
+            word-break: break-word; 
             line-height: 1.3;
         }
         .history-cat-badge { 
@@ -458,13 +457,13 @@
             display: flex; 
             align-items: center; 
             gap: 12px; 
-            flex-shrink: 0; /* Impede que os valores e a lixeira encolham */
+            flex-shrink: 0; 
             text-align: right;
         }
         .history-val { 
             font-weight: 700; 
             font-size: 14px; 
-            white-space: nowrap; /* Mantém o valor monetário sempre em linha única */
+            white-space: nowrap; 
         }
         
         .btn-delete-item { 
@@ -797,8 +796,13 @@
                 <input type="hidden" id="agenda_flow_type" value="income">
                 
                 <div class="input-group">
-                    <label id="lblAgendaDescription">🔍 Descrição do Recebimento</label>
-                    <input type="text" id="agenda_description" class="text-input" placeholder="Ex: Pagamento Cliente X, Venda de Sofá...">
+                    <label for="agenda_category">📊 Caixa / Categoria Alvo</label>
+                    <select id="agenda_category" class="select-input"></select>
+                </div>
+
+                <div class="input-group">
+                    <label id="lblAgendaDescription">✍️ Anotações / Detalhes (Texto Livre)</label>
+                    <input type="text" id="agenda_description" class="text-input" placeholder="Ex: Referente ao serviço prestado, Venda parcelada, boleto luz...">
                 </div>
 
                 <div class="grid-2col">
@@ -1027,14 +1031,27 @@
 
         function populateCategorySelector() {
             const selector = document.getElementById('sl_category');
-            if (!selector) return;
-            selector.innerHTML = '';
-            categories.forEach(cat => {
-                let opt = document.createElement('option');
-                opt.value = cat.id;
-                opt.innerText = cat.name;
-                selector.appendChild(opt);
-            });
+            const agendaSelector = document.getElementById('agenda_category');
+            
+            if (selector) {
+                selector.innerHTML = '';
+                categories.forEach(cat => {
+                    let opt = document.createElement('option');
+                    opt.value = cat.id;
+                    opt.innerText = cat.name;
+                    selector.appendChild(opt);
+                });
+            }
+            
+            if (agendaSelector) {
+                agendaSelector.innerHTML = '';
+                categories.forEach(cat => {
+                    let opt = document.createElement('option');
+                    opt.value = cat.id;
+                    opt.innerText = cat.name;
+                    agendaSelector.appendChild(opt);
+                });
+            }
         }
 
         function switchProfileData() {
@@ -1273,7 +1290,6 @@
             const formTitle = document.getElementById('agendaFormTitle');
             const formDesc = document.getElementById('agendaFormDesc');
             const lblDesc = document.getElementById('lblAgendaDescription');
-            const inputDesc = document.getElementById('agenda_description');
             const lblAmount = document.getElementById('lblAgendaAmount');
             const lblDate = document.getElementById('lblAgendaDate');
             const btnAction = document.getElementById('btnSaveAgendaAction');
@@ -1283,8 +1299,7 @@
                 formTitle.innerText = "📅 Agendar Futuro Recebimento";
                 formTitle.style.color = "var(--success)";
                 formDesc.innerText = "Cadastre valores que você tem previsão de receber para ser alertado no dia exato.";
-                lblDesc.innerText = "🔍 Descrição do Recebimento";
-                inputDesc.placeholder = "Ex: Pagamento Cliente X, Venda de Sofá...";
+                lblDesc.innerText = "✍️ Anotações / Detalhes (Texto Livre)";
                 lblAmount.innerText = "💰 Valor Esperado (R$)";
                 lblDate.innerText = "📅 Data do Recebimento";
                 btnAction.innerText = "➕ Agendar Recebimento";
@@ -1295,8 +1310,7 @@
                 formTitle.innerText = "📅 Agendar Futuro Pagamento";
                 formTitle.style.color = "var(--danger)";
                 formDesc.innerText = "Cadastre boletos, contas ou compromissos que irão vencer para monitorar o caixa.";
-                lblDesc.innerText = "🔍 Descrição do Pagamento";
-                inputDesc.placeholder = "Ex: Fornecedor de Tecidos, Conta de Luz...";
+                lblDesc.innerText = "✍️ Anotações / Detalhes (Texto Livre)";
                 lblAmount.innerText = "💰 Valor do Compromisso (R$)";
                 lblDate.innerText = "📅 Data do Vencimento";
                 btnAction.innerText = "➕ Agendar Pagamento";
@@ -1307,18 +1321,24 @@
 
         function saveAgendaItem() {
             const flowType = document.getElementById('agenda_flow_type').value;
-            const desc = document.getElementById('agenda_description').value.trim();
+            const catId = document.getElementById('agenda_category').value;
+            const freeDesc = document.getElementById('agenda_description').value.trim();
             const amount = parseFloat(document.getElementById('agenda_amount').value);
             const date = document.getElementById('agenda_date').value;
 
-            if (!desc || isNaN(amount) || amount <= 0 || !date) {
+            if (isNaN(amount) || amount <= 0 || !date || !catId) {
                 alert("⚠️ Preencha todos os campos corretamente!");
                 return;
             }
 
+            const selectedCatObj = categories.find(c => c.id === catId);
+            const baseDescription = selectedCatObj ? selectedCatObj.name : "Geral";
+
             agendaItems.push({
                 id: gerarIDUnico(),
-                description: desc,
+                categoryId: catId,
+                description: baseDescription,
+                freeDescription: freeDesc,
                 amount: amount,
                 date: date,
                 type: flowType 
@@ -1349,13 +1369,23 @@
                 let div = document.createElement('div');
                 div.className = 'history-item';
                 
-                const isInc = item.type !== 'expense';
-                div.style.borderLeft = `5px solid ${isInc ? 'var(--success)' : 'var(--danger)'}`;
+                let catObj = categories.find(c => c.id === item.categoryId);
+                let catColor = catObj ? (catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)')) : (item.type !== 'expense' ? 'var(--success)' : 'var(--danger)');
+                let catLabel = catObj ? catObj.name : "Geral";
+
+                div.style.borderLeft = `5px solid ${catColor}`;
                 div.style.cursor = 'default';
+
+                const isInc = item.type !== 'expense';
+                let extraText = item.freeDescription ? ` - <span style="font-weight:400; color:var(--text);">${item.freeDescription}</span>` : '';
 
                 div.innerHTML = `
                     <div class="history-info">
-                        <span class="history-desc">${isInc ? '🔮' : '💸'} ${item.description}</span>
+                        <span class="history-desc"><strong>${item.description}</strong>${extraText}</span>
+                        <span class="history-cat-badge" style="color: ${catColor};">
+                            <span class="history-cat-dot" style="background-color: ${catColor};"></span>
+                            ${catLabel}
+                        </span>
                         <span class="history-date">📅 Previsão: ${dateFormatted} (${isInc ? 'Recebimento' : 'Pagamento'})</span>
                     </div>
                     <div class="history-right">
@@ -1397,9 +1427,10 @@
                 let row = document.createElement('div');
                 row.className = 'notification-item-row';
                 const isInc = item.type !== 'expense';
+                let extraText = item.freeDescription ? ` (${item.freeDescription})` : '';
                 
                 row.innerHTML = `
-                    <span><strong>${isInc ? '🟢' : '🔴'} ${item.description}</strong> (${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
+                    <span><strong>${isInc ? '🟢' : '🔴'} ${item.description}</strong>${extraText} (${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
                     <button class="btn-notification-action" style="background: ${isInc ? 'var(--success)' : 'var(--danger)'}; color: ${isInc ? '#000' : '#fff'};" onclick="claimAgendaAmount('${item.id}')">
                         ${isInc ? '💰 Receber' : '💸 Pagar'}
                     </button>
@@ -1412,9 +1443,10 @@
             const item = agendaItems.find(i => i.id === id);
             if (!item) return;
 
-            let matchedCategory = findCategoryByText(item.description);
-            let categoryId = matchedCategory ? matchedCategory.id : (categories[0] ? categories[0].id : null);
+            let categoryId = item.categoryId || (categories[0] ? categories[0].id : null);
             const isInc = item.type !== 'expense';
+            let autoNotes = item.freeDescription ? `${item.freeDescription} ` : '';
+            autoNotes += isInc ? "[Previsão Recebida]" : "[Compromisso Pago]";
 
             transactions.push({ 
                 id: gerarIDUnico(), 
@@ -1423,7 +1455,7 @@
                 type: isInc ? 'income' : 'expense_cash', 
                 paymentMethod: 'dinheiro', 
                 description: item.description, 
-                freeDescription: isInc ? "[Previsão Recebida]" : "[Compromisso Pago]",
+                freeDescription: autoNotes,
                 date: new Date().toISOString().substring(0, 10)
             });
 
@@ -1566,16 +1598,6 @@
         function closeSmartDeleteModal() {
             document.getElementById('deleteParcelamentoModal').style.display = 'none';
             pendingDeleteId = null;
-        }
-
-        function findCategoryByText(text) {
-            if(!text) return null;
-            let cleanText = text.toLowerCase().replace(/[^a-z0-9]/gi, '');
-            return categories.find(c => {
-                let cleanCatName = c.name.toLowerCase().replace(/[^a-z0-9]/gi, '');
-                if (!cleanCatName) return false;
-                return cleanText.includes(cleanCatName) || cleanCatName.includes(cleanText);
-            });
         }
 
         function checkLiveBudget() {
