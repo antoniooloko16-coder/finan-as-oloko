@@ -243,7 +243,6 @@
             outline: none;
         }
 
-        /* Chave seletora estilizada para Gastos / Ganhos */
         .type-toggle-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -405,7 +404,7 @@
         .metric-box p { margin: 0; font-weight: 700; font-size: 15px; white-space: nowrap; }
 
         .alert-blink { animation: blink 2s infinite; background: rgba(255, 23, 68, 0.02) !important; }
-        @keyframes blink { 0%, 100% { border-color: var(--danger); box-shadow: 0 0 12px rgba(255,23,68,0.15); } 50% { border-color: var(--border-color); box-shadow: none; } }
+        @keyframes blink { 0%, 100+ { border-color: var(--danger); box-shadow: 0 0 12px rgba(255,23,68,0.15); } 50% { border-color: var(--border-color); box-shadow: none; } }
 
         .history-list { margin-top: 10px; }
         .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 8px; border-bottom: 1px solid var(--border-color); cursor: pointer; margin-bottom: 4px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.01); transition: background 0.2s; }
@@ -839,11 +838,7 @@
 
         function toggleCategoryBoxes() {
             const panel = document.getElementById('categoryVisualMonitorBoxes');
-            if (panel.style.display === 'grid') {
-                panel.style.display = 'none';
-            } else {
-                panel.style.display = 'grid';
-            }
+            panel.style.display = panel.style.display === 'grid' ? 'none' : 'grid';
         }
 
         function setCategoryFormType(type) {
@@ -1198,6 +1193,11 @@
             pendingDeleteId = null;
         }
 
+        function findCategoryByColor(colorHex) {
+            if (!colorHex) return null;
+            return categories.find(c => c.color && c.color.toLowerCase() === colorHex.toLowerCase());
+        }
+
         function findCategoryByText(text) {
             if(!text) return null;
             let cleanText = text.toLowerCase().replace(/[^a-z0-9]/gi, '');
@@ -1227,17 +1227,14 @@
                 const targetList = transactionIndexedMap.get(targetMonth) || [];
                 
                 targetList.forEach(t => {
+                    let isMatch = t.categoryId === foundCat.id || findCategoryByText(t.description)?.id === foundCat.id;
                     if(foundCat.type === 'income') {
-                        if(t.type === 'income') {
-                            if(t.categoryId === foundCat.id || findCategoryByText(t.description)?.id === foundCat.id) {
-                                accumulatedSpent += t.amount;
-                            }
+                        if(t.type === 'income' && isMatch) {
+                            accumulatedSpent += t.amount;
                         }
                     } else {
-                        if(t.type === 'expense_cash' || t.type === 'saving') {
-                            if(t.categoryId === foundCat.id || findCategoryByText(t.description)?.id === foundCat.id) {
-                                accumulatedSpent += t.amount;
-                            }
+                        if((t.type === 'expense_cash' || t.type === 'saving') && isMatch) {
+                            accumulatedSpent += t.amount;
                         }
                     }
                 });
@@ -1613,17 +1610,17 @@
                 document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
                 document.getElementById('btnCancelCategoryEdit').style.display = "none";
                 
-                // Reseta a chave seletora para o padrão Gasto
                 setCategoryFormType('expense');
                 
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 renderCategoryManagement(); renderTags(); loadData();
-                alert('Configuração atualizada com sucesso! 👍');
+                alert('Configuração actualizada com sucesso! 👍');
             } else {
-                // Caso queira adicionar uma nova dinamicamente
                 let newId = "cat_custom_" + gerarIDUnico();
-                categories.push({ id: newId, name: name, budget: budget, type: type, color: type === 'income' ? '#00e676' : '#bb86fc' });
+                // Gera cores dinâmicas e únicas para caixas criadas em runtime
+                let randomColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                categories.push({ id: newId, name: name, budget: budget, type: type, color: type === 'income' ? '#00e676' : randomColor });
                 safeLocalStorageSave();
                 input.value = ''; budgetInput.value = '0';
                 setCategoryFormType('expense');
@@ -1867,6 +1864,8 @@
 
             targetMonthList.forEach(t => {
                 let matchesCategory = true; let matchesPayment = true;
+                
+                // Mapeamento à prova de balas por Id estável ou Cor fixa secundária
                 let catObj = t.categoryId ? categories.find(c => c.id === t.categoryId) : findCategoryByText(t.description);
 
                 if (filtroCategoriaAtivo !== "") {
@@ -2000,3 +1999,4 @@
     </script>
 </body>
 </html>
+
