@@ -512,6 +512,31 @@
             cursor: pointer;
             font-size: 11px;
         }
+
+        /* Classes Novas para Abas de Sub-tipo da Agenda */
+        .agenda-switcher {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: #0b0b0c;
+            padding: 4px;
+            gap: 6px;
+            margin-bottom: 18px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+        .agenda-type-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 12px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .agenda-type-btn.active.inc-type { background: rgba(0, 230, 118, 0.15); color: var(--success); }
+        .agenda-type-btn.active.exp-type { background: rgba(255, 23, 68, 0.15); color: var(--danger); }
     </style>
 </head>
 <body class="perfil-pessoal">
@@ -562,7 +587,7 @@
         <div id="page-lançamentos" class="page-content active">
             
             <div class="notification-bell-panel" id="agendaAlertPanel">
-                <div class="notification-header">🔔 Alerta de Valores a Receber Hoje!</div>
+                <div class="notification-header">🔔 Alerta de Valores Agendados para Hoje!</div>
                 <div id="agendaAlertList"></div>
             </div>
 
@@ -698,26 +723,32 @@
 
         <div id="page-agenda" class="page-content">
             <div class="card">
-                <h3 style="margin-top:0; color: var(--success); font-size: 15px; font-weight: 700;">📅 Agendar Futuro Recebimento</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Cadastre valores que você tem previsão de receber para ser alertado no dia exato.</p>
+                <div class="agenda-switcher">
+                    <button class="agenda-type-btn active inc-type" id="agenda-tab-income" onclick="switchAgendaFormType('income')">🟢 Agendar Recebimento</button>
+                    <button class="agenda-type-btn exp-type" id="agenda-tab-expense" onclick="switchAgendaFormType('expense')">🔴 Agendar Pagamento</button>
+                </div>
+
+                <h3 id="agendaFormTitle" style="margin-top:0; color: var(--success); font-size: 15px; font-weight: 700;">📅 Agendar Futuro Recebimento</h3>
+                <p id="agendaFormDesc" style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Cadastre valores que você tem previsão de receber para ser alertado no dia exato.</p>
+                <input type="hidden" id="agenda_flow_type" value="income">
                 
                 <div class="input-group">
-                    <label>🔍 Descrição do Recebimento</label>
+                    <label id="lblAgendaDescription">🔍 Descrição do Recebimento</label>
                     <input type="text" id="agenda_description" class="text-input" placeholder="Ex: Pagamento Cliente X, Venda de Sofá...">
                 </div>
 
                 <div class="grid-2col">
                     <div class="input-group">
-                        <label>💰 Valor Esperado (R$)</label>
+                        <label id="lblAgendaAmount">💰 Valor Esperado (R$)</label>
                         <input type="number" id="agenda_amount" class="text-input" placeholder="0.00" step="0.01">
                     </div>
                     <div class="input-group">
-                        <label>📅 Data do Recebimento</label>
+                        <label id="lblAgendaDate">📅 Data do Recebimento</label>
                         <input type="date" id="agenda_date" class="text-input">
                     </div>
                 </div>
 
-                <button class="btn-action" style="background: var(--success); width: 100%; font-size: 14px; padding: 12px 0; margin-top: 5px;" onclick="saveAgendaItem()">➕ Agendar Recebimento</button>
+                <button id="btnSaveAgendaAction" class="btn-action" style="background: var(--success); width: 100%; font-size: 14px; padding: 12px 0; margin-top: 5px;" onclick="saveAgendaItem()">➕ Agendar Recebimento</button>
             </div>
 
             <div class="card">
@@ -882,7 +913,7 @@
         let transactions = [];
         let categories = [];
         let recurrentExpenses = []; 
-        let agendaItems = []; // Vetor para armazenar os recebimentos agendados
+        let agendaItems = []; 
         let ccConfig = { closeDay: 25, dueDay: 5 };
         let transactionIndexedMap = new Map();
 
@@ -963,7 +994,7 @@
 
             processRecurrentEntries();
             rebuildTransactionIndex();
-            checkAgendaNotifications(); // Verifica alertas ao trocar perfil
+            checkAgendaNotifications(); 
         }
 
         function processRecurrentEntries() {
@@ -1157,8 +1188,48 @@
             window.scrollTo(0,0);
         }
 
-        /* LÓGICA DE GERENCIAMENTO DA AGENDA / VALORES FUTUROS */
+        /* LÓGICA DE GERENCIAMENTO DA AGENDA (RECEBIMENTOS E PAGAMENTOS FUTUROS) */
+        function switchAgendaFormType(flowType) {
+            document.getElementById('agenda_flow_type').value = flowType;
+            document.querySelectorAll('.agenda-type-btn').forEach(btn => btn.classList.remove('active'));
+            
+            const formTitle = document.getElementById('agendaFormTitle');
+            const formDesc = document.getElementById('agendaFormDesc');
+            const lblDesc = document.getElementById('lblAgendaDescription');
+            const inputDesc = document.getElementById('agenda_description');
+            const lblAmount = document.getElementById('lblAgendaAmount');
+            const lblDate = document.getElementById('lblAgendaDate');
+            const btnAction = document.getElementById('btnSaveAgendaAction');
+
+            if(flowType === 'income') {
+                document.getElementById('agenda-tab-income').classList.add('active');
+                formTitle.innerText = "📅 Agendar Futuro Recebimento";
+                formTitle.style.color = "var(--success)";
+                formDesc.innerText = "Cadastre valores que você tem previsão de receber para ser alertado no dia exato.";
+                lblDesc.innerText = "🔍 Descrição do Recebimento";
+                inputDesc.placeholder = "Ex: Pagamento Cliente X, Venda de Sofá...";
+                lblAmount.innerText = "💰 Valor Esperado (R$)";
+                lblDate.innerText = "📅 Data do Recebimento";
+                btnAction.innerText = "➕ Agendar Recebimento";
+                btnAction.style.background = "var(--success)";
+                btnAction.style.color = "#000";
+            } else {
+                document.getElementById('agenda-tab-expense').classList.add('active');
+                formTitle.innerText = "📅 Agendar Futuro Pagamento";
+                formTitle.style.color = "var(--danger)";
+                formDesc.innerText = "Cadastre boletos, contas ou compromissos que irão vencer para monitorar o caixa.";
+                lblDesc.innerText = "🔍 Descrição do Pagamento";
+                inputDesc.placeholder = "Ex: Fornecedor de Tecidos, Conta de Luz...";
+                lblAmount.innerText = "💰 Valor do Compromisso (R$)";
+                lblDate.innerText = "📅 Data do Vencimento";
+                btnAction.innerText = "➕ Agendar Pagamento";
+                btnAction.style.background = "var(--danger)";
+                btnAction.style.color = "#fff";
+            }
+        }
+
         function saveAgendaItem() {
+            const flowType = document.getElementById('agenda_flow_type').value;
             const desc = document.getElementById('agenda_description').value.trim();
             const amount = parseFloat(document.getElementById('agenda_amount').value);
             const date = document.getElementById('agenda_date').value;
@@ -1172,7 +1243,8 @@
                 id: gerarIDUnico(),
                 description: desc,
                 amount: amount,
-                date: date
+                date: date,
+                type: flowType // 'income' ou 'expense'
             });
 
             safeLocalStorageSave();
@@ -1180,7 +1252,7 @@
             document.getElementById('agenda_amount').value = '';
             renderAgendaList();
             checkAgendaNotifications();
-            alert("📅 Recebimento futuro agendado com sucesso!");
+            alert(flowType === 'income' ? "📅 Recebimento futuro agendado!" : "📅 Pagamento futuro agendado!");
         }
 
         function renderAgendaList() {
@@ -1189,27 +1261,30 @@
             container.innerHTML = '';
 
             if (agendaItems.length === 0) {
-                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhuma previsão de recebimento cadastrada. 📭</div>`;
+                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhuma previsão futura cadastrada. 📭</div>`;
                 return;
             }
 
-            // Ordena os itens agendados por data mais próxima
             agendaItems.sort((a,b) => parseSafeDate(a.date) - parseSafeDate(b.date));
 
             agendaItems.forEach(item => {
                 let dateFormatted = item.date.split('-').reverse().join('/');
                 let div = document.createElement('div');
                 div.className = 'history-item';
-                div.style.borderLeft = `5px solid var(--success)`;
+                
+                const isInc = item.type !== 'expense';
+                div.style.borderLeft = `5px solid ${isInc ? 'var(--success)' : 'var(--danger)'}`;
                 div.style.cursor = 'default';
 
                 div.innerHTML = `
                     <div class="history-info">
-                        <span class="history-desc">🔮 ${item.description}</span>
-                        <span class="history-date">📅 Data Prevista: ${dateFormatted}</span>
+                        <span class="history-desc">${isInc ? '🔮' : '💸'} ${item.description}</span>
+                        <span class="history-date">📅 Previsão: ${dateFormatted} (${isInc ? 'Recebimento' : 'Pagamento'})</span>
                     </div>
                     <div class="history-right">
-                        <span class="history-val" style="color: var(--success)">+ ${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                        <span class="history-val" style="color: ${isInc ? 'var(--success)' : 'var(--danger)'}">
+                            ${isInc ? '+' : '-'} ${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </span>
                         <button class="btn-delete-item" onclick="deleteAgendaItem('${item.id}', event)">🗑️</button>
                     </div>
                 `;
@@ -1225,14 +1300,12 @@
             checkAgendaNotifications();
         }
 
-        // Sistema Automático de Alertas e Recebimento Direto no Painel Principal
         function checkAgendaNotifications() {
             const alertPanel = document.getElementById('agendaAlertPanel');
             const alertList = document.getElementById('agendaAlertList');
             if (!alertPanel || !alertList) return;
 
             const hojeStr = new Date().toISOString().substring(0, 10);
-            // Filtra os agendamentos cuja data seja hoje ou já tenha passado (atrasados)
             const pendentes = agendaItems.filter(item => item.date <= hojeStr);
 
             if (pendentes.length === 0) {
@@ -1246,34 +1319,36 @@
             pendentes.forEach(item => {
                 let row = document.createElement('div');
                 row.className = 'notification-item-row';
+                const isInc = item.type !== 'expense';
+                
                 row.innerHTML = `
-                    <span><strong>${item.description}</strong> (${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
-                    <button class="btn-notification-action" onclick="claimAgendaAmount('${item.id}')">💰 Receber</button>
+                    <span><strong>${isInc ? '🟢' : '🔴'} ${item.description}</strong> (${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
+                    <button class="btn-notification-action" style="background: ${isInc ? 'var(--success)' : 'var(--danger)'}; color: ${isInc ? '#000' : '#fff'};" onclick="claimAgendaAmount('${item.id}')">
+                        ${isInc ? '💰 Receber' : '💸 Pagar'}
+                    </button>
                 `;
                 alertList.appendChild(row);
             });
         }
 
-        // Injeta o valor da previsão diretamente na sua conta corrente real (Ganhos)
         function claimAgendaAmount(id) {
             const item = agendaItems.find(i => i.id === id);
             if (!item) return;
 
-            // Insere nas transações reais
             let matchedCategory = findCategoryByText(item.description);
             let categoryId = matchedCategory ? matchedCategory.id : null;
+            const isInc = item.type !== 'expense';
 
             transactions.push({ 
                 id: gerarIDUnico(), 
                 categoryId: categoryId, 
                 amount: item.amount, 
-                type: 'income', 
+                type: isInc ? 'income' : 'expense_cash', 
                 paymentMethod: 'dinheiro', 
-                description: item.description, 
-                date: new Date().toISOString().substring(0, 10) // Data atual da efetivação
+                description: item.description + (isInc ? " [Previsão Recebida]" : " [Compromisso Pago]"), 
+                date: new Date().toISOString().substring(0, 10)
             });
 
-            // Remove da agenda de previsão futura
             agendaItems = agendaItems.filter(i => i.id !== id);
 
             safeLocalStorageSave();
@@ -2045,7 +2120,7 @@
             showBanner();
             processRecurrentEntries();
             clearExtratoFilter();
-            checkAgendaNotifications(); // Atualiza alertas após modificações
+            checkAgendaNotifications(); 
         }
 
         function loadData() {
@@ -2206,8 +2281,9 @@
             }
             
             if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
-            checkAgendaNotifications(); // Roda a verificação de alertas
+            checkAgendaNotifications(); 
         }
     </script>
 </body>
 </html>
+
