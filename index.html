@@ -425,7 +425,7 @@
             box-sizing: border-box;
         }
         .history-item:hover { background: rgba(255,255,255,0.03); }
-        .history-item:last-child { border-bottom: 1px solid var(--border-color); }
+        .history-item.is-agenda { border-style: dashed; opacity: 0.8; background: rgba(255, 255, 255, 0.03); }
         
         .history-info { 
             display: flex; 
@@ -480,6 +480,18 @@
             border-radius: 6px;
         }
         .btn-delete-item:hover { color: var(--danger); background: rgba(255, 23, 68, 0.1); }
+        .btn-claim-item { 
+            background: var(--success); 
+            border: none; 
+            color: #000; 
+            font-size: 14px; 
+            cursor: pointer; 
+            padding: 6px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
 
         .category-item { background: var(--bg-input); padding: 14px 16px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--border-color); }
         .category-main-info { display: flex; justify-content: space-between; align-items: center; }
@@ -903,7 +915,7 @@
         </div>
     </div>
 
-    <!-- Modais omitidos para brevidade, mas mantidos no código final real -->
+    <!-- Modais -->
     <div class="modal" id="expenseModal">
         <div class="modal-content">
             <div class="business-alert" id="businessCreditAlert">
@@ -998,7 +1010,6 @@
             { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 500, type: "expense", color: "#b3b3b3" }
         ];
 
-        // --- ATUALIZAÇÃO DO CALENDÁRIO ---
         function syncDateToInputs() {
             const mainDate = document.getElementById('mainDateSelector').value;
             if(mainDate) {
@@ -1013,7 +1024,6 @@
             const parts = val.split('-');
             return { year: parts[0], month: parts[1] };
         }
-        // ---------------------------------
 
         function toggleCategoryBoxes() {
             const panel = document.getElementById('categoryVisualMonitorBoxes');
@@ -1150,6 +1160,7 @@
             loadData();
             
             const activeTab = document.querySelector('.tab-btn.active').id;
+            if (activeTab === 'tab-lançamentos') switchPage('lançamentos');
             if (activeTab === 'tab-categorias') { renderCategoryManagement(); renderRecurrentManagement(); }
             if (activeTab === 'tab-anual') renderAnnualBalance();
             if (activeTab === 'tab-agenda') renderAgendaList();
@@ -1186,15 +1197,13 @@
                 }
                 rebuildTransactionIndex();
             } catch (e) {
-                alert("❌ Erro ao salvar dados.");
+                console.error("Erro ao salvar dados.");
             }
         }
         
         window.addEventListener('DOMContentLoaded', () => {
             const dataHoje = new Date();
             const dataFormatada = dataHoje.toISOString().substring(0, 10);
-            
-            // Iniciar calendário do topo
             document.getElementById('mainDateSelector').value = dataFormatada;
             
             switchProfileData();
@@ -1335,7 +1344,8 @@
             document.getElementById('agenda_amount').value = '';
             renderAgendaList();
             checkAgendaNotifications();
-            alert(flowType === 'income' ? "📅 Recebimento futuro agendado!" : "📅 Pagamento futuro agendado!");
+            alert(flowType === 'income' ? "📅 Recebimento agendado!" : "📅 Pagamento agendado!");
+            loadData();
         }
 
         function renderAgendaList() {
@@ -1357,7 +1367,7 @@
             }
 
             if (agendaItems.length === 0) {
-                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhuma previsão futura cadastrada. 📭</div>`;
+                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhuma previsão cadastrada. 📭</div>`;
                 return;
             }
 
@@ -1391,6 +1401,7 @@
                         <span class="history-val" style="color: ${isInc ? 'var(--success)' : 'var(--danger)'}">
                             ${isInc ? '+' : '-'} ${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                         </span>
+                        <button class="btn-claim-item" title="Confirmar" onclick="claimAgendaAmount('${item.id}', event)">✅</button>
                         <button class="btn-delete-item" onclick="deleteAgendaItem('${item.id}', event)">🗑️</button>
                     </div>
                 `;
@@ -1403,6 +1414,7 @@
             agendaItems = agendaItems.filter(i => i.id !== id);
             safeLocalStorageSave();
             renderAgendaList();
+            loadData();
             checkAgendaNotifications();
         }
 
@@ -1438,7 +1450,8 @@
             });
         }
 
-        function claimAgendaAmount(id) {
+        function claimAgendaAmount(id, event) {
+            if(event) event.stopPropagation();
             const item = agendaItems.find(i => i.id === id);
             if (!item) return;
 
@@ -1462,6 +1475,7 @@
 
             safeLocalStorageSave();
             loadData();
+            if(document.getElementById('page-agenda').classList.contains('active')) renderAgendaList();
             checkAgendaNotifications();
             showBanner();
         }
@@ -1483,7 +1497,6 @@
             
             document.getElementById('containerFixedCheck').style.display = 'none';
             document.getElementById('editBadge').style.display = 'inline-block';
-            
             document.getElementById('actionButtonsContainer').style.display = 'none';
             document.getElementById('editButtonsContainer').style.display = 'grid';
             
@@ -1497,20 +1510,12 @@
             const catId = document.getElementById('sl_category').value;
             const freeDesc = document.getElementById('tx_free_description').value.trim();
             const dateInput = document.getElementById('tx_date').value;
-
             const selectedCatObj = categories.find(c => c.id === catId);
             const baseDescription = selectedCatObj ? selectedCatObj.name : "Geral";
 
             transactions = transactions.map(t => {
                 if (t.id === editingTransactionId) {
-                    return { 
-                        ...t, 
-                        amount: val, 
-                        categoryId: catId, 
-                        description: baseDescription, 
-                        freeDescription: freeDesc, 
-                        date: dateInput 
-                    };
+                    return { ...t, amount: val, categoryId: catId, description: baseDescription, freeDescription: freeDesc, date: dateInput };
                 }
                 return t;
             });
@@ -1544,11 +1549,8 @@
             if (event) event.stopPropagation();
             const target = transactions.find(t => t.id === id);
             if (!target) return;
-
             pendingDeleteId = id;
-            const hasParcela = target.freeDescription && target.freeDescription.match(/\((\d+)\/(\d+)\)/);
-
-            if (hasParcela) {
+            if (target.freeDescription && target.freeDescription.match(/\((\d+)\/(\d+)\)/)) {
                 document.getElementById('deleteParcelamentoModal').style.display = 'flex';
             } else {
                 document.getElementById('deleteSimpleModal').style.display = 'flex';
@@ -1579,7 +1581,6 @@
                 const baseFreeDesc = target.freeDescription.split('(')[0].trim();
                 const matchParcela = target.freeDescription.match(/\((\d+)\/(\d+)\)/);
                 const parcelaAtual = parseInt(matchParcela[1], 10);
-
                 transactions = transactions.filter(t => {
                     if (t.categoryId !== target.categoryId) return true;
                     if (!t.freeDescription || !t.freeDescription.startsWith(baseFreeDesc)) return true;
@@ -1588,7 +1589,6 @@
                     return parseInt(internalMatch[1], 10) < parcelaAtual;
                 });
             }
-
             closeSmartDeleteModal();
             safeLocalStorageSave();
             loadData();
@@ -1615,7 +1615,6 @@
             if(foundCat && foundCat.budget > 0) {
                 let accumulatedSpent = 0;
                 const targetList = transactionIndexedMap.get(targetMonth) || [];
-                
                 targetList.forEach(t => {
                     let isMatch = t.categoryId === foundCat.id;
                     if(foundCat.type === 'income') {
@@ -1627,17 +1626,15 @@
 
                 let totalProjected = accumulatedSpent + currentAmount;
                 let percentage = Math.min((totalProjected / foundCat.budget) * 100, 100);
-
                 document.getElementById('budgetMonitor').style.display = 'block';
+                let fill = document.getElementById('budgetBarFill');
+                fill.style.width = `${percentage}%`;
+                
                 if(foundCat.type === 'income') {
                     document.getElementById('budgetLabelTarget').innerText = `🎯 Meta de ${foundCat.name}`;
-                    let fill = document.getElementById('budgetBarFill');
-                    fill.style.width = `${percentage}%`;
                     fill.style.background = totalProjected >= foundCat.budget ? 'var(--success)' : 'var(--warning)';
                 } else {
                     document.getElementById('budgetLabelTarget').innerText = `🎯 Teto de ${foundCat.name}`;
-                    let fill = document.getElementById('budgetBarFill');
-                    fill.style.width = `${percentage}%`;
                     if(totalProjected > foundCat.budget) fill.style.background = 'var(--danger)';
                     else if (totalProjected > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
                     else fill.style.background = 'var(--success)';
@@ -1675,20 +1672,13 @@
                 try {
                     let imported = JSON.parse(e.target.result);
                     if (imported.t_pessoal || imported.transactions) {
-                        if(imported.t_pessoal) {
-                            localStorage.setItem('transactions_pessoal', JSON.stringify(imported.t_pessoal));
-                            localStorage.setItem('categories_pessoal', JSON.stringify(imported.c_pessoal));
-                            localStorage.setItem('recurrent_pessoal', JSON.stringify(imported.r_pessoal || []));
-                            localStorage.setItem('cc_config_pessoal', JSON.stringify(imported.cc_pessoal));
-                            localStorage.setItem('transactions_empresa', JSON.stringify(imported.t_empresa));
-                            localStorage.setItem('categories_empresa', JSON.stringify(imported.c_empresa));
-                            localStorage.setItem('recurrent_empresa', JSON.stringify(imported.r_empresa || []));
-                            localStorage.setItem('cc_config_empresa', JSON.stringify(imported.cc_config_empresa));
-                        }
+                        localStorage.setItem('transactions_pessoal', JSON.stringify(imported.t_pessoal || imported.transactions));
+                        localStorage.setItem('categories_pessoal', JSON.stringify(imported.c_pessoal || []));
+                        localStorage.setItem('recurrent_pessoal', JSON.stringify(imported.r_pessoal || []));
+                        localStorage.setItem('transactions_empresa', JSON.stringify(imported.t_empresa || []));
+                        localStorage.setItem('categories_empresa', JSON.stringify(imported.c_empresa || []));
                         alert('Backup restaurado com sucesso! 🎉');
                         window.location.reload();
-                    } else {
-                        alert('Arquivo de backup inválido ❌');
                     }
                 } catch (err) { alert('Erro ao ler arquivo.'); }
             };
@@ -1699,10 +1689,8 @@
             const tbody = document.getElementById('annualTableBody');
             const { year: selectedYear } = getSelectedYearMonth();
             if(document.getElementById('lblAnualHeader')) document.getElementById('lblAnualHeader').innerText = selectedYear;
-            
             tbody.innerHTML = '';
             let grandTotalIncome = 0; let grandTotalExpense = 0;
-
             let annualCategoryAmounts = new Map();
             categories.forEach(c => annualCategoryAmounts.set(c.id, 0));
             let grandTotalExpenseAllYear = 0;
@@ -1711,7 +1699,6 @@
                 let monthStr = String(m).padStart(2, '0');
                 let targetYearMonth = `${selectedYear}-${monthStr}`;
                 let monthlyIncome = 0; let monthlyExpense = 0;
-
                 const currentMonthList = transactionIndexedMap.get(targetYearMonth) || [];
                 currentMonthList.forEach(t => {
                     if (t.type === 'income' || t.type === 'saving_withdrawal') monthlyIncome += t.amount;
@@ -1723,34 +1710,18 @@
                         annualCategoryAmounts.set(t.categoryId, annualCategoryAmounts.get(t.categoryId) + t.amount);
                     }
                 });
-
                 grandTotalIncome += monthlyIncome; grandTotalExpense += monthlyExpense;
-                let monthlyBalance = monthlyIncome - monthlyExpense;
-                let balanceColor = monthlyBalance >= 0 ? 'var(--success)' : 'var(--danger)';
-
+                let balanceColor = (monthlyIncome - monthlyExpense) >= 0 ? 'var(--success)' : 'var(--danger)';
                 let tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="font-weight:500;">📅 ${monthNames[monthStr]}</td>
-                    <td style="color: var(--success); font-weight: 600;">${formatCurrency(monthlyIncome)}</td>
-                    <td style="color: var(--danger); font-weight: 600;">${formatCurrency(monthlyExpense)}</td>
-                    <td style="color: ${balanceColor}; font-weight: bold;">${formatCurrency(monthlyBalance)}</td>
-                `;
+                tr.innerHTML = `<td>📅 ${monthNames[monthStr]}</td><td style="color:var(--success);">${formatCurrency(monthlyIncome)}</td><td style="color:var(--danger);">${formatCurrency(monthlyExpense)}</td><td style="color:${balanceColor}; font-weight:bold;">${formatCurrency(monthlyIncome - monthlyExpense)}</td>`;
                 tbody.appendChild(tr);
             }
 
-            let yearBalance = grandTotalIncome - grandTotalExpense;
-            let totalBalanceColor = yearBalance >= 0 ? 'var(--success)' : 'var(--danger)';
-
+            let totalBalanceColor = (grandTotalIncome - grandTotalExpense) >= 0 ? 'var(--success)' : 'var(--danger)';
             let totalTr = document.createElement('tr');
             totalTr.className = 'total-row';
-            totalTr.innerHTML = `
-                <td>🏁 TOTAL ANO</td>
-                <td style="color: var(--success);">${formatCurrency(grandTotalIncome)}</td>
-                <td style="color: var(--danger);">${formatCurrency(grandTotalExpense)}</td>
-                <td style="color: ${totalBalanceColor}; font-weight: 700;">${formatCurrency(yearBalance)}</td>
-            `;
+            totalTr.innerHTML = `<td>🏁 TOTAL ANO</td><td style="color:var(--success);">${formatCurrency(grandTotalIncome)}</td><td style="color:var(--danger);">${formatCurrency(grandTotalExpense)}</td><td style="color:${totalBalanceColor}; font-weight:700;">${formatCurrency(grandTotalIncome - grandTotalExpense)}</td>`;
             tbody.appendChild(totalTr);
-
             renderAnnualCategoryBoxes(annualCategoryAmounts, grandTotalExpenseAllYear);
         }
 
@@ -1758,38 +1729,15 @@
             const container = document.getElementById('annualCategoryBoxes');
             if (!container) return;
             container.innerHTML = '';
-
             categories.forEach(cat => {
                 let spent = annualAmountsMap.get(cat.id) || 0;
-                let pct = 0;
-                if (cat.type === 'income') {
-                    let totalIncomeYear = transactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc, 0);
-                    pct = totalIncomeYear > 0 ? Math.round((spent / totalIncomeYear) * 100) : 0;
-                } else {
-                    pct = totalExpenseYear > 0 ? Math.round((spent / totalExpenseYear) * 100) : 0;
-                }
-
+                let pct = totalExpenseYear > 0 ? Math.round((spent / totalExpenseYear) * 100) : 0;
                 let annualBudget = (cat.budget || 0) * 12;
                 let isExceeded = cat.type === 'expense' && annualBudget > 0 && spent > annualBudget;
-
                 let box = document.createElement('div');
                 box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
                 box.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
-                box.style.cursor = 'default'; 
-
-                box.innerHTML = `
-                    <div class="category-box-header">
-                        <span class="category-box-title">${cat.name}</span>
-                        <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
-                    </div>
-                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 500;">
-                        ${annualBudget > 0 ? (cat.type === 'income' ? 'Meta Ano: ' : 'Teto Ano: ') + formatCurrency(annualBudget) : 'Sem Fluxo Fixo'}
-                    </div>
-                    <div class="category-box-footer">
-                        <span class="category-box-amount">${formatCurrency(spent)}</span>
-                        <span class="category-box-pct">${pct}%</span>
-                    </div>
-                `;
+                box.innerHTML = `<div class="category-box-header"><span class="category-box-title">${cat.name}</span><div class="category-box-dot" style="background-color:${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div></div><div class="category-box-footer"><span class="category-box-amount">${formatCurrency(spent)}</span><span class="category-box-pct">${pct}%</span></div>`;
                 container.appendChild(box);
             });
         }
@@ -1797,10 +1745,8 @@
         function filtrarExtratoPorTag(idCat, elementoTag) {
             const catObj = categories.find(c => c.id === idCat);
             if (!catObj) return;
-            
-            if (filtroCategoriaAtivo === catObj.id) {
-                clearExtratoFilter();
-            } else {
+            if (filtroCategoriaAtivo === catObj.id) { clearExtratoFilter(); } 
+            else {
                 document.querySelectorAll('.tag').forEach(t => t.classList.remove('active-filter'));
                 filtroCategoriaAtivo = catObj.id;
                 if(elementoTag) elementoTag.classList.add('active-filter');
@@ -1840,13 +1786,7 @@
                 tagEl.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
                 if (filtroCategoriaAtivo === cat.id) tagEl.classList.add('active-filter');
                 tagEl.innerText = cat.name;
-                
-                tagEl.onclick = (e) => { 
-                    e.stopPropagation();
-                    document.getElementById('sl_category').value = cat.id;
-                    checkLiveBudget(); 
-                    filtrarExtratoPorTag(cat.id, tagEl);
-                };
+                tagEl.onclick = (e) => { e.stopPropagation(); document.getElementById('sl_category').value = cat.id; checkLiveBudget(); filtrarExtratoPorTag(cat.id, tagEl); };
                 container.appendChild(tagEl);
             });
         }
@@ -1854,61 +1794,28 @@
         function renderVisualCategoryBoxes(targetMonthList, totalExpenseMonth) {
             const container = document.getElementById('categoryVisualMonitorBoxes');
             if (!container) return;
-            
             const currentDisplay = container.style.display;
             container.innerHTML = '';
-
             let categoryMapAmounts = new Map();
             categories.forEach(c => categoryMapAmounts.set(c.id, 0));
-
             targetMonthList.forEach(t => {
                 if (t.categoryId && categoryMapAmounts.has(t.categoryId)) {
-                    const matched = categories.find(c => c.id === t.categoryId);
-                    if (matched) {
-                        if (matched.type === 'income' && t.type === 'income') {
-                            categoryMapAmounts.set(t.categoryId, categoryMapAmounts.get(t.categoryId) + t.amount);
-                        } else if (matched.type !== 'income' && (t.type === 'expense_cash' || t.type === 'saving')) {
-                            categoryMapAmounts.set(t.categoryId, categoryMapAmounts.get(t.categoryId) + t.amount);
-                        }
-                    }
+                    if (t.type === 'expense_cash' || t.type === 'saving') categoryMapAmounts.set(t.categoryId, categoryMapAmounts.get(t.categoryId) + t.amount);
+                    if (t.type === 'income') categoryMapAmounts.set(t.categoryId, categoryMapAmounts.get(t.categoryId) + t.amount);
                 }
             });
-
-            let totalIncomeMonth = targetMonthList.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
 
             categories.forEach(cat => {
                 let spent = categoryMapAmounts.get(cat.id) || 0;
-                let pct = 0;
-                if(cat.type === 'income') {
-                    pct = totalIncomeMonth > 0 ? Math.round((spent / totalIncomeMonth) * 100) : 0;
-                } else {
-                    pct = totalExpenseMonth > 0 ? Math.round((spent / totalExpenseMonth) * 100) : 0;
-                }
-
+                let pct = totalExpenseMonth > 0 ? Math.round((spent / totalExpenseMonth) * 100) : 0;
                 let isExceeded = cat.type === 'expense' && cat.budget > 0 && spent > cat.budget;
-
                 let box = document.createElement('div');
                 box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
                 box.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
-                box.onclick = () => {
-                    document.getElementById('sl_category').value = cat.id;
-                    checkLiveBudget();
-                    filtrarExtratoPorTag(cat.id, null);
-                };
-
-                box.innerHTML = `
-                    <div class="category-box-header">
-                        <span class="category-box-title">${cat.name}</span>
-                        <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
-                    </div>
-                    <div class="category-box-footer">
-                        <span class="category-box-amount">${formatCurrency(spent)}</span>
-                        <span class="category-box-pct">${pct}%</span>
-                    </div>
-                `;
+                box.onclick = () => { document.getElementById('sl_category').value = cat.id; filtrarExtratoPorTag(cat.id, null); };
+                box.innerHTML = `<div class="category-box-header"><span class="category-box-title">${cat.name}</span><div class="category-box-dot" style="background-color:${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div></div><div class="category-box-footer"><span class="category-box-amount">${formatCurrency(spent)}</span><span class="category-box-pct">${pct}%</span></div>`;
                 container.appendChild(box);
             });
-            
             container.style.display = currentDisplay || 'none';
         }
 
@@ -1919,24 +1826,8 @@
             categories.forEach((cat) => {
                 let div = document.createElement('div');
                 div.className = 'category-item';
-                
-                let isIncome = cat.type === "income";
-                div.style.borderLeft = `4px solid ${cat.color || (isIncome ? 'var(--success)' : 'var(--primary)')}`;
-                
-                let budgetText = cat.budget > 0 ? 
-                    `${isIncome ? '🟢 Meta mensal' : '🎯 Teto mensal'}: ${formatCurrency(cat.budget)}` : 
-                    "♾️ Sem limite estipulado";
-                let badgeType = isIncome ? "🟢 Entrada / Ganho" : "🔴 Saída / Gasto";
-                
-                div.innerHTML = `
-                    <div class="category-main-info">
-                        <strong>${cat.name} <span style="font-size:10px; color:var(--text-muted); padding-left:4px;">(${badgeType})</span></strong>
-                        <div class="category-actions">
-                            <button class="btn-edit-cat" onclick="editCategory('${cat.id}')">✏️ Ajustar</button>
-                        </div>
-                    </div>
-                    <div class="category-budget-info">${budgetText}</div>
-                `;
+                div.style.borderLeft = `4px solid ${cat.color || (cat.type === "income" ? 'var(--success)' : 'var(--primary)')}`;
+                div.innerHTML = `<div class="category-main-info"><strong>${cat.name}</strong><button class="btn-edit-cat" onclick="editCategory('${cat.id}')">✏️ Ajustar</button></div><div class="category-budget-info">${cat.budget > 0 ? (cat.type === 'income' ? 'Meta: ' : 'Teto: ') + formatCurrency(cat.budget) : "♾️ Sem limite"}</div>`;
                 container.appendChild(div);
             });
         }
@@ -1946,30 +1837,21 @@
             if (!container) return;
             container.innerHTML = '';
             if (recurrentExpenses.length === 0) {
-                container.innerHTML = `<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px;">Nenhum contrato recorrente fixado.</div>`;
+                container.innerHTML = `<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px;">Nenhuma conta recorrente.</div>`;
                 return;
             }
             recurrentExpenses.forEach(rec => {
                 let div = document.createElement('div');
                 div.className = 'category-item';
                 div.style.borderLeft = "3px solid var(--primary)";
-                div.innerHTML = `
-                    <div class="category-main-info">
-                        <div>
-                            <strong>${rec.description}</strong>
-                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Valor: ${formatCurrency(rec.amount)} | Todo dia: ${rec.dueDay}</div>
-                        </div>
-                        <button class="btn-edit-cat" style="color:var(--danger);" onclick="deleteRecurrent('${rec.id}')">🗑️ Cancelar</button>
-                    </div>
-                `;
+                div.innerHTML = `<div class="category-main-info"><div><strong>${rec.description}</strong><div style="font-size:11px; color:var(--text-muted);">${formatCurrency(rec.amount)} | Todo dia: ${rec.dueDay}</div></div><button class="btn-edit-cat" style="color:var(--danger);" onclick="deleteRecurrent('${rec.id}')">🗑️</button></div>`;
                 container.appendChild(div);
             });
         }
 
         function deleteRecurrent(id) {
-            if (confirm("Deseja cancelar essa automação recorrente? Meses futuros não serão mais poluídos.")) {
+            if (confirm("Cancelar recorrência futura?")) {
                 recurrentExpenses = recurrentExpenses.filter(r => r.id !== id);
-                transactions = transactions.filter(t => t.recurrentId !== id); 
                 safeLocalStorageSave();
                 renderRecurrentManagement();
                 loadData();
@@ -1979,408 +1861,166 @@
         function addNewCategory() {
             let input = document.getElementById('new_category_name');
             let budgetInput = document.getElementById('new_category_budget');
-            let typeInput = document.getElementById('new_category_type');
             let name = input.value.trim();
             let budget = parseFloat(budgetInput.value) || 0;
-            let type = typeInput.value;
-
-            if(!name) return alert('Por favor, digite um nome válido! ⚠️');
-            if(!name.match(/[\u1F000-\u1FFFF]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹|🚗|⛽|🎁|✈️|⚽/)) { 
-                name = (type === 'income' ? "📈 " : "🔹 ") + name; 
-            }
-            
+            let type = document.getElementById('new_category_type').value;
+            if(!name) return alert('Digite um nome!');
             if (editingCategoryId) {
-                categories = categories.map(c => {
-                    if (c.id === editingCategoryId) {
-                        return { ...c, name: name, budget: budget, type: type };
-                    }
-                    return c;
-                });
+                categories = categories.map(c => c.id === editingCategoryId ? { ...c, name, budget, type } : c);
                 editingCategoryId = null;
-                document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
                 document.getElementById('btnCancelCategoryEdit').style.display = "none";
-                
-                setCategoryFormType('expense');
-                
-                safeLocalStorageSave();
-                input.value = ''; budgetInput.value = '0';
-                populateCategorySelector();
-                renderCategoryManagement(); renderTags(); loadData();
-                alert('Configuração actualizada com sucesso! 👍');
             } else {
-                let newId = "cat_custom_" + gerarIDUnico();
-                let randomColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-                categories.push({ id: newId, name: name, budget: budget, type: type, color: type === 'income' ? '#00e676' : randomColor });
-                safeLocalStorageSave();
-                input.value = ''; budgetInput.value = '0';
-                setCategoryFormType('expense');
-                populateCategorySelector();
-                renderCategoryManagement(); renderTags(); loadData();
-                alert('Nova Caixa cadastrada com sucesso! 🎉');
+                categories.push({ id: "cat_" + gerarIDUnico(), name, budget, type, color: '#' + Math.floor(Math.random()*16777215).toString(16) });
             }
+            safeLocalStorageSave();
+            input.value = ''; budgetInput.value = '0';
+            populateCategorySelector();
+            renderCategoryManagement(); renderTags(); loadData();
         }
 
         function editCategory(id) {
             const cat = categories.find(c => c.id === id);
             if (!cat) return;
-
             editingCategoryId = id;
             document.getElementById('new_category_name').value = cat.name;
             document.getElementById('new_category_budget').value = cat.budget;
-            
-            setCategoryFormType(cat.type || "expense");
-
-            document.getElementById('categoryFormTitle').innerText = "✏️ Configurar Caixa / Categoria";
+            setCategoryFormType(cat.type);
             document.getElementById('btnCancelCategoryEdit').style.display = "inline-block";
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelCategoryEdit() {
             editingCategoryId = null;
             document.getElementById('new_category_name').value = '';
             document.getElementById('new_category_budget').value = '0';
-            document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
             document.getElementById('btnCancelCategoryEdit').style.display = "none";
-            setCategoryFormType('expense');
         }
 
         function updateAmountDisplay() {
             let numericValue = parseInt(rawDigits, 10) / 100;
-            if(document.getElementById('amountDisplay')) {
-                document.getElementById('amountDisplay').innerText = formatCurrency(numericValue);
-            }
+            if(document.getElementById('amountDisplay')) document.getElementById('amountDisplay').innerText = formatCurrency(numericValue);
         }
 
         function pressKey(key) {
-            if (key === 'C') { rawDigits = "0"; } 
-            else if (key === 'back') {
-                rawDigits = rawDigits.slice(0, -1);
-                if (rawDigits === "" || rawDigits === "-") rawDigits = "0";
-            } else {
-                if (rawDigits === "0") { rawDigits = key; } 
-                else if (rawDigits.length < 10) { rawDigits += key; }
-            }
+            if (key === 'C') rawDigits = "0"; 
+            else if (key === 'back') { rawDigits = rawDigits.slice(0, -1); if (rawDigits === "") rawDigits = "0"; } 
+            else { if (rawDigits === "0") rawDigits = key; else if (rawDigits.length < 10) rawDigits += key; }
             updateAmountDisplay(); checkLiveBudget();
         }
 
         function dispararErroVisor() {
             const visor = document.getElementById('amountDisplay');
-            if(visor) {
-                visor.classList.add('visor-erro');
-                setTimeout(() => visor.classList.remove('visor-erro'), 400);
-            }
+            visor.classList.add('visor-erro');
+            setTimeout(() => visor.classList.remove('visor-erro'), 400);
         }
 
         let getNumericValue = () => parseInt(rawDigits, 10) / 100;
         function toggleConditionalFields() { document.getElementById('conditionalFields').style.display = document.getElementById('is_fixed').checked ? 'block' : 'none'; }
-
-        function togglePrivacyMode() {
-            privacyMode = !privacyMode;
-            document.getElementById('btnCortina').innerText = privacyMode ? '🙈' : '👁️';
-            loadData();
-            if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
-        }
-
-        function showBanner() {
-            const banner = document.getElementById('successBanner');
-            if(banner) {
-                banner.style.display = 'block';
-                setTimeout(() => banner.style.display = 'none', 2000);
-            }
-        }
-
-        function formatCurrency(val) {
-            if (privacyMode) return "R$ ***,**";
-            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
-
-        function openExpenseModal() {
-            const val = getNumericValue();
-            if (val <= 0) { dispararErroVisor(); return; }
-            document.getElementById('expenseModal').style.display = 'flex';
-        }
-
+        function togglePrivacyMode() { privacyMode = !privacyMode; document.getElementById('btnCortina').innerText = privacyMode ? '🙈' : '👁️'; loadData(); }
+        function showBanner() { const b = document.getElementById('successBanner'); b.style.display = 'block'; setTimeout(() => b.style.display = 'none', 2000); }
+        function formatCurrency(v) { if (privacyMode) return "R$ ***,**"; return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+        function openExpenseModal() { if (getNumericValue() <= 0) return dispararErroVisor(); document.getElementById('expenseModal').style.display = 'flex'; }
         function closeExpenseModal() { document.getElementById('expenseModal').style.display = 'none'; }
+        function executeExpenseSave(m) { closeExpenseModal(); saveTransaction('expense_cash', m); }
 
-        function executeExpenseSave(method) {
-            closeExpenseModal();
-            saveTransaction('expense_cash', method);
-        }
-
-        function saveTransaction(type, paymentMethod = 'dinheiro') {
+        function saveTransaction(type, method = 'dinheiro') {
             const val = getNumericValue();
-            if (val <= 0) { dispararErroVisor(); return; }
-            
             const catId = document.getElementById('sl_category').value;
             const freeDesc = document.getElementById('tx_free_description').value.trim();
-            
-            const selectedCatObj = categories.find(c => c.id === catId);
-            const baseDescription = selectedCatObj ? selectedCatObj.name : "Geral";
-            
             const dateInput = document.getElementById('tx_date').value;
-            const isFixed = document.getElementById('is_fixed').checked;
-
-            if (isFixed) {
-                const dueDay = parseInt(document.getElementById('due_day').value, 10) || 10;
-                recurrentExpenses.push({
-                    id: gerarIDUnico(),
-                    categoryId: catId,
-                    amount: val,
-                    type: type,
-                    description: baseDescription,
-                    dueDay: dueDay,
-                    startDate: dateInput
-                });
+            const cat = categories.find(c => c.id === catId);
+            if (document.getElementById('is_fixed').checked) {
+                recurrentExpenses.push({ id: gerarIDUnico(), categoryId: catId, amount: val, type, description: cat.name, dueDay: parseInt(document.getElementById('due_day').value), startDate: dateInput });
             } else {
-                transactions.push({ 
-                    id: gerarIDUnico(), 
-                    categoryId: catId, 
-                    amount: val, 
-                    type: type, 
-                    paymentMethod: paymentMethod, 
-                    description: baseDescription, 
-                    freeDescription: freeDesc,
-                    date: dateInput 
-                });
+                transactions.push({ id: gerarIDUnico(), categoryId: catId, amount: val, type, paymentMethod: method, description: cat.name, freeDescription: freeDesc, date: dateInput });
             }
             saveAndReset();
         }
 
-        function openCreditModal() {
-            const val = getNumericValue();
-            if (val <= 0) { dispararErroVisor(); return; }
-            document.getElementById('creditModal').style.display = 'flex';
-        }
-
-        function closeCreditModal() {
-            document.getElementById('creditModal').style.display = 'none';
-            document.getElementById('custom_installments').value = '';
-        }
-
-        function saveCustomCredit() {
-            const num = parseInt(document.getElementById('custom_installments').value, 10);
-            if (isNaN(num) || num <= 0) return alert('Insira um número válido ⚠️');
-            saveCreditTransaction(num);
-        }
+        function openCreditModal() { if (getNumericValue() <= 0) return dispararErroVisor(); document.getElementById('creditModal').style.display = 'flex'; }
+        function closeCreditModal() { document.getElementById('creditModal').style.display = 'none'; }
+        function saveCustomCredit() { saveCreditTransaction(parseInt(document.getElementById('custom_installments').value)); }
 
         function saveCreditTransaction(installments) {
-            const totalVal = getNumericValue();
+            const total = getNumericValue();
             const catId = document.getElementById('sl_category').value;
-            const freeDesc = document.getElementById('tx_free_description').value.trim() || 'Compra Cartão';
-            
-            const selectedCatObj = categories.find(c => c.id === catId);
-            const baseDescription = selectedCatObj ? selectedCatObj.name : "Geral";
-            
-            const dateInput = document.getElementById('tx_date').value;
-            
-            let splitData = dateInput.split('-');
-            let anoCompra = parseInt(splitData[0], 10);
-            let mesCompra = parseInt(splitData[1], 10) - 1; 
-            let diaCompra = parseInt(splitData[2], 10);
-
-            let monthOffset = 0;
-            if (diaCompra >= ccConfig.closeDay) { monthOffset = 1; }
-
-            const baseAmount = Math.floor((totalVal / installments) * 100) / 100;
-            let remainder = Math.round((totalVal - (baseAmount * installments)) * 100) / 100;
-
+            const freeDesc = document.getElementById('tx_free_description').value.trim() || 'Cartão';
+            const cat = categories.find(c => c.id === catId);
+            const date = document.getElementById('tx_date').value;
+            let split = date.split('-');
+            let mes = parseInt(split[1]) - 1 + (parseInt(split[2]) >= ccConfig.closeDay ? 1 : 0);
             for (let i = 0; i < installments; i++) {
-                let mesAlvo = mesCompra + i + monthOffset;
-                let dataReferencia = new Date(anoCompra, mesAlvo, 1, 12, 0, 0);
-                let anoCalculated = dataReferencia.getFullYear();
-                let mesCalculated = dataReferencia.getMonth() + 1;
-                let diaVencimento = obterUltimoDiaValido(anoCalculated, mesCalculated, ccConfig.dueDay);
-
-                let currentInstallmentAmount = baseAmount;
-                if (i === installments - 1) {
-                    currentInstallmentAmount = Math.round((baseAmount + remainder) * 100) / 100;
-                }
-
-                transactions.push({
-                    id: gerarIDUnico(),
-                    categoryId: catId,
-                    amount: currentInstallmentAmount,
-                    type: 'expense_cash',
-                    paymentMethod: 'cartao', 
-                    description: baseDescription,
-                    freeDescription: `${freeDesc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
-                    date: formatarDataISO(anoCalculated, mesCalculated, diaVencimento),
-                    isCredit: true 
-                });
+                let dRef = new Date(split[0], mes + i, 1);
+                transactions.push({ id: gerarIDUnico(), categoryId: catId, amount: total/installments, type: 'expense_cash', paymentMethod: 'cartao', description: cat.name, freeDescription: `${freeDesc} (${i+1}/${installments})`, date: formatarDataISO(dRef.getFullYear(), dRef.getMonth()+1, obterUltimoDiaValido(dRef.getFullYear(), dRef.getMonth()+1, ccConfig.dueDay)) });
             }
-            closeCreditModal();
-            saveAndReset();
+            closeCreditModal(); saveAndReset();
         }
 
         function saveAndReset() {
-            safeLocalStorageSave();
-            rawDigits = "0";
+            safeLocalStorageSave(); rawDigits = "0"; updateAmountDisplay();
             document.getElementById('tx_free_description').value = '';
-            document.getElementById('is_fixed').checked = false;
-            toggleConditionalFields();
-            updateAmountDisplay();
-            if(document.getElementById('budgetMonitor')) document.getElementById('budgetMonitor').style.display = 'none';
-            showBanner();
-            processRecurrentEntries();
-            clearExtratoFilter();
-            checkAgendaNotifications(); 
+            document.getElementById('is_fixed').checked = false; toggleConditionalFields();
+            showBanner(); processRecurrentEntries(); clearExtratoFilter();
         }
 
         function loadData() {
-            const { year: selectedYear, month: selectedMonth } = getSelectedYearMonth();
-            const currentSelectedTarget = `${selectedYear}-${selectedMonth}`;
-            
+            const { year, month } = getSelectedYearMonth();
+            const targetMonth = `${year}-${month}`;
             const container = document.getElementById('historyContainer');
             if(!container) return;
             container.innerHTML = '';
             
-            let totalIncome = 0; let totalExpense = 0; let totalSaving = 0;
-            let countItems = 0; let totalFaturaCartao = 0;
-
-            let targetMonthList = transactionIndexedMap.get(currentSelectedTarget) || [];
+            let tIncome = 0, tExpense = 0, tSaving = 0, tCartao = 0;
             
-            targetMonthList.forEach(t => {
-                if (t.type === 'expense_cash' || t.type === 'saving') totalExpense += t.amount;
-            });
+            // Mesclar transações reais com itens da agenda para o mês selecionado
+            let realList = (transactionIndexedMap.get(targetMonth) || []).map(t => ({...t, isAgenda: false}));
+            let agendaList = agendaItems.filter(item => item.date.startsWith(targetMonth)).map(t => ({...t, isAgenda: true}));
+            let combined = [...realList, ...agendaList].sort((a,b) => parseSafeDate(b.date) - parseSafeDate(a.date));
 
-            renderVisualCategoryBoxes(targetMonthList, totalExpense);
+            combined.forEach(t => {
+                if (filtroCategoriaAtivo !== "" && t.categoryId !== filtroCategoriaAtivo) return;
+                if (filtroPagamentoAtivo === 'cartao' && t.paymentMethod !== 'cartao') return;
+                if (filtroPagamentoAtivo === 'dinheiro' && t.paymentMethod === 'cartao') return;
 
-            totalExpense = 0;
-
-            targetMonthList.forEach(t => {
-                let matchesCategory = true; let matchesPayment = true;
-                
-                let catObj = categories.find(c => c.id === t.categoryId);
-
-                if (filtroCategoriaAtivo !== "") {
-                    if (t.categoryId !== filtroCategoriaAtivo) matchesCategory = false;
+                if (!t.isAgenda) {
+                    if (t.type === 'income' || t.type === 'saving_withdrawal') tIncome += t.amount;
+                    if (t.type === 'expense_cash' || t.type === 'saving') tExpense += t.amount;
+                    if (t.type === 'saving') tSaving += t.amount;
+                    if (t.type === 'saving_withdrawal') tSaving -= t.amount;
+                    if (t.paymentMethod === 'cartao') tCartao += t.amount;
                 }
 
-                if (filtroPagamentoAtivo !== "") {
-                    if (filtroPagamentoAtivo === 'cartao' && t.paymentMethod !== 'cartao') matchesPayment = false;
-                    if (filtroPagamentoAtivo === 'dinheiro' && t.paymentMethod === 'cartao') matchesPayment = false;
-                }
-
-                if (t.paymentMethod === 'cartao' || t.isCredit || (t.freeDescription && t.freeDescription.includes('('))) {
-                    totalFaturaCartao += t.amount;
-                }
-
-                if (!matchesCategory || !matchesPayment) return;
-
-                countItems++;
-                if (t.type === 'income') totalIncome += t.amount;
-                if (t.type === 'expense_cash') totalExpense += t.amount;
+                let cat = categories.find(c => c.id === t.categoryId) || { name: 'Geral', color: '#7e7e86' };
+                let itemEl = document.createElement('div');
+                itemEl.className = `history-item ${t.isAgenda ? 'is-agenda' : ''}`;
+                if(!t.isAgenda) itemEl.onclick = (e) => editTransaction(t.id, e);
                 
-                if (t.type === 'saving') totalSaving += t.amount;
-                if (t.type === 'saving_withdrawal') totalSaving -= t.amount;
+                let prefix = (t.type === 'income' || t.type === 'saving_withdrawal') ? '+' : '-';
+                let color = (t.type === 'income' || t.type === 'saving_withdrawal') ? 'var(--success)' : 'var(--danger)';
+                if (t.type === 'saving') { prefix = '💰'; color = 'var(--warning)'; }
 
-                let item = document.createElement('div');
-                item.className = 'history-item';
-                item.setAttribute('onclick', `editTransaction('${t.id}', event)`);
-                
-                let catColor = 'var(--border-color)';
-                let catLabel = 'Sem Categoria 📝';
-                if (catObj) {
-                    catColor = catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)');
-                    catLabel = catObj.name;
-                }
-                
-                item.style.borderLeft = `5px solid ${catColor}`;
-                
-                let dateFormatted = t.date.split('-').reverse().join('/');
-                let indicatorColor = 'var(--success)'; let prefix = '+';
-                
-                if (t.type === 'expense_cash') { 
-                    indicatorColor = catColor; 
-                    prefix = '-'; 
-                } else if (t.type === 'saving') { 
-                    indicatorColor = 'var(--warning)'; 
-                    prefix = '💰'; 
-                } else if (t.type === 'saving_withdrawal') {
-                    indicatorColor = 'var(--success)';
-                    prefix = '📥 +';
-                } else if (t.type === 'income') {
-                    indicatorColor = 'var(--success)';
-                    prefix = '+';
-                }
-
-                let badgeMetodo = "";
-                if(t.type === 'expense_cash') {
-                    badgeMetodo = t.paymentMethod === 'cartao' ? " <span style='color:var(--accent); font-size:10px;'>[💳]</span>" : " <span style='color:var(--success); font-size:10px;'>[💵]</span>";
-                }
-
-                let extraText = t.freeDescription ? ` - <span style="font-weight:400; color:var(--text);">${t.freeDescription}</span>` : '';
-
-                item.innerHTML = `
+                itemEl.style.borderLeft = `5px solid ${cat.color}`;
+                itemEl.innerHTML = `
                     <div class="history-info">
-                        <span class="history-desc"><strong>${t.description}</strong>${extraText}${badgeMetodo}</span>
-                        <span class="history-cat-badge" style="color: ${catColor};">
-                            <span class="history-cat-dot" style="background-color: ${catColor};"></span>
-                            ${catLabel}
-                        </span>
-                        <span class="history-date">📅 ${dateFormatted}</span>
+                        <span class="history-desc"><strong>${t.description}</strong>${t.freeDescription ? ' - '+t.freeDescription : ''} ${t.isAgenda ? '<span style="color:var(--warning); font-size:10px;">[AGENDADO]</span>' : ''}</span>
+                        <span class="history-cat-badge" style="color:${cat.color};"><span class="history-cat-dot" style="background:${cat.color};"></span>${cat.name}</span>
+                        <span class="history-date">📅 ${t.date.split('-').reverse().join('/')}</span>
                     </div>
                     <div class="history-right">
-                        <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
-                        <button class="btn-delete-item" onclick="deleteTransaction('${t.id}', event)">🗑️</button>
-                    </div>
-                `;
-                container.appendChild(item);
+                        <span class="history-val" style="color:${color}">${prefix} ${formatCurrency(t.amount)}</span>
+                        ${t.isAgenda ? `<button class="btn-claim-item" onclick="claimAgendaAmount('${t.id}', event)">✅</button>` : ''}
+                        <button class="btn-delete-item" onclick="${t.isAgenda ? 'deleteAgendaItem' : 'deleteTransaction'}('${t.id}', event)">🗑️</button>
+                    </div>`;
+                container.appendChild(itemEl);
             });
 
-            if (countItems === 0) {
-                container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhum lançamento registrado. 📭</div>`;
-            }
-
-            let totalWithdrawals = targetMonthList.filter(t => t.type === 'saving_withdrawal').reduce((acc, curr) => acc + curr.amount, 0);
-            let totalSavingsDeposited = targetMonthList.filter(t => t.type === 'saving').reduce((acc, curr) => acc + curr.amount, 0);
-            let sobrou = totalIncome - totalExpense - totalSavingsDeposited + totalWithdrawals;
+            document.getElementById('lblGanhos').innerText = formatCurrency(tIncome);
+            document.getElementById('lblGastos').innerText = formatCurrency(tExpense);
+            document.getElementById('lblCaixinha').innerText = formatCurrency(tSaving);
+            document.getElementById('lblSobrou').innerText = formatCurrency(tIncome - tExpense);
+            document.getElementById('dashFaturaCartao').innerText = formatCurrency(tCartao);
             
-            document.getElementById('lblGanhos').innerText = formatCurrency(totalIncome);
-            document.getElementById('lblGastos').innerText = formatCurrency(totalExpense);
-            document.getElementById('lblCaixinha').innerText = formatCurrency(totalSaving);
-            document.getElementById('lblSobrou').innerText = formatCurrency(sobrou);
-            document.getElementById('dashFaturaCartao').innerText = formatCurrency(totalFaturaCartao);
-
-            let macroBudgetLimit = categories.filter(c => c.type !== 'income').reduce((acc, curr) => acc + (curr.budget || 0), 0);
-            if (macroBudgetLimit > 0) {
-                document.getElementById('macroBudgetCard').style.display = 'block';
-                document.getElementById('macroBudgetValues').innerText = `${formatCurrency(totalExpense)} / ${formatCurrency(macroBudgetLimit)}`;
-                let macroPct = Math.min((totalExpense / macroBudgetLimit) * 100, 100);
-                let macroBar = document.getElementById('macroBudgetBarFill');
-                macroBar.style.width = `${macroPct}%`;
-                if(totalExpense > macroBudgetLimit) macroBar.style.background = 'var(--danger)';
-                else if (totalExpense > macroBudgetLimit * 0.8) macroBar.style.background = 'var(--warning)';
-                else macroBar.style.background = 'var(--success)';
-            } else {
-                document.getElementById('macroBudgetCard').style.display = 'none';
-            }
-
-            let saldoFuturoAno = 0;
-            transactions.forEach(t => {
-                if(t.date.startsWith(selectedYear)) {
-                    if(t.type === 'income' || t.type === 'saving_withdrawal') saldoFuturoAno += t.amount;
-                    else saldoFuturoAno -= t.amount;
-                }
-            });
-            document.getElementById('dashCaixaFutFuture').innerText = formatCurrency(saldoFuturoAno);
-
-            const summaryCard = document.getElementById('summaryCard');
-            const lblSobrou = document.getElementById('lblSobrou');
-            
-            if (summaryCard && lblSobrou) {
-                if (sobrou >= 0) {
-                    lblSobrou.style.color = currentProfile === 'pessoal' ? 'var(--primary)' : '#00e5ff';
-                    summaryCard.classList.remove('alert-blink');
-                } else {
-                    lblSobrou.style.color = 'var(--danger)';
-                    summaryCard.classList.add('alert-blink');
-                }
-            }
-            
-            if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
-            checkAgendaNotifications(); 
+            renderVisualCategoryBoxes(realList, tExpense);
+            checkAgendaNotifications();
         }
     </script>
 </body>
