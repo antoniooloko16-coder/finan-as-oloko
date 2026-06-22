@@ -998,7 +998,6 @@
             { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 500, type: "expense", color: "#b3b3b3" }
         ];
 
-        // --- ATUALIZAÇÃO DO CALENDÁRIO ---
         function syncDateToInputs() {
             const mainDate = document.getElementById('mainDateSelector').value;
             if(mainDate) {
@@ -1013,7 +1012,6 @@
             const parts = val.split('-');
             return { year: parts[0], month: parts[1] };
         }
-        // ---------------------------------
 
         function toggleCategoryBoxes() {
             const panel = document.getElementById('categoryVisualMonitorBoxes');
@@ -1194,7 +1192,6 @@
             const dataHoje = new Date();
             const dataFormatada = dataHoje.toISOString().substring(0, 10);
             
-            // Iniciar calendário do topo
             document.getElementById('mainDateSelector').value = dataFormatada;
             
             switchProfileData();
@@ -1335,6 +1332,7 @@
             document.getElementById('agenda_amount').value = '';
             renderAgendaList();
             checkAgendaNotifications();
+            loadData();
             alert(flowType === 'income' ? "📅 Recebimento futuro agendado!" : "📅 Pagamento futuro agendado!");
         }
 
@@ -1404,6 +1402,7 @@
             safeLocalStorageSave();
             renderAgendaList();
             checkAgendaNotifications();
+            loadData();
         }
 
         function checkAgendaNotifications() {
@@ -2238,46 +2237,65 @@
             let totalIncome = 0; let totalExpense = 0; let totalSaving = 0;
             let countItems = 0; let totalFaturaCartao = 0;
 
-            let targetMonthList = transactionIndexedMap.get(currentSelectedTarget) || [];
+            // Transações reais do mês
+            let realTransactions = transactionIndexedMap.get(currentSelectedTarget) || [];
             
-            targetMonthList.forEach(t => {
-                if (t.type === 'expense_cash' || t.type === 'saving') totalExpense += t.amount;
+            // Itens agendados do mês (Agenda)
+            let monthAgenda = agendaItems.filter(item => item.date.startsWith(currentSelectedTarget));
+
+            // Unifica os dois em uma lista de exibição
+            let combinedList = [
+                ...realTransactions.map(t => ({...t, isScheduled: false})),
+                ...monthAgenda.map(a => ({...a, isScheduled: true}))
+            ];
+
+            // Ordena por data decrescente
+            combinedList.sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
+
+            // Calcula caixas visuais apenas com transações REAIS
+            let totalExpenseForBoxes = 0;
+            realTransactions.forEach(t => {
+                if (t.type === 'expense_cash' || t.type === 'saving') totalExpenseForBoxes += t.amount;
             });
+            renderVisualCategoryBoxes(realTransactions, totalExpenseForBoxes);
 
-            renderVisualCategoryBoxes(targetMonthList, totalExpense);
-
-            totalExpense = 0;
-
-            targetMonthList.forEach(t => {
+            combinedList.forEach(t => {
                 let matchesCategory = true; let matchesPayment = true;
-                
                 let catObj = categories.find(c => c.id === t.categoryId);
 
                 if (filtroCategoriaAtivo !== "") {
                     if (t.categoryId !== filtroCategoriaAtivo) matchesCategory = false;
                 }
 
-                if (filtroPagamentoAtivo !== "") {
+                if (filtroPagamentoAtivo !== "" && !t.isScheduled) {
                     if (filtroPagamentoAtivo === 'cartao' && t.paymentMethod !== 'cartao') matchesPayment = false;
                     if (filtroPagamentoAtivo === 'dinheiro' && t.paymentMethod === 'cartao') matchesPayment = false;
-                }
-
-                if (t.paymentMethod === 'cartao' || t.isCredit || (t.freeDescription && t.freeDescription.includes('('))) {
-                    totalFaturaCartao += t.amount;
                 }
 
                 if (!matchesCategory || !matchesPayment) return;
 
                 countItems++;
-                if (t.type === 'income') totalIncome += t.amount;
-                if (t.type === 'expense_cash') totalExpense += t.amount;
-                
-                if (t.type === 'saving') totalSaving += t.amount;
-                if (t.type === 'saving_withdrawal') totalSaving -= t.amount;
+
+                // Soma totais apenas se NÃO for agendamento (itens agendados não afetam saldo real até serem "baixados")
+                if (!t.isScheduled) {
+                    if (t.type === 'income') totalIncome += t.amount;
+                    if (t.type === 'expense_cash') totalExpense += t.amount;
+                    if (t.type === 'saving') totalSaving += t.amount;
+                    if (t.type === 'saving_withdrawal') totalSaving -= t.amount;
+                    if (t.paymentMethod === 'cartao' || t.isCredit || (t.freeDescription && t.freeDescription.includes('('))) {
+                        totalFaturaCartao += t.amount;
+                    }
+                }
 
                 let item = document.createElement('div');
                 item.className = 'history-item';
-                item.setAttribute('onclick', `editTransaction('${t.id}', event)`);
+                
+                if (t.isScheduled) {
+                    item.style.opacity = "0.75";
+                    item.style.borderStyle = "dashed";
+                } else {
+                    item.setAttribute('onclick', `editTransaction('${t.id}', event)`);
+                }
                 
                 let catColor = 'var(--border-color)';
                 let catLabel = 'Sem Categoria 📝';
@@ -2291,23 +2309,30 @@
                 let dateFormatted = t.date.split('-').reverse().join('/');
                 let indicatorColor = 'var(--success)'; let prefix = '+';
                 
-                if (t.type === 'expense_cash') { 
-                    indicatorColor = catColor; 
-                    prefix = '-'; 
-                } else if (t.type === 'saving') { 
-                    indicatorColor = 'var(--warning)'; 
-                    prefix = '💰'; 
-                } else if (t.type === 'saving_withdrawal') {
-                    indicatorColor = 'var(--success)';
-                    prefix = '📥 +';
-                } else if (t.type === 'income') {
-                    indicatorColor = 'var(--success)';
-                    prefix = '+';
+                if (t.isScheduled) {
+                    indicatorColor = 'var(--text-muted)';
+                    prefix = t.type === 'expense' ? '⏳ -' : '⏳ +';
+                } else {
+                    if (t.type === 'expense_cash') { 
+                        indicatorColor = catColor; 
+                        prefix = '-'; 
+                    } else if (t.type === 'saving') { 
+                        indicatorColor = 'var(--warning)'; 
+                        prefix = '💰'; 
+                    } else if (t.type === 'saving_withdrawal') {
+                        indicatorColor = 'var(--success)';
+                        prefix = '📥 +';
+                    } else if (t.type === 'income') {
+                        indicatorColor = 'var(--success)';
+                        prefix = '+';
+                    }
                 }
 
                 let badgeMetodo = "";
-                if(t.type === 'expense_cash') {
+                if(!t.isScheduled && t.type === 'expense_cash') {
                     badgeMetodo = t.paymentMethod === 'cartao' ? " <span style='color:var(--accent); font-size:10px;'>[💳]</span>" : " <span style='color:var(--success); font-size:10px;'>[💵]</span>";
+                } else if (t.isScheduled) {
+                    badgeMetodo = " <span style='color:var(--warning); font-size:9px; font-weight:bold;'>[AGENDADO]</span>";
                 }
 
                 let extraText = t.freeDescription ? ` - <span style="font-weight:400; color:var(--text);">${t.freeDescription}</span>` : '';
@@ -2323,7 +2348,10 @@
                     </div>
                     <div class="history-right">
                         <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
-                        <button class="btn-delete-item" onclick="deleteTransaction('${t.id}', event)">🗑️</button>
+                        ${t.isScheduled ? 
+                            `<button class="btn-notification-action" onclick="claimAgendaAmount('${t.id}')" style="font-size:9px; padding:2px 6px;">BAIXAR</button>` : 
+                            `<button class="btn-delete-item" onclick="deleteTransaction('${t.id}', event)">🗑️</button>`
+                        }
                     </div>
                 `;
                 container.appendChild(item);
@@ -2333,8 +2361,8 @@
                 container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhum lançamento registrado. 📭</div>`;
             }
 
-            let totalWithdrawals = targetMonthList.filter(t => t.type === 'saving_withdrawal').reduce((acc, curr) => acc + curr.amount, 0);
-            let totalSavingsDeposited = targetMonthList.filter(t => t.type === 'saving').reduce((acc, curr) => acc + curr.amount, 0);
+            let totalWithdrawals = realTransactions.filter(t => t.type === 'saving_withdrawal').reduce((acc, curr) => acc + curr.amount, 0);
+            let totalSavingsDeposited = realTransactions.filter(t => t.type === 'saving').reduce((acc, curr) => acc + curr.amount, 0);
             let sobrou = totalIncome - totalExpense - totalSavingsDeposited + totalWithdrawals;
             
             document.getElementById('lblGanhos').innerText = formatCurrency(totalIncome);
@@ -2385,4 +2413,3 @@
     </script>
 </body>
 </html>
-
