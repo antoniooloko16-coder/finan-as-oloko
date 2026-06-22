@@ -613,22 +613,7 @@
                 <button class="icon-btn" id="btnToggleBoxes" onclick="toggleCategoryBoxes()" title="Ver caixas de gastos">📊</button>
                 <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
                 
-                <select class="date-select" id="monthSelector" aria-label="selecione o mês" onchange="loadData()">
-                    <option value="01">Jan</option>
-                    <option value="02">Fev</option>
-                    <option value="03">Mar</option>
-                    <option value="04">Abr</option>
-                    <option value="05">Mai</option>
-                    <option value="06">Jun</option>
-                    <option value="07">Jul</option>
-                    <option value="08">Ago</option>
-                    <option value="09">Set</option>
-                    <option value="10">Out</option>
-                    <option value="11">Nov</option>
-                    <option value="12">Dez</option>
-                </select>
-
-                <select class="date-select" id="yearSelector" aria-label="selecionar ano" onchange="loadData()"></select>
+                <input type="date" class="date-select" id="mainDateSelector" onchange="syncDateToInputs(); loadData();" style="padding: 7px 5px; width: 110px;">
             </div>
         </div>
         
@@ -798,7 +783,6 @@
                 <div class="input-group">
                     <label for="agenda_category">📊 Caixa / Categoria Alvo</label>
                     <select id="agenda_category" class="select-input"></select>
-                    <!-- ACESSO RÁPIDO MOVIDO PARA CÁ -->
                     <div class="tags-container" id="agendaTagsContainer"></div>
                 </div>
 
@@ -919,6 +903,7 @@
         </div>
     </div>
 
+    <!-- Modais omitidos para brevidade, mas mantidos no código final real -->
     <div class="modal" id="expenseModal">
         <div class="modal-content">
             <div class="business-alert" id="businessCreditAlert">
@@ -1013,6 +998,23 @@
             { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 500, type: "expense", color: "#b3b3b3" }
         ];
 
+        // --- ATUALIZAÇÃO DO CALENDÁRIO ---
+        function syncDateToInputs() {
+            const mainDate = document.getElementById('mainDateSelector').value;
+            if(mainDate) {
+                document.getElementById('tx_date').value = mainDate;
+                document.getElementById('agenda_date').value = mainDate;
+            }
+        }
+
+        function getSelectedYearMonth() {
+            const val = document.getElementById('mainDateSelector').value;
+            if (!val) return { year: "2026", month: "01" };
+            const parts = val.split('-');
+            return { year: parts[0], month: parts[1] };
+        }
+        // ---------------------------------
+
         function toggleCategoryBoxes() {
             const panel = document.getElementById('categoryVisualMonitorBoxes');
             panel.style.display = panel.style.display === 'grid' ? 'none' : 'grid';
@@ -1094,8 +1096,7 @@
         }
 
         function processRecurrentEntries() {
-            const mSel = document.getElementById('monthSelector')?.value || String(new Date().getMonth() + 1).padStart(2, '0');
-            const ySel = document.getElementById('yearSelector')?.value || String(new Date().getFullYear());
+            const { year: ySel, month: mSel } = getSelectedYearMonth();
             const targetKey = `${ySel}-${mSel}`;
 
             recurrentExpenses.forEach(rec => {
@@ -1190,22 +1191,18 @@
         }
         
         window.addEventListener('DOMContentLoaded', () => {
-            configurarSeletorAnos(); 
-            
             const dataHoje = new Date();
-            const anoCorrente = dataHoje.getFullYear();
-            const mesCorrente = String(dataHoje.getMonth() + 1).padStart(2, '0');
-            const diaCorrente = String(dataHoje.getDate()).padStart(2, '0');
+            const dataFormatada = dataHoje.toISOString().substring(0, 10);
             
-            if(document.getElementById('monthSelector')) document.getElementById('monthSelector').value = mesCorrente;
-            if(document.getElementById('yearSelector')) document.getElementById('yearSelector').value = anoCorrente;
+            // Iniciar calendário do topo
+            document.getElementById('mainDateSelector').value = dataFormatada;
             
             switchProfileData();
             
             if(document.getElementById('cc_close_day')) document.getElementById('cc_close_day').value = ccConfig.closeDay;
             if(document.getElementById('cc_due_day')) document.getElementById('cc_due_day').value = ccConfig.dueDay;
-            if(document.getElementById('tx_date')) document.getElementById('tx_date').value = `${anoCorrente}-${mesCorrente}-${diaCorrente}`;
-            if(document.getElementById('agenda_date')) document.getElementById('agenda_date').value = `${anoCorrente}-${mesCorrente}-${diaCorrente}`;
+            if(document.getElementById('tx_date')) document.getElementById('tx_date').value = dataFormatada;
+            if(document.getElementById('agenda_date')) document.getElementById('agenda_date').value = dataFormatada;
             
             updateAmountDisplay();
             renderTags();
@@ -1238,19 +1235,6 @@
         function obterUltimoDiaValido(ano, mes, diaAlvo) {
             let dataTeste = new Date(ano, mes, 0); 
             return Math.min(diaAlvo, dataTeste.getDate());
-        }
-
-        function configurarSeletorAnos() {
-            const seletorAno = document.getElementById('yearSelector');
-            if(!seletorAno) return;
-            const anoCorrente = new Date().getFullYear();
-            seletorAno.innerHTML = "";
-            for (let i = 2024; i <= 2030; i++) {
-                let opt = document.createElement('option');
-                opt.value = i; opt.innerText = i;
-                if (i === anoCorrente) opt.selected = true;
-                seletorAno.appendChild(opt);
-            }
         }
 
         function saveCCConfig() {
@@ -1713,7 +1697,7 @@
 
         function renderAnnualBalance() {
             const tbody = document.getElementById('annualTableBody');
-            const selectedYear = document.getElementById('yearSelector').value;
+            const { year: selectedYear } = getSelectedYearMonth();
             if(document.getElementById('lblAnualHeader')) document.getElementById('lblAnualHeader').innerText = selectedYear;
             
             tbody.innerHTML = '';
@@ -1846,7 +1830,7 @@
             loadData();
         }
 
-        renderTags = function() {
+        function renderTags() {
             const container = document.getElementById('tagsContainer');
             if(!container) return;
             container.innerHTML = '';
@@ -2244,12 +2228,7 @@
         }
 
         function loadData() {
-            const monthSelector = document.getElementById('monthSelector');
-            const yearSelector = document.getElementById('yearSelector');
-            if(!monthSelector || !yearSelector) return;
-
-            const selectedMonth = monthSelector.value;
-            const selectedYear = yearSelector.value;
+            const { year: selectedYear, month: selectedMonth } = getSelectedYearMonth();
             const currentSelectedTarget = `${selectedYear}-${selectedMonth}`;
             
             const container = document.getElementById('historyContainer');
@@ -2406,4 +2385,3 @@
     </script>
 </body>
 </html>
-
