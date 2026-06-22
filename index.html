@@ -40,7 +40,7 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            padding-top: 175px; 
+            padding-top: 185px; 
             padding-bottom: 40px;
         }
 
@@ -57,7 +57,7 @@
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-color);
             padding-top: 0px; 
-            padding-bottom: 5px;
+            padding-bottom: 0px;
         }
 
         .profile-switcher {
@@ -551,7 +551,7 @@
         .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: 700; text-transform: uppercase; display: none; }
 
         .edit-badge { background: var(--warning); color: #000; font-size: 10px; padding: 3px 6px; border-radius: 5px; font-weight: 700; margin-left: 8px; display: none; }
-        .card-dash-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 15px 15px 0 15px; }
+        .card-dash-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 25px 15px 0 15px; }
         .card-dash { background: var(--bg-card); padding: 14px; border-radius: 16px; border: 1px solid var(--border-color); text-align: left; }
         .card-dash h3 { margin: 0 0 4px 0; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
         .card-dash p { margin: 0; font-size: 15px; font-weight: 700; }
@@ -1704,7 +1704,7 @@
                     let fill = document.getElementById('budgetBarFill');
                     fill.style.width = `${percentage}%`;
                     if(totalProjected > foundCat.budget) fill.style.background = 'var(--danger)';
-                    else if (totalProjected > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
+                    else if (totalExpense > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
                     else fill.style.background = 'var(--success)';
                 }
                 document.getElementById('budgetLabelValues').innerText = `${formatCurrency(totalProjected)} / ${formatCurrency(foundCat.budget)}`;
@@ -2472,3 +2472,5 @@
     </script>
 </body>
 </html>
+
+
