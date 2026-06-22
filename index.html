@@ -110,7 +110,7 @@
 
         .top-actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
         }
 
@@ -129,17 +129,37 @@
         }
         .icon-btn:active { background: var(--border-color); }
 
-        .date-select {
+        .date-navigation {
+            display: flex;
+            align-items: center;
             background: var(--bg-input);
-            color: var(--text);
             border: 1px solid var(--border-color);
-            padding: 8px 12px;
             border-radius: 10px;
+            padding: 2px;
+        }
+
+        .nav-arrow {
+            background: none;
+            border: none;
+            color: var(--primary);
+            padding: 6px 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .date-select {
+            background: none;
+            color: var(--text);
+            border: none;
+            padding: 6px 4px;
             font-size: 13px;
             font-weight: 600;
             outline: none;
             appearance: none;
             -webkit-appearance: none;
+            text-align: center;
+            width: 95px;
         }
 
         .tab-navigation {
@@ -193,6 +213,24 @@
             40%, 80% { color: var(--danger); transform: translateX(6px); }
         }
         .visor-erro { animation: erroVisor 0.4s ease-in-out; }
+
+        .keyboard-shortcuts {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .shortcut-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
 
         .keyboard-grid {
             display: grid;
@@ -613,7 +651,11 @@
                 <button class="icon-btn" id="btnToggleBoxes" onclick="toggleCategoryBoxes()" title="Ver caixas de gastos">📊</button>
                 <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
                 
-                <input type="date" class="date-select" id="mainDateSelector" onchange="syncDateToInputs(); loadData();" style="padding: 7px 5px; width: 110px;">
+                <div class="date-navigation">
+                    <button class="nav-arrow" onclick="changeMonth(-1)">‹</button>
+                    <input type="date" class="date-select" id="mainDateSelector" onchange="syncDateToInputs(); loadData();">
+                    <button class="nav-arrow" onclick="changeMonth(1)">›</button>
+                </div>
             </div>
         </div>
         
@@ -662,6 +704,13 @@
                     <div class="display-amount" id="amountDisplay">R$ 0,00</div>
                     <span class="edit-badge" id="editBadge">MODO EDIÇÃO</span>
                 </div>
+                
+                <div class="keyboard-shortcuts">
+                    <button class="shortcut-btn" onclick="addQuickAmount(10)">+ R$ 10</button>
+                    <button class="shortcut-btn" onclick="addQuickAmount(50)">+ R$ 50</button>
+                    <button class="shortcut-btn" onclick="addQuickAmount(100)">+ R$ 100</button>
+                </div>
+
                 <div class="keyboard-grid">
                     <button class="key" onclick="pressKey('1')">1</button>
                     <button class="key" onclick="pressKey('2')">2</button>
@@ -903,7 +952,7 @@
         </div>
     </div>
 
-    <!-- Modais omitidos para brevidade, mas mantidos no código final real -->
+    <!-- Modais -->
     <div class="modal" id="expenseModal">
         <div class="modal-content">
             <div class="business-alert" id="businessCreditAlert">
@@ -1004,6 +1053,23 @@
                 document.getElementById('tx_date').value = mainDate;
                 document.getElementById('agenda_date').value = mainDate;
             }
+        }
+
+        function changeMonth(offset) {
+            const currentVal = document.getElementById('mainDateSelector').value;
+            const date = currentVal ? new Date(currentVal + 'T12:00:00') : new Date();
+            date.setMonth(date.getMonth() + offset);
+            const newValue = date.toISOString().substring(0, 10);
+            document.getElementById('mainDateSelector').value = newValue;
+            syncDateToInputs();
+            loadData();
+        }
+
+        function addQuickAmount(val) {
+            let current = parseInt(rawDigits, 10);
+            rawDigits = String(current + (val * 100));
+            updateAmountDisplay();
+            checkLiveBudget();
         }
 
         function getSelectedYearMonth() {
@@ -2237,22 +2303,16 @@
             let totalIncome = 0; let totalExpense = 0; let totalSaving = 0;
             let countItems = 0; let totalFaturaCartao = 0;
 
-            // Transações reais do mês
             let realTransactions = transactionIndexedMap.get(currentSelectedTarget) || [];
-            
-            // Itens agendados do mês (Agenda)
             let monthAgenda = agendaItems.filter(item => item.date.startsWith(currentSelectedTarget));
 
-            // Unifica os dois em uma lista de exibição
             let combinedList = [
                 ...realTransactions.map(t => ({...t, isScheduled: false})),
                 ...monthAgenda.map(a => ({...a, isScheduled: true}))
             ];
 
-            // Ordena por data decrescente
             combinedList.sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
 
-            // Calcula caixas visuais apenas com transações REAIS
             let totalExpenseForBoxes = 0;
             realTransactions.forEach(t => {
                 if (t.type === 'expense_cash' || t.type === 'saving') totalExpenseForBoxes += t.amount;
@@ -2276,7 +2336,6 @@
 
                 countItems++;
 
-                // Soma totais apenas se NÃO for agendamento (itens agendados não afetam saldo real até serem "baixados")
                 if (!t.isScheduled) {
                     if (t.type === 'income') totalIncome += t.amount;
                     if (t.type === 'expense_cash') totalExpense += t.amount;
