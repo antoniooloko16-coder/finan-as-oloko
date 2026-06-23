@@ -918,6 +918,13 @@
                 <input type="file" id="fileFileInput" style="display:none;" onchange="importBackup(event)">
             </div>
 
+            <!-- NOVA SEÇÃO DE RESET DE FÁBRICA -->
+            <div class="card" style="border-color: rgba(255, 23, 68, 0.3);">
+                <h3 style="margin-top:0; color: var(--danger); font-size: 15px; font-weight: 700;">🚨 Redefinição de Fábrica</h3>
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">Esta ação irá apagar permanentemente todos os lançamentos, categorias e ajustes de AMBOS os perfis (Pessoal e Empresa). O app ficará como se tivesse acabado de ser instalado.</p>
+                <button class="btn-action" style="background: var(--danger); color: #fff; width: 100%; font-size: 13px;" onclick="triggerAppReset()">🗑️ Limpar Tudo e Resetar App</button>
+            </div>
+
             <div class="card">
                 <h3 style="margin-top:0; color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">📋 Gerenciar Estrutura das Caixas</h3>
                 <div id="categoryListContainer"></div>
@@ -1704,7 +1711,7 @@
                     let fill = document.getElementById('budgetBarFill');
                     fill.style.width = `${percentage}%`;
                     if(totalProjected > foundCat.budget) fill.style.background = 'var(--danger)';
-                    else if (totalExpense > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
+                    else if (totalProjected > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
                     else fill.style.background = 'var(--success)';
                 }
                 document.getElementById('budgetLabelValues').innerText = `${formatCurrency(totalProjected)} / ${formatCurrency(foundCat.budget)}`;
@@ -1758,6 +1765,21 @@
                 } catch (err) { alert('Erro ao ler arquivo.'); }
             };
             reader.readAsText(file);
+        }
+
+        // FUNÇÃO DE RESET COMPLETO
+        function triggerAppReset() {
+            const firstConfirmation = confirm("⚠️ ATENÇÃO: Você está prestes a apagar TODOS os dados do aplicativo (Pessoal e Empresa).\n\nDeseja continuar com o primeiro passo da redefinição?");
+            
+            if (firstConfirmation) {
+                const secondConfirmation = confirm("🛑 ÚLTIMO AVISO: Esta ação não pode ser desfeita. Todos os lançamentos, economias e categorias personalizadas serão deletados para sempre.\n\nTem certeza absoluta que deseja resetar o app agora?");
+                
+                if (secondConfirmation) {
+                    localStorage.clear();
+                    alert("App resetado com sucesso. Reiniciando...");
+                    window.location.reload();
+                }
+            }
         }
 
         function renderAnnualBalance() {
@@ -2472,6 +2494,4 @@
     </script>
 </body>
 </html>
-
-
 
