@@ -39,7 +39,6 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            /* Aumentado de 215px para 250px para compensar o novo topo do header */
             padding-top: 250px; 
             padding-bottom: 40px;
         }
@@ -56,7 +55,6 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-color);
-            /* Aumentado de 10px para 45px para criar uma "Safe Area" no topo do celular */
             padding-top: 45px; 
             padding-bottom: 5px;
         }
@@ -911,10 +909,13 @@
 
         <div class="card">
             <h3 style="margin-top:0; color: var(--warning); font-size: 15px; font-weight: 700;">💾 Cópia de Segurança (Backup)</h3>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">Baixe seus dados para não perder nada caso troque ou formate o celular.</p>
-            <div class="grid-2col">
-                <button class="btn-secondary" onclick="exportBackup()">📤 Exportar</button>
-                <button class="btn-secondary" onclick="document.getElementById('fileFileInput').click()">📥 Importar</button>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">Exporte seus dados para não perder nada. No celular, você pode enviar por e-mail ou WhatsApp.</p>
+            <div class="grid-2col" style="grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button class="btn-secondary" style="background: var(--primary); border-color: var(--primary); color: #000;" onclick="shareBackup()">✉️ Compartilhar/E-mail</button>
+                <button class="btn-secondary" onclick="exportBackup()">📂 Baixar Arquivo</button>
+            </div>
+            <div style="margin-top: 10px;">
+                <button class="btn-secondary" style="width: 100%;" onclick="document.getElementById('fileFileInput').click()">📥 Importar Backup</button>
             </div>
             <input type="file" id="fileFileInput" style="display:none;" onchange="importBackup(event)">
         </div>
@@ -1714,8 +1715,11 @@
         }
     }
 
-    function exportBackup() {
-        let backupData = { 
+    /**
+     * GERA O OBJETO DE BACKUP COMPLETO
+     */
+    function getFullBackupObject() {
+        return { 
             t_pessoal: JSON.parse(localStorage.getItem('transactions_pessoal')) || [],
             c_pessoal: JSON.parse(localStorage.getItem('categories_pessoal')) || defaultCategoriesPessoal,
             r_pessoal: JSON.parse(localStorage.getItem('recurrent_pessoal')) || [],
@@ -1727,12 +1731,49 @@
             a_empresa: JSON.parse(localStorage.getItem('agenda_empresa')) || [],
             cc_empresa: JSON.parse(localStorage.getItem('cc_config_empresa')) || { closeDay: 25, dueDay: 5 }
         };
-        let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
-        let downloadAnchor = document.createElement('a');
+    }
+
+    /**
+     * EXPORTAÇÃO TRADICIONAL (DOWNLOAD DO ARQUIVO NA PASTA DOWNLOADS)
+     */
+    function exportBackup() {
+        const backupData = getFullBackupObject();
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
+        const downloadAnchor = document.createElement('a');
         downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `Backup_Financas_Pro_Full.json`);
+        downloadAnchor.setAttribute("download", `Backup_Financas_Pro_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.json`);
         document.body.appendChild(downloadAnchor);
-        downloadAnchor.click(); downloadAnchor.remove();
+        downloadAnchor.click(); 
+        downloadAnchor.remove();
+    }
+
+    /**
+     * COMPARTILHAMENTO NATIVO (WEB SHARE API) - IDEAL PARA ENVIAR POR E-MAIL/WHATSAPP NO CELULAR
+     */
+    async function shareBackup() {
+        const backupData = getFullBackupObject();
+        const jsonContent = JSON.stringify(backupData, null, 2);
+        const fileName = `Backup_Financas_Pro.json`;
+
+        // Cria o arquivo virtual para ser compartilhado
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const file = new File([blob], fileName, { type: 'application/json' });
+
+        // Verifica se o navegador suporta compartilhamento de arquivos
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'Backup de Finanças Pro',
+                    text: 'Cópia de segurança dos meus dados financeiros.'
+                });
+            } catch (err) {
+                if (err.name !== 'AbortError') alert('Erro ao compartilhar: ' + err.message);
+            }
+        } else {
+            // Fallback caso não suporte compartilhamento de arquivos (desktops antigos)
+            alert('Seu navegador não suporta compartilhamento direto de arquivos. Use a opção "Baixar Arquivo" e anexe-o manualmente ao e-mail.');
+        }
     }
 
     function importBackup(event) {
@@ -1742,7 +1783,6 @@
         reader.onload = function(e) {
             try {
                 let imported = JSON.parse(e.target.result);
-                // Validação mínima de estrutura
                 if (imported.t_pessoal || imported.t_empresa) {
                     // Pessoal
                     if(imported.t_pessoal) localStorage.setItem('transactions_pessoal', JSON.stringify(imported.t_pessoal));
