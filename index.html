@@ -40,7 +40,8 @@
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
-            padding-top: 185px; 
+            /* Ajustado para 240px para compensar o cabeçalho que desceu mais */
+            padding-top: 240px; 
             padding-bottom: 40px;
         }
 
@@ -56,8 +57,9 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-color);
-            padding-top: 0px; 
-            padding-bottom: 0px;
+            /* Aumentado significativamente para descer os perfis e fugir da barra de status */
+            padding-top: 45px; 
+            padding-bottom: 8px;
         }
 
         .profile-switcher {
@@ -66,7 +68,7 @@
             background: #0b0b0c;
             padding: 5px;
             gap: 6px;
-            margin: 6px 15px 4px 15px; 
+            margin: 6px 15px 12px 15px; 
             border-radius: 12px;
             border: 1px solid var(--border-color);
         }
@@ -918,7 +920,6 @@
                 <input type="file" id="fileFileInput" style="display:none;" onchange="importBackup(event)">
             </div>
 
-            <!-- NOVA SEÇÃO DE RESET DE FÁBRICA -->
             <div class="card" style="border-color: rgba(255, 23, 68, 0.3);">
                 <h3 style="margin-top:0; color: var(--danger); font-size: 15px; font-weight: 700;">🚨 Redefinição de Fábrica</h3>
                 <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">Esta ação irá apagar permanentemente todos os lançamentos, categorias e ajustes de AMBOS os perfis (Pessoal e Empresa). O app ficará como se tivesse acabado de ser instalado.</p>
@@ -1130,26 +1131,33 @@
         }
 
         function switchProfileData() {
+            const appTitle = document.getElementById('appTitle');
+            const lblTitleGanhos = document.getElementById('lblTitleGanhos');
+            const lblTitleSobrou = document.getElementById('lblTitleSobrou');
+            const businessCreditAlert = document.getElementById('businessCreditAlert');
+
             if (currentProfile === "pessoal") {
+                if (appTitle) appTitle.innerText = "👤 Finanças Pessoais";
+                if (lblTitleGanhos) lblTitleGanhos.innerText = "🟢 Ganhos";
+                if (lblTitleSobrou) lblTitleSobrou.innerText = "🟣 Saldo Livre";
+                if (businessCreditAlert) businessCreditAlert.style.display = 'none';
+                
                 transactions = JSON.parse(localStorage.getItem('transactions_pessoal')) || [];
                 categories = JSON.parse(localStorage.getItem('categories_pessoal')) || defaultCategoriesPessoal;
                 recurrentExpenses = JSON.parse(localStorage.getItem('recurrent_pessoal')) || [];
                 agendaItems = JSON.parse(localStorage.getItem('agenda_pessoal')) || [];
                 ccConfig = JSON.parse(localStorage.getItem('cc_config_pessoal')) || { closeDay: 25, dueDay: 5 };
-                document.getElementById('appTitle').innerText = "👤 Finanças Pessoais";
-                document.getElementById('lblTitleGanhos').innerText = "🟢 Ganhos";
-                document.getElementById('lblTitleSobrou').innerText = "🟣 Saldo Livre";
-                document.getElementById('businessCreditAlert').style.display = 'none';
             } else {
+                if (appTitle) appTitle.innerText = "🏢 Finanças Empresa";
+                if (lblTitleGanhos) lblTitleGanhos.innerText = "🟢 Faturamento";
+                if (lblTitleSobrou) lblTitleSobrou.innerText = "🟣 Lucro Caixa";
+                if (businessCreditAlert) businessCreditAlert.style.display = 'block';
+                
                 transactions = JSON.parse(localStorage.getItem('transactions_empresa')) || [];
                 categories = JSON.parse(localStorage.getItem('categories_empresa')) || defaultCategoriesEmpresa;
                 recurrentExpenses = JSON.parse(localStorage.getItem('recurrent_empresa')) || [];
                 agendaItems = JSON.parse(localStorage.getItem('agenda_empresa')) || [];
                 ccConfig = JSON.parse(localStorage.getItem('cc_config_empresa')) || { closeDay: 25, dueDay: 5 };
-                document.getElementById('appTitle').innerText = "🏢 Finanças Business";
-                document.getElementById('lblTitleGanhos').innerText = "🟢 Faturamento";
-                document.getElementById('lblTitleSobrou').innerText = "🟣 Lucro Caixa";
-                document.getElementById('businessCreditAlert').style.display = 'block';
             }
             
             if (currentProfile === "pessoal" && categories.length !== 8 && !localStorage.getItem('categories_pessoal')) {
@@ -1767,7 +1775,6 @@
             reader.readAsText(file);
         }
 
-        // FUNÇÃO DE RESET COMPLETO
         function triggerAppReset() {
             const firstConfirmation = confirm("⚠️ ATENÇÃO: Você está prestes a apagar TODOS os dados do aplicativo (Pessoal e Empresa).\n\nDeseja continuar com o primeiro passo da redefinição?");
             
@@ -2039,7 +2046,7 @@
             recurrentExpenses.forEach(rec => {
                 let div = document.createElement('div');
                 div.className = 'category-item';
-                div.style.borderLeft = "3px solid var(--primary)";
+                div.style.borderLeft = "3 solid var(--primary)";
                 div.innerHTML = `
                     <div class="category-main-info">
                         <div>
