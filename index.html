@@ -166,9 +166,9 @@
 
         .tab-navigation {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             padding: 0 12px;
-            gap: 4px;
+            gap: 2px;
         }
 
         .tab-btn {
@@ -177,7 +177,7 @@
             color: var(--text-muted);
             padding: 12px 2px;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 10px;
             cursor: pointer;
             text-align: center;
             transition: all 0.2s;
@@ -635,6 +635,23 @@
         }
         .agenda-type-btn.active.inc-type { background: rgba(0, 230, 118, 0.15); color: var(--success); }
         .agenda-type-btn.active.exp-type { background: rgba(255, 23, 68, 0.15); color: var(--danger); }
+
+        /* Estilos do Módulo de Veículos */
+        .vehicle-card {
+            background: #1e1e22;
+            border-radius: 14px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 5px solid var(--accent);
+        }
+        .vehicle-title { font-weight: 700; font-size: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .vehicle-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .v-stat-box { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; }
+        .v-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+        .v-stat-val { font-size: 13px; font-weight: 700; }
+        .v-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .v-btn { border: none; padding: 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .search-container { margin: 15px; }
     </style>
 </head>
 <body class="perfil-pessoal">
@@ -663,6 +680,7 @@
         
         <div class="tab-navigation">
             <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">📝 Lançamentos</button>
+            <button class="tab-btn" id="tab-veiculos" onclick="switchPage('veiculos')">🚗 Veículos</button>
             <button class="tab-btn" id="tab-agenda" onclick="switchPage('agenda')">📅 Agenda</button>
             <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Ajustes</button>
             <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Anual</button>
@@ -820,6 +838,38 @@
             </div>
         </div>
 
+        <div id="page-veiculos" class="page-content">
+            <div class="card">
+                <div class="agenda-switcher">
+                    <button class="agenda-type-btn active inc-type" id="v-tab-estoque" onclick="switchVehicleList('active')">🏎️ Em Estoque</button>
+                    <button class="agenda-type-btn exp-type" id="v-tab-vendidos" onclick="switchVehicleList('sold')">🏁 Vendidos</button>
+                </div>
+                
+                <div id="vehicleSearchBox" class="search-container">
+                    <input type="text" id="v_search_input" class="text-input" placeholder="🔍 Buscar veículo por nome..." onkeyup="renderVehiclesList()">
+                    <select id="v_month_filter" class="select-input" style="margin-top:8px; display:none;" onchange="renderVehiclesList()">
+                        <option value="">📅 Todos os Meses</option>
+                        <option value="01">Janeiro</option>
+                        <option value="02">Fevereiro</option>
+                        <option value="03">Março</option>
+                        <option value="04">Abril</option>
+                        <option value="05">Maio</option>
+                        <option value="06">Junho</option>
+                        <option value="07">Julho</option>
+                        <option value="08">Agosto</option>
+                        <option value="09">Setembro</option>
+                        <option value="10">Outubro</option>
+                        <option value="11">Novembro</option>
+                        <option value="12">Dezembro</option>
+                    </select>
+                </div>
+
+                <button class="btn-action" style="background: var(--success); width: 100%; margin-top: 10px;" onclick="openAddVehicleModal()">➕ Comprar Novo Veículo</button>
+            </div>
+
+            <div id="vehiclesListContainer" style="padding: 0 15px;"></div>
+        </div>
+
         <div id="page-agenda" class="page-content">
             <div class="card">
                 <div class="agenda-switcher">
@@ -964,7 +1014,7 @@
     <div class="modal" id="expenseModal">
         <div class="modal-content">
             <div class="business-alert" id="businessCreditAlert">
-                ⚠️ <strong>Aviso Business:</strong> O Cartão de Crédito impacta apenas o <em>Regime de Competência</em> e fluxo futuro nas datas de vencimento de suas parcelas.
+                ⚠️ <strong>Aviso Business:</strong> O Cartão de Crédito impacta apenas o <em>Regime de Competência</em> e fluxo futuro nas das de vencimento de suas parcelas.
             </div>
             <div class="modal-title">💵 Como você pagou esse gasto?</div>
             <button class="modal-btn" style="border-left: 4px solid var(--success);" onclick="executeExpenseSave('dinheiro')">💵 Dinheiro / PIX / Débito</button>
@@ -1015,6 +1065,73 @@
         </div>
     </div>
 
+    <!-- Modais de Veículos -->
+    <div class="modal" id="modalAddVehicle">
+        <div class="modal-content">
+            <div class="modal-title">🏎️ Comprar Veículo</div>
+            <div class="input-group">
+                <label>Nome do Veículo (Modelo/Placa)</label>
+                <input type="text" id="v_name" class="text-input" placeholder="Ex: Honda Civic 2020 - ABC1234">
+            </div>
+            <div class="input-group">
+                <label>Preço de Compra (R$)</label>
+                <input type="number" id="v_purchase_price" class="text-input" placeholder="0.00">
+            </div>
+            <div class="input-group">
+                <label>Data da Compra</label>
+                <input type="date" id="v_purchase_date" class="text-input">
+            </div>
+            <button class="btn-action" style="background: var(--success); width: 100%;" onclick="saveNewVehicle()">💾 Registrar Compra</button>
+            <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 10px; border-color: transparent;" onclick="closeAddVehicleModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <div class="modal" id="modalAddVehicleExpense">
+        <div class="modal-content">
+            <div class="modal-title">🔧 Registrar Gasto no Veículo</div>
+            <input type="hidden" id="v_expense_vehicle_id">
+            <div class="input-group">
+                <label>Tipo de Gasto</label>
+                <select id="v_expense_category" class="select-input">
+                    <option value="Mecânica">🔧 Mecânica</option>
+                    <option value="Funilaria">🎨 Funilaria / Pintura</option>
+                    <option value="Lavagem">🧽 Lavagem / Estética</option>
+                    <option value="Documentação">📜 Documentação / IPVA</option>
+                    <option value="Peças">📦 Peças / Acessórios</option>
+                    <option value="Outros">⚙️ Outros</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Descrição do Serviço</label>
+                <input type="text" id="v_expense_desc" class="text-input" placeholder="Ex: Troca de óleo, polimento...">
+            </div>
+            <div class="input-group">
+                <label>Valor do Gasto (R$)</label>
+                <input type="number" id="v_expense_amount" class="text-input" placeholder="0.00">
+            </div>
+            <button class="btn-action" style="background: var(--primary); width: 100%;" onclick="saveVehicleExpense()">💸 Lançar Gasto</button>
+            <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 10px; border-color: transparent;" onclick="closeVehicleExpenseModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <div class="modal" id="modalSellVehicle">
+        <div class="modal-content">
+            <div class="modal-title">🏁 Finalizar Venda</div>
+            <input type="hidden" id="v_sell_id">
+            <div id="v_sell_summary" style="font-size:12px; margin-bottom:15px; color:var(--text-muted); background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;"></div>
+            <div class="input-group">
+                <label>Preço de Venda Final (R$)</label>
+                <input type="number" id="v_sell_price" class="text-input" placeholder="0.00">
+            </div>
+            <div class="input-group">
+                <label>Data da Venda</label>
+                <input type="date" id="v_sell_date" class="text-input">
+            </div>
+            <button class="btn-action" style="background: var(--success); width: 100%;" onclick="executeVehicleSale()">💰 Confirmar Venda</button>
+            <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 10px; border-color: transparent;" onclick="closeSellVehicleModal()">Cancelar</button>
+        </div>
+    </div>
+
     <script>
         let currentProfile = "pessoal"; 
         let rawDigits = "0";
@@ -1026,12 +1143,14 @@
         let categories = [];
         let recurrentExpenses = []; 
         let agendaItems = []; 
+        let vehicles = [];
         let ccConfig = { closeDay: 25, dueDay: 5 };
         let transactionIndexedMap = new Map();
 
         let editingTransactionId = null;
         let editingCategoryId = null;
         let pendingDeleteId = null;
+        let activeVehicleFilter = 'active';
 
         const defaultCategoriesPessoal = [
             { id: "cat_p_1", name: "🛒 Supermercado", budget: 600, type: "expense", color: "#ffea00" },
@@ -1060,6 +1179,8 @@
             if(mainDate) {
                 document.getElementById('tx_date').value = mainDate;
                 document.getElementById('agenda_date').value = mainDate;
+                document.getElementById('v_purchase_date').value = mainDate;
+                document.getElementById('v_sell_date').value = mainDate;
             }
         }
 
@@ -1146,6 +1267,7 @@
                 categories = JSON.parse(localStorage.getItem('categories_pessoal')) || defaultCategoriesPessoal;
                 recurrentExpenses = JSON.parse(localStorage.getItem('recurrent_pessoal')) || [];
                 agendaItems = JSON.parse(localStorage.getItem('agenda_pessoal')) || [];
+                vehicles = JSON.parse(localStorage.getItem('vehicles_pessoal')) || [];
                 ccConfig = JSON.parse(localStorage.getItem('cc_config_pessoal')) || { closeDay: 25, dueDay: 5 };
             } else {
                 if (appTitle) appTitle.innerText = "🏢 Finanças Empresa";
@@ -1157,6 +1279,7 @@
                 categories = JSON.parse(localStorage.getItem('categories_empresa')) || defaultCategoriesEmpresa;
                 recurrentExpenses = JSON.parse(localStorage.getItem('recurrent_empresa')) || [];
                 agendaItems = JSON.parse(localStorage.getItem('agenda_empresa')) || [];
+                vehicles = JSON.parse(localStorage.getItem('vehicles_empresa')) || [];
                 ccConfig = JSON.parse(localStorage.getItem('cc_config_empresa')) || { closeDay: 25, dueDay: 5 };
             }
             
@@ -1232,6 +1355,7 @@
             if (activeTab === 'tab-categorias') { renderCategoryManagement(); renderRecurrentManagement(); }
             if (activeTab === 'tab-anual') renderAnnualBalance();
             if (activeTab === 'tab-agenda') renderAgendaList();
+            if (activeTab === 'tab-veiculos') renderVehiclesList();
         }
 
         function rebuildTransactionIndex() {
@@ -1257,11 +1381,13 @@
                     localStorage.setItem('categories_pessoal', JSON.stringify(categories));
                     localStorage.setItem('recurrent_pessoal', JSON.stringify(recurrentExpenses));
                     localStorage.setItem('agenda_pessoal', JSON.stringify(agendaItems));
+                    localStorage.setItem('vehicles_pessoal', JSON.stringify(vehicles));
                 } else {
                     localStorage.setItem('transactions_empresa', JSON.stringify(transactions));
                     localStorage.setItem('categories_empresa', JSON.stringify(categories));
                     localStorage.setItem('recurrent_empresa', JSON.stringify(recurrentExpenses));
                     localStorage.setItem('agenda_empresa', JSON.stringify(agendaItems));
+                    localStorage.setItem('vehicles_empresa', JSON.stringify(vehicles));
                 }
                 rebuildTransactionIndex();
             } catch (e) {
@@ -1343,8 +1469,231 @@
                 renderAnnualBalance();
             } else if (pageId === 'agenda') {
                 renderAgendaList();
+            } else if (pageId === 'veiculos') {
+                renderVehiclesList();
             }
             window.scrollTo(0,0);
+        }
+
+        /* Funções do Módulo de Veículos */
+        function switchVehicleList(status) {
+            activeVehicleFilter = status;
+            document.getElementById('v-tab-estoque').classList.toggle('active', status === 'active');
+            document.getElementById('v-tab-vendidos').classList.toggle('active', status === 'sold');
+            document.getElementById('v_month_filter').style.display = status === 'sold' ? 'block' : 'none';
+            renderVehiclesList();
+        }
+
+        function openAddVehicleModal() { document.getElementById('modalAddVehicle').style.display = 'flex'; }
+        function closeAddVehicleModal() { document.getElementById('modalAddVehicle').style.display = 'none'; }
+
+        function saveNewVehicle() {
+            const name = document.getElementById('v_name').value.trim();
+            const price = parseFloat(document.getElementById('v_purchase_price').value);
+            const date = document.getElementById('v_purchase_date').value;
+
+            if (!name || isNaN(price) || !date) return alert("Preencha todos os dados da compra.");
+
+            const vehicleId = "veh_" + gerarIDUnico();
+            const newVehicle = {
+                id: vehicleId,
+                name: name,
+                purchasePrice: price,
+                purchaseDate: date,
+                status: 'active',
+                expenses: [],
+                salePrice: 0,
+                saleDate: ''
+            };
+
+            vehicles.push(newVehicle);
+
+            // Adicionar automaticamente ao extrato como despesa
+            transactions.push({
+                id: gerarIDUnico(),
+                categoryId: (categories[0] ? categories[0].id : null),
+                amount: price,
+                type: 'expense_cash',
+                paymentMethod: 'dinheiro',
+                description: "🚘 Compra de Veículo",
+                freeDescription: `Investimento Inicial: ${name}`,
+                date: date,
+                linkedVehicleId: vehicleId
+            });
+
+            safeLocalStorageSave();
+            closeAddVehicleModal();
+            renderVehiclesList();
+            alert("Veículo registrado em estoque!");
+        }
+
+        function renderVehiclesList() {
+            const container = document.getElementById('vehiclesListContainer');
+            const search = document.getElementById('v_search_input').value.toLowerCase();
+            const monthFilter = document.getElementById('v_month_filter').value;
+            if (!container) return;
+            container.innerHTML = '';
+
+            let filtered = vehicles.filter(v => v.status === activeVehicleFilter);
+
+            if (search) {
+                filtered = filtered.filter(v => v.name.toLowerCase().includes(search));
+            }
+
+            if (activeVehicleFilter === 'sold' && monthFilter) {
+                filtered = filtered.filter(v => v.saleDate && v.saleDate.substring(5,7) === monthFilter);
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">Nenhum veículo encontrado.</p>`;
+                return;
+            }
+
+            filtered.forEach(v => {
+                const totalExpenses = v.expenses.reduce((acc, e) => acc + e.amount, 0);
+                const totalCost = v.purchasePrice + totalExpenses;
+                const profit = v.salePrice - totalCost;
+
+                const card = document.createElement('div');
+                card.className = 'vehicle-card';
+                if (v.status === 'sold') card.style.borderLeftColor = 'var(--success)';
+
+                let actionHtml = '';
+                if (v.status === 'active') {
+                    actionHtml = `
+                        <div class="v-actions">
+                            <button class="v-btn" style="background:var(--accent); color:#fff;" onclick="openAddVehicleExpenseModal('${v.id}')">🔧 Gastos</button>
+                            <button class="v-btn" style="background:var(--success); color:#000;" onclick="openSellVehicleModal('${v.id}')">💰 Vender</button>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="vehicle-title">
+                        <span>${v.name}</span>
+                        <span style="font-size:10px; color:var(--text-muted);">${v.status === 'active' ? 'ESTOQUE' : 'VENDIDO'}</span>
+                    </div>
+                    <div class="vehicle-stats">
+                        <div class="v-stat-box">
+                            <div class="v-stat-label">Custo Total</div>
+                            <div class="v-stat-val">${formatCurrency(totalCost)}</div>
+                        </div>
+                        <div class="v-stat-box">
+                            <div class="v-stat-label">${v.status === 'active' ? 'Investido' : 'Lucro Gerado'}</div>
+                            <div class="v-stat-val" style="color:${v.status === 'active' ? '#fff' : (profit >= 0 ? 'var(--success)' : 'var(--danger)')}">
+                                ${v.status === 'active' ? formatCurrency(totalExpenses) : formatCurrency(profit)}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px;">
+                        📅 Compra: ${v.purchaseDate.split('-').reverse().join('/')} 
+                        ${v.status === 'sold' ? ' | Venda: ' + v.saleDate.split('-').reverse().join('/') : ''}
+                    </div>
+                    ${actionHtml}
+                    <div style="margin-top:10px;">
+                        <button class="v-btn" style="width:100%; background:rgba(255,255,255,0.05); color:var(--text-muted); border:1px solid var(--border-color);" onclick="deleteVehicle('${v.id}')">🗑️ Remover Registro</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openAddVehicleExpenseModal(id) {
+            document.getElementById('v_expense_vehicle_id').value = id;
+            document.getElementById('modalAddVehicleExpense').style.display = 'flex';
+        }
+        function closeVehicleExpenseModal() { document.getElementById('modalAddVehicleExpense').style.display = 'none'; }
+
+        function saveVehicleExpense() {
+            const id = document.getElementById('v_expense_vehicle_id').value;
+            const cat = document.getElementById('v_expense_category').value;
+            const desc = document.getElementById('v_expense_desc').value.trim();
+            const amount = parseFloat(document.getElementById('v_expense_amount').value);
+            const date = new Date().toISOString().substring(0, 10);
+
+            if (isNaN(amount) || amount <= 0) return alert("Insira um valor válido.");
+
+            const vehicle = vehicles.find(v => v.id === id);
+            if (!vehicle) return;
+
+            const expense = { category: cat, description: desc, amount: amount, date: date };
+            vehicle.expenses.push(expense);
+
+            // Lançar no extrato geral
+            transactions.push({
+                id: gerarIDUnico(),
+                categoryId: (categories[0] ? categories[0].id : null), // Geralmente manutenção
+                amount: amount,
+                type: 'expense_cash',
+                paymentMethod: 'dinheiro',
+                description: `🔧 Manutenção: ${vehicle.name}`,
+                freeDescription: `${cat}: ${desc}`,
+                date: date,
+                linkedVehicleId: id
+            });
+
+            safeLocalStorageSave();
+            closeVehicleExpenseModal();
+            renderVehiclesList();
+            showBanner();
+        }
+
+        function openSellVehicleModal(id) {
+            const v = vehicles.find(v => v.id === id);
+            if (!v) return;
+            const totalExpenses = v.expenses.reduce((acc, e) => acc + e.amount, 0);
+            const totalCost = v.purchasePrice + totalExpenses;
+
+            document.getElementById('v_sell_id').value = id;
+            document.getElementById('v_sell_summary').innerHTML = `
+                <strong>Resumo do Veículo:</strong><br>
+                Compra: ${formatCurrency(v.purchasePrice)}<br>
+                Melhorias: ${formatCurrency(totalExpenses)}<br>
+                Custo Total: <strong>${formatCurrency(totalCost)}</strong>
+            `;
+            document.getElementById('modalSellVehicle').style.display = 'flex';
+        }
+        function closeSellVehicleModal() { document.getElementById('modalSellVehicle').style.display = 'none'; }
+
+        function executeVehicleSale() {
+            const id = document.getElementById('v_sell_id').value;
+            const price = parseFloat(document.getElementById('v_sell_price').value);
+            const date = document.getElementById('v_sell_date').value;
+
+            if (isNaN(price) || !date) return alert("Informe o preço e a data da venda.");
+
+            const vehicle = vehicles.find(v => v.id === id);
+            if (!vehicle) return;
+
+            vehicle.status = 'sold';
+            vehicle.salePrice = price;
+            vehicle.saleDate = date;
+
+            // Lançar ganho no extrato geral
+            transactions.push({
+                id: gerarIDUnico(),
+                categoryId: (categories[0] ? categories[0].id : null),
+                amount: price,
+                type: 'income',
+                paymentMethod: 'dinheiro',
+                description: `🏁 Venda de Veículo`,
+                freeDescription: `Venda: ${vehicle.name}`,
+                date: date,
+                linkedVehicleId: id
+            });
+
+            safeLocalStorageSave();
+            closeSellVehicleModal();
+            switchVehicleList('sold');
+            alert("Venda realizada com sucesso! O lucro foi computado no extrato.");
+        }
+
+        function deleteVehicle(id) {
+            if (confirm("Deseja apagar o registro deste veículo? (Isso não apagará os lançamentos já feitos no extrato)")) {
+                vehicles = vehicles.filter(v => v.id !== id);
+                safeLocalStorageSave();
+                renderVehiclesList();
+            }
         }
 
         function switchAgendaFormType(flowType) {
@@ -2496,6 +2845,7 @@
             }
             
             if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
+            if(document.getElementById('page-veiculos').classList.contains('active')) renderVehiclesList();
             checkAgendaNotifications(); 
         }
     </script>
