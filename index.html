@@ -1017,6 +1017,14 @@
         </div>
     </div>
 
+    <div class="modal" id="groupDetailsModal">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-title" id="groupModalTitle">📦 Parcelas do Lançamento</div>
+            <div id="groupModalList" class="history-list" style="max-height: 50vh; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
+            <button class="modal-btn" style="background: var(--bg-input); text-align: center; border-color: transparent;" onclick="closeGroupModal()">Fechar Visualização</button>
+        </div>
+    </div>
+
     <script>
         let currentProfile = "pessoal"; 
         let rawDigits = "0";
@@ -1446,6 +1454,55 @@
                 expandedGroups.add(groupId);
             }
             renderAgendaList();
+            loadData();
+        }
+
+        function viewFullGroup(groupId) {
+            const modal = document.getElementById('groupDetailsModal');
+            const list = document.getElementById('groupModalList');
+            const title = document.getElementById('groupModalTitle');
+            if (!modal || !list) return;
+
+            list.innerHTML = '';
+            
+            const realItems = transactions.filter(t => t.groupId === groupId);
+            const scheduledItems = agendaItems.filter(i => i.groupId === groupId);
+            const combined = [
+                ...realItems.map(i => ({...i, status: 'realizado'})),
+                ...scheduledItems.map(i => ({...i, status: 'agendado'}))
+            ];
+
+            combined.sort((a,b) => parseSafeDate(a.date) - parseSafeDate(b.date));
+
+            if (combined.length > 0) title.innerText = `📦 Grupo: ${combined[0].description}`;
+
+            combined.forEach(item => {
+                let div = document.createElement('div');
+                div.className = 'history-item';
+                div.style.cursor = 'default';
+                let dateFormatted = item.date.split('-').reverse().join('/');
+                
+                const isInc = item.type === 'income' || item.type === 'saving_withdrawal';
+                const color = isInc ? 'var(--success)' : 'var(--danger)';
+                const statusLabel = item.status === 'realizado' ? '✅ EFETUADO' : '⏳ AGENDADO';
+
+                div.innerHTML = `
+                    <div class="history-info">
+                        <span class="history-desc" style="${item.status === 'agendado' ? 'opacity: 0.6;' : ''}">${item.freeDescription || item.description}</span>
+                        <span class="history-date">📅 ${dateFormatted} | <strong style="font-size: 9px; color: ${item.status === 'realizado' ? 'var(--success)' : 'var(--warning)'}">${statusLabel}</strong></span>
+                    </div>
+                    <div class="history-right">
+                        <span class="history-val" style="color: ${color}">${formatCurrency(item.amount)}</span>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+
+            modal.style.display = 'flex';
+        }
+
+        function closeGroupModal() {
+            document.getElementById('groupDetailsModal').style.display = 'none';
         }
 
         function renderAgendaList() {
@@ -1493,8 +1550,8 @@
                     div.style.borderLeft = `8px solid ${catColor}`;
                     div.innerHTML = `
                         <div class="history-info">
-                            <span class="history-desc">📦 <strong>${item.description}</strong> <span style="font-size:11px; color:var(--text-muted);">(${groupItems.length} parcelas agrupadas)</span></span>
-                            <span class="history-date">Clique para ver os detalhes da repetição</span>
+                            <span class="history-desc">📦 <strong>${item.description}</strong> <span style="font-size:11px; color:var(--text-muted);">(${groupItems.length} parcelas pendentes)</span></span>
+                            <span class="history-date">Clique para ver e baixar cada parcela individualmente</span>
                         </div>
                         <div class="history-right">
                             <span class="history-val" style="color: ${catColor};">${formatCurrency(totalVal)}</span>
@@ -1538,7 +1595,11 @@
                     
                     if (item.groupId && agendaItems.filter(i => i.groupId === item.groupId).pop().id === item.id) {
                          let closeBtn = document.createElement('div');
-                         closeBtn.innerHTML = `<div style="text-align:center; padding: 5px; font-size:10px; color:var(--primary); cursor:pointer; font-weight:700;" onclick="toggleGroupExpansion('${item.groupId}')">▲ RECOLHER GRUPO</div>`;
+                         closeBtn.innerHTML = `
+                            <div style="display:flex; justify-content:space-around; padding: 10px;">
+                                <div style="font-size:10px; color:var(--primary); cursor:pointer; font-weight:700;" onclick="toggleGroupExpansion('${item.groupId}')">▲ RECOLHER</div>
+                                <div style="font-size:10px; color:var(--accent); cursor:pointer; font-weight:700;" onclick="viewFullGroup('${item.groupId}')">👁️ VER GRUPO COMPLETO</div>
+                            </div>`;
                          container.appendChild(closeBtn);
                     }
                 }
@@ -1775,7 +1836,7 @@
                     });
                 } else {
                     agendaItems = agendaItems.filter(t => {
-                        if (t.groupId === target.groupId && t.date >= target.date) return false;
+                        if (i.groupId === target.groupId && i.date >= target.date) return false;
                         return true;
                     });
                 }
@@ -2452,6 +2513,8 @@
             });
             renderVisualCategoryBoxes(realTransactions, totalExpenseForBoxes);
 
+            const groupsProcessed = new Set();
+
             combinedList.forEach(t => {
                 let matchesCategory = true; let matchesPayment = true;
                 let catObj = categories.find(c => c.id === t.categoryId);
@@ -2467,8 +2530,6 @@
 
                 if (!matchesCategory || !matchesPayment) return;
 
-                countItems++;
-
                 if (!t.isScheduled) {
                     if (t.type === 'income') totalIncome += t.amount;
                     if (t.type === 'expense_cash') totalExpense += t.amount;
@@ -2478,6 +2539,38 @@
                         totalFaturaCartao += t.amount;
                     }
                 }
+
+                if (t.groupId && !expandedGroups.has(t.groupId)) {
+                    if (groupsProcessed.has(t.groupId)) return;
+                    groupsProcessed.add(t.groupId);
+                    
+                    const groupReal = transactions.filter(i => i.groupId === t.groupId && i.date.startsWith(currentSelectedTarget));
+                    const groupScheduled = agendaItems.filter(i => i.groupId === t.groupId && i.date.startsWith(currentSelectedTarget));
+                    const totalMonthGroup = [...groupReal, ...groupScheduled].reduce((acc, curr) => acc + curr.amount, 0);
+
+                    let item = document.createElement('div');
+                    item.className = 'history-item group-header';
+                    item.onclick = () => toggleGroupExpansion(t.groupId);
+                    
+                    let catColor = catObj ? (catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)')) : 'var(--accent)';
+                    item.style.borderLeft = `8px solid ${catColor}`;
+
+                    item.innerHTML = `
+                        <div class="history-info">
+                            <span class="history-desc">📦 <strong>${t.description}</strong> <span style="font-size:11px; color:var(--text-muted);">(Parcelado/Grupo)</span></span>
+                            <span class="history-date">Clique para ver as parcelas deste mês</span>
+                        </div>
+                        <div class="history-right">
+                            <span class="history-val" style="color: ${catColor}">${formatCurrency(totalMonthGroup)}</span>
+                            <span style="font-size: 16px; margin-left: 8px;">▼</span>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                    countItems++;
+                    return;
+                }
+
+                countItems++;
 
                 let item = document.createElement('div');
                 item.className = 'history-item';
@@ -2536,7 +2629,7 @@
                             <span class="history-cat-dot" style="background-color: ${catColor};"></span>
                             ${catLabel}
                         </span>
-                        <span class="history-date">📅 ${dateFormatted}</span>
+                        <span class="history-date">📅 ${dateFormatted} ${t.groupId ? `| <span style="color:var(--primary); cursor:pointer;" onclick="event.stopPropagation(); viewFullGroup('${t.groupId}')">Ver Grupo</span>` : ''}</span>
                     </div>
                     <div class="history-right">
                         <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
