@@ -600,16 +600,19 @@
             padding: 8px 12px;
             border-radius: 8px;
             font-size: 12px;
+            gap: 8px;
         }
+        .notification-item-content { flex: 1; }
+        .notification-item-actions { display: flex; gap: 4px; }
         .btn-notification-action {
             background: var(--success);
             border: none;
             color: #000;
             font-weight: 700;
-            padding: 4px 10px;
+            padding: 6px 10px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 10px;
         }
 
         .agenda-switcher {
@@ -1000,10 +1003,11 @@
 
     <div class="modal" id="deleteParcelamentoModal">
         <div class="modal-content">
-            <div class="modal-title" style="color: var(--danger)">⚠️ Excluir Parcelamento</div>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; text-align: center; font-weight: 500;">Esse lançamento faz parte de um parcelamento. Como deseja prosseguir?</p>
-            <button class="modal-btn" style="border-left: 4px solid var(--danger);" onclick="executeSmartDelete('single')">❌ Excluir APENAS esta parcela</button>
-            <button class="modal-btn" style="background: var(--danger); color: #fff; border-color: transparent;" onclick="executeSmartDelete('future')">⚠️ Excluir ESTA e todas as PRÓXIMAS</button>
+            <div class="modal-title" style="color: var(--danger)">⚠️ Excluir Lançamento em Grupo</div>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; text-align: center; font-weight: 500;">Este lançamento faz parte de uma sequência (parcelamento ou repetição). Como deseja prosseguir?</p>
+            <button class="modal-btn" style="border-left: 4px solid var(--danger);" onclick="executeSmartDelete('single')">❌ Excluir APENAS este</button>
+            <button class="modal-btn" style="border-left: 4px solid var(--danger); opacity: 0.9;" onclick="executeSmartDelete('future')">⚠️ Excluir ESTE e todos os PRÓXIMOS</button>
+            <button class="modal-btn" style="background: var(--danger); color: #fff; border-color: transparent;" onclick="executeSmartDelete('all')">🚨 Excluir TODO O GRUPO</button>
             <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 15px; border-color: transparent;" onclick="closeSmartDeleteModal()">Cancelar</button>
         </div>
     </div>
@@ -1025,6 +1029,7 @@
         let editingTransactionId = null;
         let editingCategoryId = null;
         let pendingDeleteId = null;
+        let pendingDeleteSource = 'transactions';
 
         const defaultCategoriesPessoal = [
             { id: "cat_p_1", name: "🛒 Supermercado", budget: 600, type: "expense", color: "#ffea00" },
@@ -1391,14 +1396,13 @@
 
             const selectedCatObj = categories.find(c => c.id === catId);
             const baseDescription = selectedCatObj ? selectedCatObj.name : "Geral";
-            
             const baseDate = new Date(dateStr + 'T12:00:00');
+            const groupId = installments > 1 ? gerarIDUnico() : null;
 
             for (let i = 0; i < installments; i++) {
                 let currentDate = new Date(baseDate);
                 currentDate.setMonth(baseDate.getMonth() + i);
                 
-                // Tratar estouro de dias (Ex: Jan 31 -> Fev 28)
                 if (currentDate.getDate() !== baseDate.getDate()) {
                     currentDate.setDate(0);
                 }
@@ -1408,6 +1412,7 @@
 
                 agendaItems.push({
                     id: gerarIDUnico(),
+                    groupId: groupId,
                     categoryId: catId,
                     description: baseDescription,
                     freeDescription: freeDesc + installmentSuffix,
@@ -1489,11 +1494,17 @@
 
         function deleteAgendaItem(id, event) {
             if(event) event.stopPropagation();
-            agendaItems = agendaItems.filter(i => i.id !== id);
-            safeLocalStorageSave();
-            renderAgendaList();
-            checkAgendaNotifications();
-            loadData();
+            const target = agendaItems.find(i => i.id === id);
+            if (!target) return;
+
+            pendingDeleteId = id;
+            pendingDeleteSource = 'agenda';
+
+            if (target.groupId) {
+                document.getElementById('deleteParcelamentoModal').style.display = 'flex';
+            } else {
+                document.getElementById('deleteSimpleModal').style.display = 'flex';
+            }
         }
 
         function checkAgendaNotifications() {
@@ -1519,13 +1530,40 @@
                 let extraText = item.freeDescription ? ` (${item.freeDescription})` : '';
                 
                 row.innerHTML = `
-                    <span><strong>${isInc ? '🟢' : '🔴'} ${item.description}</strong>${extraText} (${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})</span>
-                    <button class="btn-notification-action" style="background: ${isInc ? 'var(--success)' : 'var(--danger)'}; color: ${isInc ? '#000' : '#fff'};" onclick="claimAgendaAmount('${item.id}')">
-                        ${isInc ? '💰 Receber' : '💸 Pagar'}
-                    </button>
+                    <div class="notification-item-content">
+                        <strong>${isInc ? '🟢' : '🔴'} ${item.description}</strong>${extraText} (${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
+                    </div>
+                    <div class="notification-item-actions">
+                        <button class="btn-notification-action" style="background: ${isInc ? 'var(--success)' : 'var(--danger)'}; color: ${isInc ? '#000' : '#fff'};" onclick="claimAgendaAmount('${item.id}')">
+                            ${isInc ? 'Receber' : 'Pagar'}
+                        </button>
+                        <button class="btn-notification-action" style="background: var(--bg-input); color: #fff; font-size: 8px;" onclick="skipAgendaItem('${item.id}')">Pular</button>
+                        ${item.groupId ? `<button class="btn-notification-action" style="background: var(--danger); color: #fff; font-size: 8px;" onclick="cancelFutureAgenda('${item.id}')">Encerrar</button>` : ''}
+                    </div>
                 `;
                 alertList.appendChild(row);
             });
+        }
+
+        function skipAgendaItem(id) {
+            agendaItems = agendaItems.filter(i => i.id !== id);
+            safeLocalStorageSave();
+            checkAgendaNotifications();
+            loadData();
+        }
+
+        function cancelFutureAgenda(id) {
+            const target = agendaItems.find(i => i.id === id);
+            if (!target || !target.groupId) return skipAgendaItem(id);
+            
+            agendaItems = agendaItems.filter(i => {
+                if (i.groupId === target.groupId && i.date >= target.date) return false;
+                return true;
+            });
+            safeLocalStorageSave();
+            checkAgendaNotifications();
+            loadData();
+            alert("Repetições futuras canceladas com sucesso.");
         }
 
         function claimAgendaAmount(id) {
@@ -1539,6 +1577,7 @@
 
             transactions.push({ 
                 id: gerarIDUnico(), 
+                groupId: item.groupId,
                 categoryId: categoryId, 
                 amount: item.amount, 
                 type: isInc ? 'income' : 'expense_cash', 
@@ -1633,9 +1672,9 @@
             if (!target) return;
 
             pendingDeleteId = id;
-            const hasParcela = target.freeDescription && target.freeDescription.match(/\((\d+)\/(\d+)\)/);
+            pendingDeleteSource = 'transactions';
 
-            if (hasParcela) {
+            if (target.groupId) {
                 document.getElementById('deleteParcelamentoModal').style.display = 'flex';
             } else {
                 document.getElementById('deleteSimpleModal').style.display = 'flex';
@@ -1644,9 +1683,14 @@
 
         function executeSimpleDelete() {
             if (pendingDeleteId) {
-                transactions = transactions.filter(t => t.id !== pendingDeleteId);
+                if (pendingDeleteSource === 'transactions') {
+                    transactions = transactions.filter(t => t.id !== pendingDeleteId);
+                } else {
+                    agendaItems = agendaItems.filter(t => t.id !== pendingDeleteId);
+                }
                 safeLocalStorageSave();
                 loadData();
+                renderAgendaList();
             }
             closeSimpleDeleteModal();
         }
@@ -1657,28 +1701,40 @@
         }
 
         function executeSmartDelete(mode) {
-            const target = transactions.find(t => t.id === pendingDeleteId);
+            const list = (pendingDeleteSource === 'transactions') ? transactions : agendaItems;
+            const target = list.find(t => t.id === pendingDeleteId);
             if (!target) return closeSmartDeleteModal();
 
             if (mode === 'single') {
-                transactions = transactions.filter(t => t.id !== pendingDeleteId);
+                if (pendingDeleteSource === 'transactions') {
+                    transactions = transactions.filter(t => t.id !== pendingDeleteId);
+                } else {
+                    agendaItems = agendaItems.filter(t => t.id !== pendingDeleteId);
+                }
             } else if (mode === 'future') {
-                const baseFreeDesc = target.freeDescription.split('(')[0].trim();
-                const matchParcela = target.freeDescription.match(/\((\d+)\/(\d+)\)/);
-                const parcelaAtual = parseInt(matchParcela[1], 10);
-
-                transactions = transactions.filter(t => {
-                    if (t.categoryId !== target.categoryId) return true;
-                    if (!t.freeDescription || !t.freeDescription.startsWith(baseFreeDesc)) return true;
-                    const internalMatch = t.freeDescription.match(/\((\d+)\/(\d+)\)/);
-                    if (!internalMatch) return true;
-                    return parseInt(internalMatch[1], 10) < parcelaAtual;
-                });
+                if (pendingDeleteSource === 'transactions') {
+                    transactions = transactions.filter(t => {
+                        if (t.groupId === target.groupId && t.date >= target.date) return false;
+                        return true;
+                    });
+                } else {
+                    agendaItems = agendaItems.filter(t => {
+                        if (t.groupId === target.groupId && t.date >= target.date) return false;
+                        return true;
+                    });
+                }
+            } else if (mode === 'all') {
+                if (pendingDeleteSource === 'transactions') {
+                    transactions = transactions.filter(t => t.groupId !== target.groupId);
+                } else {
+                    agendaItems = agendaItems.filter(t => t.groupId !== target.groupId);
+                }
             }
 
             closeSmartDeleteModal();
             safeLocalStorageSave();
             loadData();
+            renderAgendaList();
         }
 
         function closeSmartDeleteModal() {
@@ -2270,6 +2326,7 @@
 
             const baseAmount = Math.floor((totalVal / installments) * 100) / 100;
             let remainder = Math.round((totalVal - (baseAmount * installments)) * 100) / 100;
+            const groupId = installments > 1 ? gerarIDUnico() : null;
 
             for (let i = 0; i < installments; i++) {
                 let mesAlvo = mesCompra + i + monthOffset;
@@ -2285,6 +2342,7 @@
 
                 transactions.push({
                     id: gerarIDUnico(),
+                    groupId: groupId,
                     categoryId: catId,
                     amount: currentInstallmentAmount,
                     type: 'expense_cash',
