@@ -2350,6 +2350,7 @@
                     <strong>${cat.name} <span style="font-size:10px; color:var(--text-muted); padding-left:4px;">(${badgeType})</span></strong>
                     <div class="category-actions">
                         <button class="btn-edit-cat" onclick="editCategory('${cat.id}')">✏️ Ajustar</button>
+                        <button class="btn-delete-item" onclick="deleteCategory('${cat.id}')" title="Excluir Categoria">🗑️</button>
                     </div>
                 </div>
                 <div class="category-budget-info">${budgetText}</div>
@@ -2460,6 +2461,24 @@
         document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
         document.getElementById('btnCancelCategoryEdit').style.display = "none";
         setCategoryFormType('expense');
+    }
+
+    function deleteCategory(id) {
+        const cat = categories.find(c => c.id === id);
+        if (!cat) return;
+
+        let confirm1 = confirm(`Deseja realmente excluir a categoria "${cat.name}"?`);
+        if (confirm1) {
+            let confirm2 = confirm(`AVISO: Os lançamentos existentes no histórico continuarão salvos, mas a categoria deixará de aparecer para novos registros. Confirmar exclusão?`);
+            if (confirm2) {
+                categories = categories.filter(c => c.id !== id);
+                safeLocalStorageSave();
+                populateCategorySelector();
+                renderCategoryManagement();
+                renderTags();
+                loadData();
+            }
+        }
     }
 
     function updateAmountDisplay() {
@@ -2839,4 +2858,5 @@
         checkAgendaNotifications(); 
     }
 </script>
+</html>
 
