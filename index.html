@@ -638,6 +638,11 @@
         }
         .agenda-type-btn.active.inc-type { background: rgba(0, 230, 118, 0.15); color: var(--success); }
         .agenda-type-btn.active.exp-type { background: rgba(255, 23, 68, 0.15); color: var(--danger); }
+
+        .history-item.group-header {
+            background: rgba(187, 134, 252, 0.05);
+            border-left-width: 8px;
+        }
     </style>
 </head>
 <body class="perfil-pessoal">
@@ -1025,6 +1030,7 @@
         let agendaItems = []; 
         let ccConfig = { closeDay: 25, dueDay: 5 };
         let transactionIndexedMap = new Map();
+        let expandedGroups = new Set();
 
         let editingTransactionId = null;
         let editingCategoryId = null;
@@ -1203,6 +1209,7 @@
             currentProfile = profile;
             cancelEdit();
             cancelCategoryEdit();
+            expandedGroups.clear();
             
             document.querySelectorAll('.profile-btn').forEach(btn => btn.classList.remove('active'));
             if (profile === 'pessoal') {
@@ -1408,7 +1415,7 @@
                 }
                 
                 let targetDateStr = currentDate.toISOString().substring(0, 10);
-                let installmentSuffix = installments > 1 ? ` (${i + 1}/${installments})` : "";
+                let installmentSuffix = installments > 1 ? ` (${String(i+1).padStart(2, '0')}/${String(installments).padStart(2, '0')})` : "";
 
                 agendaItems.push({
                     id: gerarIDUnico(),
@@ -1430,6 +1437,15 @@
             checkAgendaNotifications();
             loadData();
             alert(flowType === 'income' ? "📅 Recebimento(s) agendado(s)!" : "📅 Pagamento(s) agendado(s)!");
+        }
+
+        function toggleGroupExpansion(groupId) {
+            if (expandedGroups.has(groupId)) {
+                expandedGroups.delete(groupId);
+            } else {
+                expandedGroups.add(groupId);
+            }
+            renderAgendaList();
         }
 
         function renderAgendaList() {
@@ -1457,38 +1473,75 @@
 
             agendaItems.sort((a,b) => parseSafeDate(a.date) - parseSafeDate(b.date));
 
+            const groupsProcessed = new Set();
+
             agendaItems.forEach(item => {
-                let dateFormatted = item.date.split('-').reverse().join('/');
-                let div = document.createElement('div');
-                div.className = 'history-item';
-                
-                let catObj = categories.find(c => c.id === item.categoryId);
-                let catColor = catObj ? (catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)')) : (item.type !== 'expense' ? 'var(--success)' : 'var(--danger)');
-                let catLabel = catObj ? catObj.name : "Geral";
+                if (item.groupId && !expandedGroups.has(item.groupId)) {
+                    if (groupsProcessed.has(item.groupId)) return;
+                    groupsProcessed.add(item.groupId);
+                    
+                    const groupItems = agendaItems.filter(i => i.groupId === item.groupId);
+                    const totalVal = groupItems.reduce((acc, curr) => acc + curr.amount, 0);
+                    
+                    let div = document.createElement('div');
+                    div.className = 'history-item group-header';
+                    div.onclick = () => toggleGroupExpansion(item.groupId);
+                    
+                    let catObj = categories.find(c => c.id === item.categoryId);
+                    let catColor = catObj ? (catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)')) : (item.type !== 'expense' ? 'var(--success)' : 'var(--danger)');
+                    
+                    div.style.borderLeft = `8px solid ${catColor}`;
+                    div.innerHTML = `
+                        <div class="history-info">
+                            <span class="history-desc">📦 <strong>${item.description}</strong> <span style="font-size:11px; color:var(--text-muted);">(${groupItems.length} parcelas agrupadas)</span></span>
+                            <span class="history-date">Clique para ver os detalhes da repetição</span>
+                        </div>
+                        <div class="history-right">
+                            <span class="history-val" style="color: ${catColor};">${formatCurrency(totalVal)}</span>
+                            <span style="font-size: 16px; margin-left: 8px;">▼</span>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                } else {
+                    let dateFormatted = item.date.split('-').reverse().join('/');
+                    let div = document.createElement('div');
+                    div.className = 'history-item';
+                    if (item.groupId) div.style.background = 'rgba(255,255,255,0.04)';
+                    
+                    let catObj = categories.find(c => c.id === item.categoryId);
+                    let catColor = catObj ? (catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)')) : (item.type !== 'expense' ? 'var(--success)' : 'var(--danger)');
+                    let catLabel = catObj ? catObj.name : "Geral";
 
-                div.style.borderLeft = `5px solid ${catColor}`;
-                div.style.cursor = 'default';
+                    div.style.borderLeft = `5px solid ${catColor}`;
+                    div.style.cursor = 'default';
 
-                const isInc = item.type !== 'expense';
-                let extraText = item.freeDescription ? ` - <span style="font-weight:400; color:var(--text);">${item.freeDescription}</span>` : '';
+                    const isInc = item.type !== 'expense';
+                    let extraText = item.freeDescription ? ` - <span style="font-weight:400; color:var(--text);">${item.freeDescription}</span>` : '';
 
-                div.innerHTML = `
-                    <div class="history-info">
-                        <span class="history-desc"><strong>${item.description}</strong>${extraText}</span>
-                        <span class="history-cat-badge" style="color: ${catColor};">
-                            <span class="history-cat-dot" style="background-color: ${catColor};"></span>
-                            ${catLabel}
-                        </span>
-                        <span class="history-date">📅 Previsão: ${dateFormatted} (${isInc ? 'Recebimento' : 'Pagamento'})</span>
-                    </div>
-                    <div class="history-right">
-                        <span class="history-val" style="color: ${isInc ? 'var(--success)' : 'var(--danger)'}">
-                            ${isInc ? '+' : '-'} ${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </span>
-                        <button class="btn-delete-item" onclick="deleteAgendaItem('${item.id}', event)">🗑️</button>
-                    </div>
-                `;
-                container.appendChild(div);
+                    div.innerHTML = `
+                        <div class="history-info">
+                            <span class="history-desc"><strong>${item.description}</strong>${extraText}</span>
+                            <span class="history-cat-badge" style="color: ${catColor};">
+                                <span class="history-cat-dot" style="background-color: ${catColor};"></span>
+                                ${catLabel}
+                            </span>
+                            <span class="history-date">📅 Previsão: ${dateFormatted} (${isInc ? 'Recebimento' : 'Pagamento'})</span>
+                        </div>
+                        <div class="history-right">
+                            <span class="history-val" style="color: ${isInc ? 'var(--success)' : 'var(--danger)'}">
+                                ${isInc ? '+' : '-'} ${formatCurrency(item.amount)}
+                            </span>
+                            <button class="btn-delete-item" onclick="deleteAgendaItem('${item.id}', event)">🗑️</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                    
+                    if (item.groupId && agendaItems.filter(i => i.groupId === item.groupId).pop().id === item.id) {
+                         let closeBtn = document.createElement('div');
+                         closeBtn.innerHTML = `<div style="text-align:center; padding: 5px; font-size:10px; color:var(--primary); cursor:pointer; font-weight:700;" onclick="toggleGroupExpansion('${item.groupId}')">▲ RECOLHER GRUPO</div>`;
+                         container.appendChild(closeBtn);
+                    }
+                }
             });
         }
 
@@ -1531,7 +1584,7 @@
                 
                 row.innerHTML = `
                     <div class="notification-item-content">
-                        <strong>${isInc ? '🟢' : '🔴'} ${item.description}</strong>${extraText} (${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
+                        <strong>${isInc ? '🟢' : '🔴'} ${item.description}</strong>${extraText} (${formatCurrency(item.amount)})
                     </div>
                     <div class="notification-item-actions">
                         <button class="btn-notification-action" style="background: ${isInc ? 'var(--success)' : 'var(--danger)'}; color: ${isInc ? '#000' : '#fff'};" onclick="claimAgendaAmount('${item.id}')">
@@ -1550,6 +1603,7 @@
             safeLocalStorageSave();
             checkAgendaNotifications();
             loadData();
+            renderAgendaList();
         }
 
         function cancelFutureAgenda(id) {
@@ -1563,6 +1617,7 @@
             safeLocalStorageSave();
             checkAgendaNotifications();
             loadData();
+            renderAgendaList();
             alert("Repetições futuras canceladas com sucesso.");
         }
 
@@ -1592,6 +1647,7 @@
             safeLocalStorageSave();
             loadData();
             checkAgendaNotifications();
+            renderAgendaList();
             showBanner();
         }
 
@@ -2549,3 +2605,4 @@
     </script>
 </body>
 </html>
+
