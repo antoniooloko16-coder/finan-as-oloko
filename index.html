@@ -166,7 +166,7 @@
 
         .tab-navigation {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             padding: 0 12px;
             gap: 4px;
         }
@@ -177,7 +177,7 @@
             color: var(--text-muted);
             padding: 12px 2px;
             font-weight: 600;
-            font-size: 11px;
+            font-size: 12px;
             cursor: pointer;
             text-align: center;
             transition: all 0.2s;
@@ -635,21 +635,6 @@
         }
         .agenda-type-btn.active.inc-type { background: rgba(0, 230, 118, 0.15); color: var(--success); }
         .agenda-type-btn.active.exp-type { background: rgba(255, 23, 68, 0.15); color: var(--danger); }
-
-        /* NOVAS ESTILIZAÇÕES VEÍCULOS */
-        .vehicle-card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px; border-radius: 14px; margin-bottom: 12px; }
-        .vehicle-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-        .vehicle-name { font-weight: 700; font-size: 16px; color: var(--primary); }
-        .vehicle-badge { font-size: 10px; background: var(--bg-input); padding: 4px 8px; border-radius: 6px; color: var(--text-muted); text-transform: uppercase; }
-        .vehicle-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .stat-item { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; }
-        .stat-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
-        .stat-value { font-size: 12px; font-weight: 700; }
-        .vehicle-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-        .btn-v-action { padding: 10px; border-radius: 8px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; }
-        .search-container { margin: 15px; display: flex; gap: 8px; }
-        .search-input-v { background: var(--bg-input); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 10px; flex: 1; font-size: 14px; }
-        .sold-profit { color: var(--success); font-size: 13px; font-weight: 700; margin-top: 8px; text-align: center; background: rgba(0,230,118,0.05); padding: 6px; border-radius: 6px; }
     </style>
 </head>
 <body class="perfil-pessoal">
@@ -678,7 +663,6 @@
         
         <div class="tab-navigation">
             <button class="tab-btn active" id="tab-lançamentos" onclick="switchPage('lançamentos')">📝 Lançamentos</button>
-            <button class="tab-btn" id="tab-veiculos" onclick="switchPage('veiculos')">🚗 Veículos</button>
             <button class="tab-btn" id="tab-agenda" onclick="switchPage('agenda')">📅 Agenda</button>
             <button class="tab-btn" id="tab-categorias" onclick="switchPage('categorias')">⚙️ Ajustes</button>
             <button class="tab-btn" id="tab-anual" onclick="switchPage('anual')">📊 Anual</button>
@@ -771,18 +755,6 @@
                     <label for="tx_date">📅 Data</label>
                     <input type="date" id="tx_date" class="text-input" onchange="checkLiveBudget()">
                 </div>
-
-                <div class="checkbox-group" id="containerFixedCheck">
-                    <input type="checkbox" id="is_fixed" onchange="toggleConditionalFields()">
-                    <label for="is_fixed" style="color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer;">🔄 Repetir todo mês (Fixo)</label>
-                </div>
-
-                <div class="conditional-box" id="conditionalFields">
-                    <div class="input-group">
-                        <label>📆 Dia padrão de cobrança</label>
-                        <input type="number" id="due_day" aria-label="Dia padrão de cobrança" class="text-input" min="1" max="31" value="10">
-                    </div>
-                </div>
             </div>
 
             <div class="action-grid" id="actionButtonsContainer">
@@ -836,21 +808,6 @@
             </div>
         </div>
 
-        <!-- ABA VEÍCULOS -->
-        <div id="page-veiculos" class="page-content">
-            <div class="search-container">
-                <input type="text" id="v_search" class="search-input-v" placeholder="🔍 Buscar carro pelo nome..." oninput="renderVehicles()">
-                <button class="icon-btn" onclick="openAddVehicleModal()">➕</button>
-            </div>
-
-            <div class="agenda-switcher" style="margin: 15px;">
-                <button class="agenda-type-btn active inc-type" id="v-tab-estoque" onclick="switchVehicleView('estoque')">🚗 Em Estoque</button>
-                <button class="agenda-type-btn exp-type" id="v-tab-vendidos" onclick="switchVehicleView('vendidos')">🏁 Carros Vendidos</button>
-            </div>
-
-            <div id="v_list_container" style="padding: 0 15px;"></div>
-        </div>
-
         <div id="page-agenda" class="page-content">
             <div class="card">
                 <div class="agenda-switcher">
@@ -875,13 +832,18 @@
 
                 <div class="grid-2col">
                     <div class="input-group">
-                        <label id="lblAgendaAmount">💰 Valor Esperado (R$)</label>
+                        <label id="lblAgendaAmount">💰 Valor (R$)</label>
                         <input type="number" id="agenda_amount" class="text-input" placeholder="0.00" step="0.01">
                     </div>
                     <div class="input-group">
-                        <label id="lblAgendaDate">📅 Data do Recebimento</label>
+                        <label id="lblAgendaDate">📅 Data Inicial</label>
                         <input type="date" id="agenda_date" class="text-input">
                     </div>
+                </div>
+
+                <div class="input-group">
+                    <label>🔁 Repetir por quantos meses? (Fixo/Parcelado)</label>
+                    <input type="number" id="agenda_installments" class="text-input" value="1" min="1" max="60">
                 </div>
 
                 <button id="btnSaveAgendaAction" class="btn-action" style="background: var(--success); width: 100%; font-size: 14px; padding: 12px 0; margin-top: 5px;" onclick="saveAgendaItem()">➕ Agendar Recebimento</button>
@@ -1046,75 +1008,17 @@
         </div>
     </div>
 
-    <!-- MODAL ADICIONAR VEÍCULO -->
-    <div class="modal" id="vehicleModal">
-        <div class="modal-content">
-            <div class="modal-title">🚗 Novo Veículo</div>
-            <div class="input-group">
-                <label>Nome do Veículo</label>
-                <input type="text" id="v_name" class="text-input" placeholder="Ex: Honda Civic 2020">
-            </div>
-            <div class="input-group">
-                <label>Preço de Compra</label>
-                <input type="number" id="v_buy_price" class="text-input" placeholder="0.00">
-            </div>
-            <button class="modal-btn" style="background: var(--success); text-align: center; color: #000;" onclick="saveNewVehicle()">Salvar Veículo</button>
-            <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 10px; border-color: transparent;" onclick="closeVehicleModal()">Cancelar</button>
-        </div>
-    </div>
-
-    <!-- MODAL GASTOS VEÍCULO -->
-    <div class="modal" id="vehicleExpenseModal">
-        <div class="modal-content">
-            <div class="modal-title">🔧 Lançar Gasto no Veículo</div>
-            <input type="hidden" id="v_expense_id">
-            <div class="input-group">
-                <label>Tipo de Gasto</label>
-                <select id="v_expense_cat" class="select-input">
-                    <option value="Mecânico">🔧 Mecânico</option>
-                    <option value="Funilaria">🎨 Funilaria</option>
-                    <option value="Lavagem">🧼 Lavagem</option>
-                    <option value="Peças">⚙️ Peças</option>
-                    <option value="Documentação">📄 Documentação</option>
-                    <option value="Outros">🔹 Outros</option>
-                </select>
-            </div>
-            <div class="input-group">
-                <label>Valor (R$)</label>
-                <input type="number" id="v_expense_amount" class="text-input" placeholder="0.00">
-            </div>
-            <button class="modal-btn" style="background: var(--danger); text-align: center; color: #fff;" onclick="saveVehicleExpense()">Confirmar Gasto</button>
-            <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 10px; border-color: transparent;" onclick="closeVehicleExpenseModal()">Cancelar</button>
-        </div>
-    </div>
-
-    <!-- MODAL VENDER VEÍCULO -->
-    <div class="modal" id="vehicleSellModal">
-        <div class="modal-content">
-            <div class="modal-title">🏁 Finalizar Venda</div>
-            <input type="hidden" id="v_sell_id">
-            <div class="input-group">
-                <label>Preço de Venda Final</label>
-                <input type="number" id="v_sell_price" class="text-input" placeholder="0.00">
-            </div>
-            <button class="modal-btn" style="background: var(--primary); text-align: center; color: #000;" onclick="confirmVehicleSale()">Efetivar Venda</button>
-            <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 10px; border-color: transparent;" onclick="closeVehicleSellModal()">Cancelar</button>
-        </div>
-    </div>
-
     <script>
         let currentProfile = "pessoal"; 
         let rawDigits = "0";
         let privacyMode = false;
         let filtroCategoriaAtivo = ""; 
         let filtroPagamentoAtivo = ""; 
-        let vehicleView = "estoque";
         
         let transactions = [];
         let categories = [];
         let recurrentExpenses = []; 
         let agendaItems = []; 
-        let vehicles = [];
         let ccConfig = { closeDay: 25, dueDay: 5 };
         let transactionIndexedMap = new Map();
 
@@ -1160,7 +1064,6 @@
             document.getElementById('mainDateSelector').value = newValue;
             syncDateToInputs();
             loadData();
-            if(document.getElementById('page-veiculos').classList.contains('active')) renderVehicles();
         }
 
         function addQuickAmount(val) {
@@ -1236,7 +1139,6 @@
                 categories = JSON.parse(localStorage.getItem('categories_pessoal')) || defaultCategoriesPessoal;
                 recurrentExpenses = JSON.parse(localStorage.getItem('recurrent_pessoal')) || [];
                 agendaItems = JSON.parse(localStorage.getItem('agenda_pessoal')) || [];
-                vehicles = JSON.parse(localStorage.getItem('vehicles_pessoal')) || [];
                 ccConfig = JSON.parse(localStorage.getItem('cc_config_pessoal')) || { closeDay: 25, dueDay: 5 };
             } else {
                 if (appTitle) appTitle.innerText = "🏢 Finanças Empresa";
@@ -1248,7 +1150,6 @@
                 categories = JSON.parse(localStorage.getItem('categories_empresa')) || defaultCategoriesEmpresa;
                 recurrentExpenses = JSON.parse(localStorage.getItem('recurrent_empresa')) || [];
                 agendaItems = JSON.parse(localStorage.getItem('agenda_empresa')) || [];
-                vehicles = JSON.parse(localStorage.getItem('vehicles_empresa')) || [];
                 ccConfig = JSON.parse(localStorage.getItem('cc_config_empresa')) || { closeDay: 25, dueDay: 5 };
             }
             
@@ -1324,7 +1225,6 @@
             if (activeTab === 'tab-categorias') { renderCategoryManagement(); renderRecurrentManagement(); }
             if (activeTab === 'tab-anual') renderAnnualBalance();
             if (activeTab === 'tab-agenda') renderAgendaList();
-            if (activeTab === 'tab-veiculos') renderVehicles();
         }
 
         function rebuildTransactionIndex() {
@@ -1350,13 +1250,11 @@
                     localStorage.setItem('categories_pessoal', JSON.stringify(categories));
                     localStorage.setItem('recurrent_pessoal', JSON.stringify(recurrentExpenses));
                     localStorage.setItem('agenda_pessoal', JSON.stringify(agendaItems));
-                    localStorage.setItem('vehicles_pessoal', JSON.stringify(vehicles));
                 } else {
                     localStorage.setItem('transactions_empresa', JSON.stringify(transactions));
                     localStorage.setItem('categories_empresa', JSON.stringify(categories));
                     localStorage.setItem('recurrent_empresa', JSON.stringify(recurrentExpenses));
                     localStorage.setItem('agenda_empresa', JSON.stringify(agendaItems));
-                    localStorage.setItem('vehicles_empresa', JSON.stringify(vehicles));
                 }
                 rebuildTransactionIndex();
             } catch (e) {
@@ -1438,206 +1336,8 @@
                 renderAnnualBalance();
             } else if (pageId === 'agenda') {
                 renderAgendaList();
-            } else if (pageId === 'veiculos') {
-                renderVehicles();
             }
             window.scrollTo(0,0);
-        }
-
-        // LÓGICA DE VEÍCULOS
-        function switchVehicleView(view) {
-            vehicleView = view;
-            document.querySelectorAll('.agenda-type-btn').forEach(btn => btn.classList.remove('active'));
-            if(view === 'estoque') document.getElementById('v-tab-estoque').classList.add('active');
-            else document.getElementById('v-tab-vendidos').classList.add('active');
-            renderVehicles();
-        }
-
-        function openAddVehicleModal() { document.getElementById('vehicleModal').style.display = 'flex'; }
-        function closeVehicleModal() { document.getElementById('vehicleModal').style.display = 'none'; }
-        
-        function saveNewVehicle() {
-            const name = document.getElementById('v_name').value.trim();
-            const buyPrice = parseFloat(document.getElementById('v_buy_price').value);
-            const date = document.getElementById('mainDateSelector').value;
-
-            if(!name || isNaN(buyPrice)) return alert("Preencha os dados do veículo!");
-
-            const vId = gerarIDUnico();
-            const newV = {
-                id: vId,
-                name: name,
-                buyPrice: buyPrice,
-                expenses: [],
-                status: 'estoque',
-                dateBuy: date,
-                dateSell: null,
-                sellPrice: 0
-            };
-
-            vehicles.push(newV);
-            // Lançar no extrato como gasto
-            transactions.push({
-                id: gerarIDUnico(),
-                categoryId: categories[0]?.id || "cat_e_1",
-                amount: buyPrice,
-                type: 'expense_cash',
-                paymentMethod: 'dinheiro',
-                description: "Compra Veículo",
-                freeDescription: `Aquisição: ${name}`,
-                date: date
-            });
-
-            safeLocalStorageSave();
-            closeVehicleModal();
-            renderVehicles();
-            loadData();
-            document.getElementById('v_name').value = '';
-            document.getElementById('v_buy_price').value = '';
-        }
-
-        function renderVehicles() {
-            const container = document.getElementById('v_list_container');
-            const searchTerm = document.getElementById('v_search').value.toLowerCase();
-            const { year: ySel, month: mSel } = getSelectedYearMonth();
-            const targetMonth = `${ySel}-${mSel}`;
-
-            container.innerHTML = '';
-            
-            let filtered = vehicles.filter(v => v.status === vehicleView && v.name.toLowerCase().includes(searchTerm));
-            
-            if(vehicleView === 'vendidos') {
-                filtered = filtered.filter(v => v.dateSell && v.dateSell.startsWith(targetMonth));
-            }
-
-            if(filtered.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">Nenhum veículo encontrado.</p>';
-                return;
-            }
-
-            filtered.forEach(v => {
-                const totalExpenses = v.expenses.reduce((acc, curr) => acc + curr.amount, 0);
-                const totalCost = v.buyPrice + totalExpenses;
-                const profit = v.sellPrice - totalCost;
-
-                const card = document.createElement('div');
-                card.className = 'vehicle-card';
-                card.innerHTML = `
-                    <div class="vehicle-header">
-                        <div>
-                            <div class="vehicle-name">${v.name}</div>
-                            <div class="vehicle-badge">${v.status === 'estoque' ? '📍 Em Estoque' : '🏁 Vendido'}</div>
-                        </div>
-                        <button class="btn-delete-item" onclick="deleteVehicle('${v.id}')">🗑️</button>
-                    </div>
-                    <div class="vehicle-stats">
-                        <div class="stat-item">
-                            <div class="stat-label">Compra</div>
-                            <div class="stat-value">${formatCurrency(v.buyPrice)}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Gastos/Reparos</div>
-                            <div class="stat-value" style="color:var(--danger)">${formatCurrency(totalExpenses)}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Custo Total</div>
-                            <div class="stat-value">${formatCurrency(totalCost)}</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">${v.status === 'estoque' ? 'Investimento' : 'Venda'}</div>
-                            <div class="stat-value" style="color:var(--success)">${v.status === 'estoque' ? formatCurrency(totalCost) : formatCurrency(v.sellPrice)}</div>
-                        </div>
-                    </div>
-                    ${v.status === 'vendidos' ? `<div class="sold-profit">Lucro Gerado: ${formatCurrency(profit)}</div>` : ''}
-                    ${v.status === 'estoque' ? `
-                        <div class="vehicle-actions">
-                            <button class="btn-v-action" style="background:var(--bg-input); color:#fff;" onclick="openAddExpenseVehicle('${v.id}')">🔧 Lançar Gasto</button>
-                            <button class="btn-v-action" style="background:var(--success); color:#000;" onclick="openSellVehicle('${v.id}')">💰 Vender Carro</button>
-                        </div>
-                    ` : ''}
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function deleteVehicle(id) {
-            if(confirm("Deseja excluir este registro de veículo? Os lançamentos no extrato permanecerão.")) {
-                vehicles = vehicles.filter(v => v.id !== id);
-                safeLocalStorageSave();
-                renderVehicles();
-            }
-        }
-
-        function openAddExpenseVehicle(id) {
-            document.getElementById('v_expense_id').value = id;
-            document.getElementById('vehicleExpenseModal').style.display = 'flex';
-        }
-        function closeVehicleExpenseModal() { document.getElementById('vehicleExpenseModal').style.display = 'none'; }
-
-        function saveVehicleExpense() {
-            const id = document.getElementById('v_expense_id').value;
-            const cat = document.getElementById('v_expense_cat').value;
-            const amount = parseFloat(document.getElementById('v_expense_amount').value);
-            const date = document.getElementById('mainDateSelector').value;
-
-            if(isNaN(amount)) return alert("Informe o valor!");
-
-            const v = vehicles.find(v => v.id === id);
-            v.expenses.push({ type: cat, amount: amount, date: date });
-
-            transactions.push({
-                id: gerarIDUnico(),
-                categoryId: categories.find(c => c.name.includes('Manutenção'))?.id || categories[2]?.id,
-                amount: amount,
-                type: 'expense_cash',
-                paymentMethod: 'dinheiro',
-                description: `Reparo: ${v.name}`,
-                freeDescription: `${cat} - Vinculado ao Veículo`,
-                date: date
-            });
-
-            safeLocalStorageSave();
-            closeVehicleExpenseModal();
-            renderVehicles();
-            loadData();
-            document.getElementById('v_expense_amount').value = '';
-        }
-
-        function openSellVehicle(id) {
-            document.getElementById('v_sell_id').value = id;
-            document.getElementById('vehicleSellModal').style.display = 'flex';
-        }
-        function closeVehicleSellModal() { document.getElementById('vehicleSellModal').style.display = 'none'; }
-
-        function confirmVehicleSale() {
-            const id = document.getElementById('v_sell_id').value;
-            const sellPrice = parseFloat(document.getElementById('v_sell_price').value);
-            const date = document.getElementById('mainDateSelector').value;
-
-            if(isNaN(sellPrice)) return alert("Informe o preço de venda!");
-
-            const v = vehicles.find(v => v.id === id);
-            v.status = 'vendidos';
-            v.dateSell = date;
-            v.sellPrice = sellPrice;
-
-            // Lançar entrada no extrato
-            transactions.push({
-                id: gerarIDUnico(),
-                categoryId: categories.find(c => c.type === 'income')?.id || "cat_e_income",
-                amount: sellPrice,
-                type: 'income',
-                paymentMethod: 'dinheiro',
-                description: `Venda Veículo`,
-                freeDescription: `Venda: ${v.name}`,
-                date: date
-            });
-
-            safeLocalStorageSave();
-            closeVehicleSellModal();
-            renderVehicles();
-            loadData();
-            document.getElementById('v_sell_price').value = '';
         }
 
         function switchAgendaFormType(flowType) {
@@ -1658,7 +1358,7 @@
                 formDesc.innerText = "Cadastre valores que você tem previsão de receber para ser alertado no dia exato.";
                 lblDesc.innerText = "✍️ Anotações / Detalhes (Texto Livre)";
                 lblAmount.innerText = "💰 Valor Esperado (R$)";
-                lblDate.innerText = "📅 Data do Recebimento";
+                lblDate.innerText = "📅 Data Inicial";
                 btnAction.innerText = "➕ Agendar Recebimento";
                 btnAction.style.background = "var(--success)";
                 btnAction.style.color = "#000";
@@ -1669,7 +1369,7 @@
                 formDesc.innerText = "Cadastre boletos, contas ou compromissos que irão vencer para monitorar o caixa.";
                 lblDesc.innerText = "✍️ Anotações / Detalhes (Texto Livre)";
                 lblAmount.innerText = "💰 Valor do Compromisso (R$)";
-                lblDate.innerText = "📅 Data do Vencimento";
+                lblDate.innerText = "📅 Data Inicial";
                 btnAction.innerText = "➕ Agendar Pagamento";
                 btnAction.style.background = "var(--danger)";
                 btnAction.style.color = "#fff";
@@ -1681,33 +1381,50 @@
             const catId = document.getElementById('agenda_category').value;
             const freeDesc = document.getElementById('agenda_description').value.trim();
             const amount = parseFloat(document.getElementById('agenda_amount').value);
-            const date = document.getElementById('agenda_date').value;
+            const dateStr = document.getElementById('agenda_date').value;
+            const installments = parseInt(document.getElementById('agenda_installments').value) || 1;
 
-            if (isNaN(amount) || amount <= 0 || !date || !catId) {
+            if (isNaN(amount) || amount <= 0 || !dateStr || !catId) {
                 alert("⚠️ Preencha todos os campos corretamente!");
                 return;
             }
 
             const selectedCatObj = categories.find(c => c.id === catId);
             const baseDescription = selectedCatObj ? selectedCatObj.name : "Geral";
+            
+            const baseDate = new Date(dateStr + 'T12:00:00');
 
-            agendaItems.push({
-                id: gerarIDUnico(),
-                categoryId: catId,
-                description: baseDescription,
-                freeDescription: freeDesc,
-                amount: amount,
-                date: date,
-                type: flowType 
-            });
+            for (let i = 0; i < installments; i++) {
+                let currentDate = new Date(baseDate);
+                currentDate.setMonth(baseDate.getMonth() + i);
+                
+                // Tratar estouro de dias (Ex: Jan 31 -> Fev 28)
+                if (currentDate.getDate() !== baseDate.getDate()) {
+                    currentDate.setDate(0);
+                }
+                
+                let targetDateStr = currentDate.toISOString().substring(0, 10);
+                let installmentSuffix = installments > 1 ? ` (${i + 1}/${installments})` : "";
+
+                agendaItems.push({
+                    id: gerarIDUnico(),
+                    categoryId: catId,
+                    description: baseDescription,
+                    freeDescription: freeDesc + installmentSuffix,
+                    amount: amount,
+                    date: targetDateStr,
+                    type: flowType 
+                });
+            }
 
             safeLocalStorageSave();
             document.getElementById('agenda_description').value = '';
             document.getElementById('agenda_amount').value = '';
+            document.getElementById('agenda_installments').value = '1';
             renderAgendaList();
             checkAgendaNotifications();
             loadData();
-            alert(flowType === 'income' ? "📅 Recebimento futuro agendado!" : "📅 Pagamento futuro agendado!");
+            alert(flowType === 'income' ? "📅 Recebimento(s) agendado(s)!" : "📅 Pagamento(s) agendado(s)!");
         }
 
         function renderAgendaList() {
@@ -1854,7 +1571,6 @@
             document.getElementById('tx_free_description').value = target.freeDescription || '';
             document.getElementById('tx_date').value = target.date;
             
-            document.getElementById('containerFixedCheck').style.display = 'none';
             document.getElementById('editBadge').style.display = 'inline-block';
             
             document.getElementById('actionButtonsContainer').style.display = 'none';
@@ -1889,7 +1605,6 @@
             });
 
             editingTransactionId = null;
-            document.getElementById('containerFixedCheck').style.display = 'flex';
             document.getElementById('editBadge').style.display = 'none';
             document.getElementById('actionButtonsContainer').style.display = 'grid';
             document.getElementById('editButtonsContainer').style.display = 'none';
@@ -1903,7 +1618,6 @@
 
         function cancelEdit() {
             editingTransactionId = null;
-            document.getElementById('containerFixedCheck').style.display = 'flex';
             document.getElementById('editBadge').style.display = 'none';
             document.getElementById('actionButtonsContainer').style.display = 'grid';
             document.getElementById('editButtonsContainer').style.display = 'none';
@@ -2030,7 +1744,6 @@
                 t_empresa: JSON.parse(localStorage.getItem('transactions_empresa')) || [],
                 c_empresa: JSON.parse(localStorage.getItem('categories_empresa')) || defaultCategoriesEmpresa,
                 r_empresa: JSON.parse(localStorage.getItem('recurrent_empresa')) || [],
-                v_empresa: JSON.parse(localStorage.getItem('vehicles_empresa')) || [],
                 cc_empresa: JSON.parse(localStorage.getItem('cc_config_empresa')) || { closeDay: 25, dueDay: 5 }
             };
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
@@ -2057,7 +1770,6 @@
                             localStorage.setItem('transactions_empresa', JSON.stringify(imported.t_empresa));
                             localStorage.setItem('categories_empresa', JSON.stringify(imported.c_empresa));
                             localStorage.setItem('recurrent_empresa', JSON.stringify(imported.r_empresa || []));
-                            localStorage.setItem('vehicles_empresa', JSON.stringify(imported.v_empresa || []));
                             localStorage.setItem('cc_config_empresa', JSON.stringify(imported.cc_config_empresa));
                         }
                         alert('Backup restaurado com sucesso! 🎉');
@@ -2462,14 +2174,12 @@
         }
 
         let getNumericValue = () => parseInt(rawDigits, 10) / 100;
-        function toggleConditionalFields() { document.getElementById('conditionalFields').style.display = document.getElementById('is_fixed').checked ? 'block' : 'none'; }
 
         function togglePrivacyMode() {
             privacyMode = !privacyMode;
             document.getElementById('btnCortina').innerText = privacyMode ? '🙈' : '👁️';
             loadData();
             if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
-            if(document.getElementById('page-veiculos').classList.contains('active')) renderVehicles();
         }
 
         function showBanner() {
@@ -2509,31 +2219,17 @@
             const baseDescription = selectedCatObj ? selectedCatObj.name : "Geral";
             
             const dateInput = document.getElementById('tx_date').value;
-            const isFixed = document.getElementById('is_fixed').checked;
 
-            if (isFixed) {
-                const dueDay = parseInt(document.getElementById('due_day').value, 10) || 10;
-                recurrentExpenses.push({
-                    id: gerarIDUnico(),
-                    categoryId: catId,
-                    amount: val,
-                    type: type,
-                    description: baseDescription,
-                    dueDay: dueDay,
-                    startDate: dateInput
-                });
-            } else {
-                transactions.push({ 
-                    id: gerarIDUnico(), 
-                    categoryId: catId, 
-                    amount: val, 
-                    type: type, 
-                    paymentMethod: paymentMethod, 
-                    description: baseDescription, 
-                    freeDescription: freeDesc,
-                    date: dateInput 
-                });
-            }
+            transactions.push({ 
+                id: gerarIDUnico(), 
+                categoryId: catId, 
+                amount: val, 
+                type: type, 
+                paymentMethod: paymentMethod, 
+                description: baseDescription, 
+                freeDescription: freeDesc,
+                date: dateInput 
+            });
             saveAndReset();
         }
 
@@ -2607,8 +2303,6 @@
             safeLocalStorageSave();
             rawDigits = "0";
             document.getElementById('tx_free_description').value = '';
-            document.getElementById('is_fixed').checked = false;
-            toggleConditionalFields();
             updateAmountDisplay();
             if(document.getElementById('budgetMonitor')) document.getElementById('budgetMonitor').style.display = 'none';
             showBanner();
@@ -2797,4 +2491,3 @@
     </script>
 </body>
 </html>
-
