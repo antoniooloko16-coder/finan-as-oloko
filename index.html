@@ -338,7 +338,7 @@
     .tag.active-filter { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
 
     .grid-categories-panel {
-        display: none;
+        display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
         margin: 15px 15px 0 15px;
@@ -1083,7 +1083,10 @@
         { id: "cat_p_5", name: "✈️ Viagens", budget: 500, type: "expense", color: "#ff9f43" },
         { id: "cat_p_6", name: "🎁 Presentes", budget: 200, type: "expense", color: "#e040fb" },
         { id: "cat_p_7", name: "🚗 Combustível", budget: 350, type: "expense", color: "#00e676" },
-        { id: "cat_p_8", name: "🏋️ Esportes", budget: 150, type: "expense", color: "#ff1744" }
+        { id: "cat_p_8", name: "🏋️ Esportes", budget: 150, type: "expense", color: "#ff1744" },
+        { id: "cat_p_9", name: "📈 Salário / Proventos", budget: 5000, type: "income", color: "#00e676" },
+        { id: "cat_p_10", name: "🏠 Aluguel / Condomínio", budget: 1200, type: "expense", color: "#ff2a6d" },
+        { id: "cat_p_11", name: "💊 Farmácia / Saúde", budget: 200, type: "expense", color: "#05dfd7" }
     ];
 
     const defaultCategoriesEmpresa = [
@@ -1094,7 +1097,9 @@
         { id: "cat_e_5", name: "👥 Pró-Labore / Salários", budget: 4000, type: "expense", color: "#a370f7" },
         { id: "cat_e_6", name: "📢 Marketing & Anúncios", budget: 600, type: "expense", color: "#05dfd7" },
         { id: "cat_e_7", name: "🏛️ Impostos & Taxas", budget: 1200, type: "expense", color: "#ff2a6d" },
-        { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 500, type: "expense", color: "#b3b3b3" }
+        { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 500, type: "expense", color: "#b3b3b3" },
+        { id: "cat_e_9", name: "💰 Vendas de Produtos", budget: 10000, type: "income", color: "#00e676" },
+        { id: "cat_e_10", name: "💻 Softwares & Assinaturas", budget: 300, type: "expense", color: "#ff9f43" }
     ];
 
     function loadProfiles() {
@@ -2323,7 +2328,7 @@
             container.appendChild(box);
         });
         
-        container.style.display = currentDisplay || 'none';
+        container.style.display = currentDisplay === 'none' ? 'none' : 'grid';
     }
 
     function renderCategoryManagement() {
@@ -2854,5 +2859,4 @@
     }
 </script>
 </html>
-
 
