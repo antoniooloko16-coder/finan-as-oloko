@@ -338,7 +338,7 @@
     .tag.active-filter { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
 
     .grid-categories-panel {
-        display: grid;
+        display: none;
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
         margin: 15px 15px 0 15px;
@@ -564,8 +564,38 @@
     .modal-btn:active { background: var(--border-color); }
     
     .custom-installments-container { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
-    .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #00e676; color: #000; padding: 10px 24px; border-radius: 30px; font-weight: 700; font-size: 14px; z-index: 2000; display: none; box-shadow: 0 4px 16px rgba(0,230,118,0.3); }
     
+    .success-banner { 
+        position: fixed; 
+        top: 20px; 
+        left: 50%; 
+        transform: translateX(-50%) translateY(-100px); 
+        background: #00e676; 
+        color: #000; 
+        padding: 12px 30px; 
+        border-radius: 30px; 
+        font-weight: 800; 
+        font-size: 14px; 
+        z-index: 2000; 
+        display: none; 
+        box-shadow: 0 8px 24px rgba(0,230,118,0.4); 
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .success-banner.show { display: block; transform: translateX(-50%) translateY(0); }
+    
+    .empty-state-guide {
+        text-align: center;
+        padding: 30px 20px;
+        background: rgba(255,255,255,0.02);
+        border-radius: 16px;
+        border: 2px dashed var(--border-color);
+        margin-top: 10px;
+    }
+    .empty-state-guide h4 { margin: 0 0 10px 0; color: var(--primary); }
+    .empty-state-guide p { font-size: 13px; color: var(--text-muted); margin: 0 0 20px 0; line-height: 1.5; }
+    .empty-state-step { display: flex; align-items: center; gap: 10px; text-align: left; font-size: 12px; margin-bottom: 8px; color: var(--text); }
+    .empty-state-num { background: var(--primary); color: #000; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+
     .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: 700; text-transform: uppercase; display: none; }
 
@@ -662,7 +692,7 @@
     }
 </style>
 
-<div class="success-banner" id="successBanner">Lançamento Salvo! ✓</div>
+<div class="success-banner" id="successBanner">🚀 Lançamento Salvo com Sucesso! ✓</div>
 
 <div class="header-fixed-container">
     <div class="profile-switcher-wrapper">
@@ -980,7 +1010,7 @@
 <div class="modal" id="expenseModal">
     <div class="modal-content">
         <div class="business-alert" id="businessCreditAlert">
-            ⚠️ <strong>Aviso Business:</strong> O Cartão de Crédito impacta apenas o <em>Regime de Competência</em> e fluxo futuro nas datas de vencimento de suas parcelas.
+            ⚠️ <strong>Aviso Financeiro:</strong> O gasto no cartão aparecerá na sua fatura do mês que vem, conforme sua data de vencimento.
         </div>
         <div class="modal-title">💵 Como você pagou esse gasto?</div>
         <button class="modal-btn" style="border-left: 4px solid var(--success);" onclick="executeExpenseSave('dinheiro')">💵 Dinheiro / PIX / Débito</button>
@@ -1083,10 +1113,7 @@
         { id: "cat_p_5", name: "✈️ Viagens", budget: 500, type: "expense", color: "#ff9f43" },
         { id: "cat_p_6", name: "🎁 Presentes", budget: 200, type: "expense", color: "#e040fb" },
         { id: "cat_p_7", name: "🚗 Combustível", budget: 350, type: "expense", color: "#00e676" },
-        { id: "cat_p_8", name: "🏋️ Esportes", budget: 150, type: "expense", color: "#ff1744" },
-        { id: "cat_p_9", name: "📈 Salário / Proventos", budget: 5000, type: "income", color: "#00e676" },
-        { id: "cat_p_10", name: "🏠 Aluguel / Condomínio", budget: 1200, type: "expense", color: "#ff2a6d" },
-        { id: "cat_p_11", name: "💊 Farmácia / Saúde", budget: 200, type: "expense", color: "#05dfd7" }
+        { id: "cat_p_8", name: "🏋️ Esportes", budget: 150, type: "expense", color: "#ff1744" }
     ];
 
     const defaultCategoriesEmpresa = [
@@ -1097,10 +1124,14 @@
         { id: "cat_e_5", name: "👥 Pró-Labore / Salários", budget: 4000, type: "expense", color: "#a370f7" },
         { id: "cat_e_6", name: "📢 Marketing & Anúncios", budget: 600, type: "expense", color: "#05dfd7" },
         { id: "cat_e_7", name: "🏛️ Impostos & Taxas", budget: 1200, type: "expense", color: "#ff2a6d" },
-        { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 500, type: "expense", color: "#b3b3b3" },
-        { id: "cat_e_9", name: "💰 Vendas de Produtos", budget: 10000, type: "income", color: "#00e676" },
-        { id: "cat_e_10", name: "💻 Softwares & Assinaturas", budget: 300, type: "expense", color: "#ff9f43" }
+        { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 500, type: "expense", color: "#b3b3b3" }
     ];
+
+    function triggerHaptic() {
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(10);
+        }
+    }
 
     function loadProfiles() {
         let saved = localStorage.getItem('app_profiles_list');
@@ -1228,6 +1259,7 @@
     }
 
     function addQuickAmount(val) {
+        triggerHaptic();
         let current = parseInt(rawDigits, 10);
         rawDigits = String(current + (val * 100));
         updateAmountDisplay();
@@ -2103,13 +2135,15 @@
     }
 
     function triggerAppReset() {
-        const firstConfirmation = confirm("⚠️ ATENÇÃO: Você está prestes a apagar TODOS os dados do aplicativo (Todos os Perfis).\n\nDeseja continuar?");
+        const firstConfirmation = confirm("⚠️ ATENÇÃO CRÍTICA: Você está prestes a apagar TODOS os dados do aplicativo de todos os perfis.\n\nDeseja realmente deletar tudo?");
         if (firstConfirmation) {
-            const secondConfirmation = confirm("🛑 ÚLTIMO AVISO: Esta ação deletará tudo para sempre. Tem certeza?");
-            if (secondConfirmation) {
+            const safetyCheck = prompt("Esta ação é irreversível. Para confirmar, digite exatamente a palavra: DELETAR");
+            if (safetyCheck === "DELETAR") {
                 localStorage.clear();
                 alert("App resetado com sucesso. Reiniciando...");
                 window.location.reload();
+            } else {
+                alert("Confirmação incorreta. O reset foi cancelado por segurança.");
             }
         }
     }
@@ -2328,7 +2362,7 @@
             container.appendChild(box);
         });
         
-        container.style.display = currentDisplay === 'none' ? 'none' : 'grid';
+        container.style.display = currentDisplay || 'none';
     }
 
     function renderCategoryManagement() {
@@ -2489,6 +2523,7 @@
     }
 
     function pressKey(key) {
+        triggerHaptic();
         if (key === 'C') { rawDigits = "0"; } 
         else if (key === 'back') {
             rawDigits = rawDigits.slice(0, -1);
@@ -2520,8 +2555,8 @@
     function showBanner() {
         const banner = document.getElementById('successBanner');
         if(banner) {
-            banner.style.display = 'block';
-            setTimeout(() => banner.style.display = 'none', 2000);
+            banner.classList.add('show');
+            setTimeout(() => banner.classList.remove('show'), 3000);
         }
     }
 
@@ -2532,7 +2567,11 @@
 
     function openExpenseModal() {
         const val = getNumericValue();
-        if (val <= 0) { dispararErroVisor(); return; }
+        if (val <= 0) { 
+            alert("⚠️ Digite um valor primeiro no teclado numérico.");
+            dispararErroVisor(); 
+            return; 
+        }
         document.getElementById('expenseModal').style.display = 'flex';
     }
 
@@ -2545,7 +2584,11 @@
 
     function saveTransaction(type, paymentMethod = 'dinheiro') {
         const val = getNumericValue();
-        if (val <= 0) { dispararErroVisor(); return; }
+        if (val <= 0) { 
+            alert("⚠️ Digite um valor maior que zero para registrar.");
+            dispararErroVisor(); 
+            return; 
+        }
         
         const catId = document.getElementById('sl_category').value;
         const freeDesc = document.getElementById('tx_free_description').value.trim();
@@ -2570,7 +2613,11 @@
 
     function openCreditModal() {
         const val = getNumericValue();
-        if (val <= 0) { dispararErroVisor(); return; }
+        if (val <= 0) { 
+            alert("⚠️ Digite um valor primeiro no teclado numérico.");
+            dispararErroVisor(); 
+            return; 
+        }
         document.getElementById('creditModal').style.display = 'flex';
     }
 
@@ -2805,7 +2852,14 @@
         });
 
         if (countItems === 0) {
-            container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhum lançamento registrado. 📭</div>`;
+            container.innerHTML = `
+                <div class="empty-state-guide">
+                    <h4>🚀 Comece sua jornada!</h4>
+                    <p>Parece que você ainda não tem registros neste mês. Siga estes passos para organizar sua vida financeira:</p>
+                    <div class="empty-state-step"><div class="empty-state-num">1</div><span>Digite o valor no <strong>Teclado Numérico</strong> acima.</span></div>
+                    <div class="empty-state-step"><div class="empty-state-num">2</div><span>Escolha uma <strong>Categoria</strong> ou adicione uma nova.</span></div>
+                    <div class="empty-state-step"><div class="empty-state-num">3</div><span>Toque em <strong>Gastei</strong> ou <strong>Ganhei</strong> para salvar!</span></div>
+                </div>`;
         }
 
         let totalWithdrawals = realTransactions.filter(t => t.type === 'saving_withdrawal').reduce((acc, curr) => acc + curr.amount, 0);
