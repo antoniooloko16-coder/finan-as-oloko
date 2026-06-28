@@ -880,8 +880,8 @@
 
     <div id="page-categorias" class="page-content">
         <div class="card">
-            <h3 id="categoryFormTitle" style="margin-top:0; color: var(--primary); font-size: 15px; font-weight: 700;">✨ Editar Caixa / Categoria</h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Selecione uma caixa na lista inferior para alterar o nome, tipo ou teto/meta.</p>
+            <h3 id="categoryFormTitle" style="margin-top:0; color: var(--primary); font-size: 15px; font-weight: 700;">✨ Nova Caixa ou Editar Existente</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Para criar, preencha os dados e clique em Salvar. Para editar, escolha uma da lista abaixo.</p>
             
             <div class="input-group">
                 <label>📊 Tipo de Categoria (Fluxo)</label>
@@ -894,15 +894,15 @@
 
             <div class="input-group">
                 <label>🏷️ Nome da Categoria</label>
-                <input type="text" id="new_category_name" aria-label="Nome da Categoria" class="text-input" placeholder="Selecione uma categoria abaixo para editar...">
+                <input type="text" id="new_category_name" aria-label="Nome da Categoria" class="text-input" placeholder="Ex: Mercado, Viagem, Salário...">
             </div>
             <div class="input-group">
                 <label id="lblCategoryBudgetLimit">🎯 Teto de Gasto / Meta Mensal (Opcional)</label>
                 <input type="number" id="new_category_budget" aria-label="Teto de Gasto Mensal" class="text-input" placeholder="Ex: 500" value="0">
             </div>
             <div style="display: block;">
-                <button id="btnSaveCategory" class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">💾 Atualizar Configuração da Caixa</button>
-                <button id="btnCancelCategoryEdit" class="btn-secondary" style="display: none; width: 100%; margin-top: 8px; padding: 12px 0;" onclick="cancelCategoryEdit()">❌ Cancelar Ajuste</button>
+                <button id="btnSaveCategory" class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">💾 Salvar Configuração da Caixa</button>
+                <button id="btnCancelCategoryEdit" class="btn-secondary" style="display: none; width: 100%; margin-top: 8px; padding: 12px 0;" onclick="cancelCategoryEdit()">❌ Cancelar Edição</button>
             </div>
         </div>
 
@@ -1181,7 +1181,6 @@
     function deleteProfile(id) {
         if (allProfiles.length <= 1) return alert("Você deve ter pelo menos um perfil.");
         
-        // Duplo consentimento solicitado
         let confirm1 = confirm(`⚠️ TEM CERTEZA? Você irá apagar permanentemente o perfil e todos os seus dados.`);
         if (confirm1) {
             let confirm2 = confirm(`🛑 AÇÃO IRREVERSÍVEL! Confirma a exclusão definitiva do perfil?`);
@@ -1789,7 +1788,6 @@
     }
 
     function skipAgendaItem(id) {
-        // Duplo consentimento solicitado para cancelar cobrança/recebimento
         let c1 = confirm("Deseja pular este item agendado?");
         if (c1) {
             let c2 = confirm("Confirmar cancelamento da notificação para este item?");
@@ -1807,7 +1805,6 @@
         const target = agendaItems.find(i => i.id === id);
         if (!target || !target.groupId) return skipAgendaItem(id);
         
-        // Duplo consentimento para parcelas futuras
         let c1 = confirm("Deseja cancelar esta e TODAS as futuras parcelas deste grupo?");
         if (c1) {
             let c2 = confirm("TEM CERTEZA? As parcelas futuras serão apagadas da agenda.");
@@ -2415,11 +2412,9 @@
                 return c;
             });
             editingCategoryId = null;
-            document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
+            document.getElementById('categoryFormTitle').innerText = "✨ Nova Caixa ou Editar Existente";
             document.getElementById('btnCancelCategoryEdit').style.display = "none";
-            
             setCategoryFormType('expense');
-            
             safeLocalStorageSave();
             input.value = ''; budgetInput.value = '0';
             populateCategorySelector();
@@ -2458,7 +2453,7 @@
         editingCategoryId = null;
         document.getElementById('new_category_name').value = '';
         document.getElementById('new_category_budget').value = '0';
-        document.getElementById('categoryFormTitle').innerText = "✨ Editar Caixa / Categoria";
+        document.getElementById('categoryFormTitle').innerText = "✨ Nova Caixa ou Editar Existente";
         document.getElementById('btnCancelCategoryEdit').style.display = "none";
         setCategoryFormType('expense');
     }
@@ -2859,4 +2854,5 @@
     }
 </script>
 </html>
+
 
