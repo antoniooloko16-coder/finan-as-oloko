@@ -564,8 +564,39 @@
     .modal-btn:active { background: var(--border-color); }
     
     .custom-installments-container { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 10px; }
-    .success-banner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #00e676; color: #000; padding: 10px 24px; border-radius: 30px; font-weight: 700; font-size: 14px; z-index: 2000; display: none; box-shadow: 0 4px 16px rgba(0,230,118,0.3); }
     
+    .success-banner { 
+        position: fixed; 
+        top: 20px; 
+        left: 50%; 
+        transform: translateX(-50%) translateY(-100px); 
+        background: #00e676; 
+        color: #000; 
+        padding: 12px 30px; 
+        border-radius: 30px; 
+        font-weight: 800; 
+        font-size: 14px; 
+        z-index: 2000; 
+        display: none; 
+        box-shadow: 0 8px 24px rgba(0,230,118,0.5); 
+        transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .success-banner.show { display: block; transform: translateX(-50%) translateY(0); animation: pulseSuccess 0.6s ease; }
+    @keyframes pulseSuccess { 0% { transform: translateX(-50%) translateY(0) scale(1); } 50% { transform: translateX(-50%) translateY(0) scale(1.1); } 100% { transform: translateX(-50%) translateY(0) scale(1); } }
+    
+    .empty-state-guide {
+        text-align: center;
+        padding: 40px 20px;
+        background: rgba(187, 134, 252, 0.03);
+        border-radius: 20px;
+        border: 2px dashed var(--border-color);
+        margin: 15px 0;
+    }
+    .empty-state-guide h4 { margin: 0 0 10px 0; color: var(--primary); font-size: 18px; }
+    .empty-state-guide p { font-size: 14px; color: var(--text-muted); margin: 0 0 25px 0; line-height: 1.5; }
+    .empty-state-step { display: flex; align-items: center; gap: 12px; text-align: left; font-size: 13px; margin-bottom: 12px; color: var(--text); padding: 8px; background: rgba(255,255,255,0.02); border-radius: 10px; }
+    .empty-state-num { background: var(--primary); color: #000; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; }
+
     .filter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .btn-clear-filter { background: none; border: none; color: var(--primary); font-size: 11px; cursor: pointer; font-weight: 700; text-transform: uppercase; display: none; }
 
@@ -583,12 +614,13 @@
     .business-alert {
         background: rgba(41, 121, 255, 0.1);
         border: 1px solid var(--accent);
-        padding: 10px;
-        border-radius: 8px;
-        font-size: 11px;
+        padding: 12px;
+        border-radius: 10px;
+        font-size: 12px;
         color: #fff;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
         display: none;
+        line-height: 1.4;
     }
 
     .notification-bell-panel {
@@ -662,7 +694,7 @@
     }
 </style>
 
-<div class="success-banner" id="successBanner">Lançamento Salvo! ✓</div>
+<div class="success-banner" id="successBanner">🚀 Lançamento Salvo! ✓</div>
 
 <div class="header-fixed-container">
     <div class="profile-switcher-wrapper">
@@ -707,7 +739,7 @@
                 <p id="dashFaturaCartao" style="color: var(--accent);">R$ 0,00</p>
             </div>
             <div class="card-dash" style="border-left: 3px solid var(--success);">
-                <h3>🔮 Ideal Anual</h3>
+                <h3>💵 CAIXA ATUAL</h3>
                 <p id="dashCaixaFutFuture" style="color: var(--success);">R$ 0,00</p>
             </div>
         </div>
@@ -936,9 +968,9 @@
             <input type="file" id="fileFileInput" style="display:none;" onchange="importBackup(event)">
         </div>
 
-        <div class="card" style="border-color: rgba(255, 23, 68, 0.3);">
-            <h3 style="margin-top:0; color: var(--danger); font-size: 15px; font-weight: 700;">🚨 Redefinição de Fábrica</h3>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">Esta ação irá apagar permanentemente todos os lançamentos, categorias e ajustes de AMBOS os perfis (Pessoal e Empresa). O app ficará como se tivesse acabado de ser instalado.</p>
+        <div class="card" style="border-color: rgba(255, 23, 68, 0.3); margin-top: 30px; background: rgba(255, 23, 68, 0.02);">
+            <h3 style="margin-top:0; color: var(--danger); font-size: 15px; font-weight: 700;">🚨 Zona de Risco: Redefinição</h3>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">Esta ação irá apagar permanentemente todos os lançamentos de AMBOS os perfis. Use apenas se desejar começar do zero absoluto.</p>
             <button class="btn-action" style="background: var(--danger); color: #fff; width: 100%; font-size: 13px;" onclick="triggerAppReset()">🗑️ Limpar Tudo e Resetar App</button>
         </div>
 
@@ -979,10 +1011,10 @@
 <!-- Modais -->
 <div class="modal" id="expenseModal">
     <div class="modal-content">
-        <div class="business-alert" id="businessCreditAlert">
-            ⚠️ <strong>Aviso Business:</strong> O Cartão de Crédito impacta apenas o <em>Regime de Competência</em> e fluxo futuro nas datas de vencimento de suas parcelas.
+        <div class="business-alert" id="businessCreditAlert" style="display: block;">
+            💡 <strong>Nota de Lançamento:</strong> Este gasto aparecerá na sua fatura do mês que vem, conforme suas configurações de ciclo de cartão.
         </div>
-        <div class="modal-title">💵 Como você pagou esse gasto?</div>
+        <div class="modal-title">💵 Forma de Pagamento</div>
         <button class="modal-btn" style="border-left: 4px solid var(--success);" onclick="executeExpenseSave('dinheiro')">💵 Dinheiro / PIX / Débito</button>
         <button class="modal-btn" style="border-left: 4px solid var(--accent);" onclick="closeExpenseModal(); openCreditModal();">💳 Cartão de Crédito</button>
         <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 15px; border-color: transparent;" onclick="closeExpenseModal()">❌ Cancelar</button>
@@ -992,6 +1024,7 @@
 <div class="modal" id="creditModal">
     <div class="modal-content">
         <div class="modal-title">🔢 Parcelas do Cartão</div>
+        <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 15px;">Escolha em quantas vezes o valor será dividido na sua fatura.</p>
         <button class="modal-btn" onclick="saveCreditTransaction(1)">1x (À Vista na Fatura)</button>
         <button class="modal-btn" onclick="saveCreditTransaction(2)">2 meses seguintes</button>
         <button class="modal-btn" onclick="saveCreditTransaction(3)">3 meses seguintes</button>
@@ -1096,6 +1129,12 @@
         { id: "cat_e_7", name: "🏛️ Impostos & Taxas", budget: 1200, type: "expense", color: "#ff2a6d" },
         { id: "cat_e_8", name: "📦 Embalagens & Extras", budget: 500, type: "expense", color: "#b3b3b3" }
     ];
+
+    function triggerHaptic() {
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(15);
+        }
+    }
 
     function loadProfiles() {
         let saved = localStorage.getItem('app_profiles_list');
@@ -1223,6 +1262,7 @@
     }
 
     function addQuickAmount(val) {
+        triggerHaptic();
         let current = parseInt(rawDigits, 10);
         rawDigits = String(current + (val * 100));
         updateAmountDisplay();
@@ -2098,13 +2138,15 @@
     }
 
     function triggerAppReset() {
-        const firstConfirmation = confirm("⚠️ ATENÇÃO: Você está prestes a apagar TODOS os dados do aplicativo (Todos os Perfis).\n\nDeseja continuar?");
+        const firstConfirmation = confirm("⚠️ ATENÇÃO CRÍTICA: Você está prestes a apagar TODOS os dados do aplicativo de todos os perfis.\n\nDeseja realmente deletar tudo?");
         if (firstConfirmation) {
-            const secondConfirmation = confirm("🛑 ÚLTIMO AVISO: Esta ação deletará tudo para sempre. Tem certeza?");
-            if (secondConfirmation) {
+            const safetyCheck = prompt("Esta ação é irreversível. Para confirmar, digite exatamente a palavra: DELETAR");
+            if (safetyCheck === "DELETAR") {
                 localStorage.clear();
                 alert("App resetado com sucesso. Reiniciando...");
                 window.location.reload();
+            } else {
+                alert("Confirmação incorreta. O reset foi cancelado por segurança.");
             }
         }
     }
@@ -2484,6 +2526,7 @@
     }
 
     function pressKey(key) {
+        triggerHaptic();
         if (key === 'C') { rawDigits = "0"; } 
         else if (key === 'back') {
             rawDigits = rawDigits.slice(0, -1);
@@ -2496,6 +2539,7 @@
     }
 
     function dispararErroVisor() {
+        triggerHaptic();
         const visor = document.getElementById('amountDisplay');
         if(visor) {
             visor.classList.add('visor-erro');
@@ -2515,8 +2559,8 @@
     function showBanner() {
         const banner = document.getElementById('successBanner');
         if(banner) {
-            banner.style.display = 'block';
-            setTimeout(() => banner.style.display = 'none', 2000);
+            banner.classList.add('show');
+            setTimeout(() => banner.classList.remove('show'), 3000);
         }
     }
 
@@ -2527,7 +2571,11 @@
 
     function openExpenseModal() {
         const val = getNumericValue();
-        if (val <= 0) { dispararErroVisor(); return; }
+        if (val <= 0) { 
+            alert("⚠️ Digite um valor primeiro usando o teclado numérico.");
+            dispararErroVisor(); 
+            return; 
+        }
         document.getElementById('expenseModal').style.display = 'flex';
     }
 
@@ -2540,7 +2588,11 @@
 
     function saveTransaction(type, paymentMethod = 'dinheiro') {
         const val = getNumericValue();
-        if (val <= 0) { dispararErroVisor(); return; }
+        if (val <= 0) { 
+            alert("⚠️ Digite um valor primeiro para salvar.");
+            dispararErroVisor(); 
+            return; 
+        }
         
         const catId = document.getElementById('sl_category').value;
         const freeDesc = document.getElementById('tx_free_description').value.trim();
@@ -2565,7 +2617,11 @@
 
     function openCreditModal() {
         const val = getNumericValue();
-        if (val <= 0) { dispararErroVisor(); return; }
+        if (val <= 0) { 
+            alert("⚠️ Digite um valor primeiro para usar o cartão.");
+            dispararErroVisor(); 
+            return; 
+        }
         document.getElementById('creditModal').style.display = 'flex';
     }
 
@@ -2800,7 +2856,15 @@
         });
 
         if (countItems === 0) {
-            container.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size:14px; padding: 20px 0;">Nenhum lançamento registrado. 📭</div>`;
+            container.innerHTML = `
+                <div class="empty-state-guide">
+                    <h4>🚀 Organize seus gastos hoje!</h4>
+                    <p>Parece que você ainda não tem lançamentos neste mês. Siga este roteiro simples para começar:</p>
+                    <div class="empty-state-step"><div class="empty-state-num">1</div><span>Use o <strong>teclado numérico</strong> acima para digitar o valor.</span></div>
+                    <div class="empty-state-step"><div class="empty-state-num">2</div><span>Selecione uma <strong>categoria (caixa)</strong> alvo.</span></div>
+                    <div class="empty-state-step"><div class="empty-state-num">3</div><span>Toque nos botões <strong>Ganhei</strong> ou <strong>Gastei</strong> para confirmar.</span></div>
+                    <p style="font-size: 11px; margin-top: 15px; font-style: italic;">Seus dados ficam salvos apenas no seu celular. 🔒</p>
+                </div>`;
         }
 
         let totalWithdrawals = realTransactions.filter(t => t.type === 'saving_withdrawal').reduce((acc, curr) => acc + curr.amount, 0);
@@ -2854,5 +2918,3 @@
     }
 </script>
 </html>
-
-
