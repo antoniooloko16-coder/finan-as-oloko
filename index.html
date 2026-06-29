@@ -226,6 +226,12 @@
         letter-spacing: -1px;
     }
 
+    .decimal-small {
+        font-size: 0.6em;
+        vertical-align: baseline;
+        margin-left: 1px;
+    }
+
     @keyframes erroVisor {
         0%, 100% { color: var(--text); transform: translateX(0); }
         20%, 60% { color: var(--danger); transform: translateX(-6px); }
@@ -2079,7 +2085,7 @@
                 else if (totalProjected > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
                 else fill.style.background = 'var(--success)';
             }
-            document.getElementById('budgetLabelValues').innerText = `${formatCurrency(totalProjected)} / ${formatCurrency(foundCat.budget)}`;
+            document.getElementById('budgetLabelValues').innerHTML = `${formatCurrency(totalProjected)} / ${formatCurrency(foundCat.budget)}`;
         } else {
             document.getElementById('budgetMonitor').style.display = 'none';
         }
@@ -2518,7 +2524,7 @@
     function updateAmountDisplay() {
         let numericValue = parseInt(rawDigits, 10) / 100;
         if(document.getElementById('amountDisplay')) {
-            document.getElementById('amountDisplay').innerText = formatCurrency(numericValue);
+            document.getElementById('amountDisplay').innerHTML = formatCurrency(numericValue);
         }
     }
 
@@ -2562,7 +2568,12 @@
 
     function formatCurrency(val) {
         if (privacyMode) return "R$ ***,**";
-        return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        let formatted = val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        let parts = formatted.split(',');
+        if (parts.length > 1) {
+            return `${parts[0]}<small class="decimal-small">,${parts[1]}</small>`;
+        }
+        return formatted;
     }
 
     function openExpenseModal() {
@@ -2866,16 +2877,16 @@
         let totalSavingsDeposited = realTransactions.filter(t => t.type === 'saving').reduce((acc, curr) => acc + curr.amount, 0);
         let sobrou = totalIncome - totalExpense - totalSavingsDeposited + totalWithdrawals;
         
-        document.getElementById('lblGanhos').innerText = formatCurrency(totalIncome);
-        document.getElementById('lblGastos').innerText = formatCurrency(totalExpense);
-        document.getElementById('lblCaixinha').innerText = formatCurrency(totalSaving);
-        document.getElementById('lblSobrou').innerText = formatCurrency(sobrou);
-        document.getElementById('dashFaturaCartao').innerText = formatCurrency(totalFaturaCartao);
+        document.getElementById('lblGanhos').innerHTML = formatCurrency(totalIncome);
+        document.getElementById('lblGastos').innerHTML = formatCurrency(totalExpense);
+        document.getElementById('lblCaixinha').innerHTML = formatCurrency(totalSaving);
+        document.getElementById('lblSobrou').innerHTML = formatCurrency(sobrou);
+        document.getElementById('dashFaturaCartao').innerHTML = formatCurrency(totalFaturaCartao);
 
         let macroBudgetLimit = categories.filter(c => c.type !== 'income').reduce((acc, curr) => acc + (curr.budget || 0), 0);
         if (macroBudgetLimit > 0) {
             document.getElementById('macroBudgetCard').style.display = 'block';
-            document.getElementById('macroBudgetValues').innerText = `${formatCurrency(totalExpense)} / ${formatCurrency(macroBudgetLimit)}`;
+            document.getElementById('macroBudgetValues').innerHTML = `${formatCurrency(totalExpense)} / ${formatCurrency(macroBudgetLimit)}`;
             let macroPct = Math.min((totalExpense / macroBudgetLimit) * 100, 100);
             let macroBar = document.getElementById('macroBudgetBarFill');
             macroBar.style.width = `${macroPct}%`;
@@ -2893,7 +2904,7 @@
                 else saldoFuturoAno -= t.amount;
             }
         });
-        document.getElementById('dashCaixaFutFuture').innerText = formatCurrency(saldoFuturoAno);
+        document.getElementById('dashCaixaFutFuture').innerHTML = formatCurrency(saldoFuturoAno);
 
         const summaryCard = document.getElementById('summaryCard');
         const lblSobrou = document.getElementById('lblSobrou');
