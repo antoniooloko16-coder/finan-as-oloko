@@ -17,7 +17,7 @@
             --accent: #2979ff;
             --warning: #ffea00;
             --text: #ffffff;
-            --text-muted: #7e7e86;
+            --text-muted: #9a9aa0;
         }
     body.perfil-pessoal { --primary: #a370f7; }
     body.perfil-empresa { --primary: #00e5ff; }
@@ -40,7 +40,7 @@
         display: flex;
         flex-direction: column;
         box-sizing: border-box;
-        padding-top: 240px; 
+        padding-top: 130px; 
         padding-bottom: 40px;
     }
 
@@ -56,27 +56,34 @@
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--border-color);
-        padding-top: 45px; 
-        padding-bottom: 8px;
+        height: 130px;
+        padding-top: 10px;
+        padding-bottom: 5px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
 
-    .profile-switcher-wrapper {
+    .top-bar-row {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 8px;
-        margin: 6px 15px 12px 15px;
+        padding: 0 15px;
+        height: 35px;
     }
 
     .profile-switcher {
         display: flex;
-        flex: 1;
         background: #0b0b0c;
-        padding: 5px;
-        gap: 6px;
-        border-radius: 12px;
+        padding: 3px;
+        gap: 4px;
+        border-radius: 8px;
         border: 1px solid var(--border-color);
         overflow-x: auto;
         scrollbar-width: none;
+        flex: 1;
+        margin-right: 10px;
     }
     .profile-switcher::-webkit-scrollbar { display: none; }
 
@@ -84,11 +91,11 @@
         background: none;
         border: none;
         color: var(--text-muted);
-        padding: 10px 15px; 
-        font-size: 13px;
+        padding: 4px 10px; 
+        font-size: 11px;
         font-weight: 600;
         cursor: pointer;
-        border-radius: 9px;
+        border-radius: 6px;
         transition: all 0.2s ease;
         white-space: nowrap;
     }
@@ -96,89 +103,63 @@
     .profile-btn.active {
         color: #fff;
         background: var(--bg-card);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.5);
     }
     
     .btn-manage-profiles {
         background: var(--bg-input);
         border: 1px solid var(--border-color);
         color: var(--text);
-        padding: 10px;
-        border-radius: 12px;
+        padding: 6px 8px;
+        border-radius: 8px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
+        font-size: 14px;
     }
-
-    .top-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 4px 20px 8px 20px; 
-        box-sizing: border-box;
-    }
-
-    .top-bar h2 {
-        font-size: 18px;
-        font-weight: 700;
-        margin: 0;
-        color: var(--text);
-        letter-spacing: -0.5px;
-    }
-
-    .top-actions {
-        display: flex;
-        gap: 6px;
-        align-items: center;
-    }
-
-    .icon-btn {
-        background: var(--bg-input);
-        border: 1px solid var(--border-color);
-        color: var(--text);
-        font-size: 16px;
-        cursor: pointer;
-        padding: 8px 12px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.2s;
-    }
-    .icon-btn:active { background: var(--border-color); }
 
     .date-navigation {
         display: flex;
         align-items: center;
         background: var(--bg-input);
         border: 1px solid var(--border-color);
-        border-radius: 10px;
+        border-radius: 8px;
         padding: 2px;
+        height: 32px;
+        flex: 1;
+        margin-left: 10px;
     }
 
     .nav-arrow {
         background: none;
         border: none;
         color: var(--primary);
-        padding: 6px 10px;
+        padding: 0 10px;
         cursor: pointer;
         font-weight: bold;
         font-size: 16px;
+        height: 100%;
+        display: flex;
+        align-items: center;
     }
 
-    .date-select {
-        background: none;
-        color: var(--text);
-        border: none;
-        padding: 6px 4px;
+    #mainDateSelector {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+        width: 0;
+        height: 0;
+    }
+
+    #dateDisplayText {
+        flex: 1;
+        text-align: center;
         font-size: 13px;
         font-weight: 600;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        text-align: center;
-        width: 95px;
+        color: var(--text);
+        cursor: pointer;
+        user-select: none;
     }
 
     .tab-navigation {
@@ -186,15 +167,16 @@
         grid-template-columns: repeat(4, 1fr);
         padding: 0 12px;
         gap: 4px;
+        height: 36px;
     }
 
     .tab-btn {
         background: none;
         border: none;
         color: var(--text-muted);
-        padding: 12px 2px;
+        padding: 8px 2px;
         font-weight: 600;
-        font-size: 12px;
+        font-size: 11px;
         cursor: pointer;
         text-align: center;
         transition: all 0.2s;
@@ -225,6 +207,7 @@
         color: var(--text);
         letter-spacing: -1px;
     }
+    .display-amount sup { font-size: 0.5em; vertical-align: baseline; }
 
     @keyframes erroVisor {
         0%, 100% { color: var(--text); transform: translateX(0); }
@@ -270,6 +253,7 @@
         transition: background 0.1s;
     }
     .key:active { background: var(--border-color); }
+    .key-zero { grid-column: span 3; }
 
     .input-group { margin-bottom: 15px; }
     .input-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -299,6 +283,7 @@
         font-size: 15px;
         outline: none;
         cursor: pointer;
+        display: none;
     }
     .select-input:focus { border-color: var(--primary); }
 
@@ -378,6 +363,14 @@
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
     }
+    
+    .category-box-motivational {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--text-muted);
+        font-style: italic;
+        line-height: 1.3;
+    }
 
     .category-box-dot {
         width: 10px;
@@ -432,30 +425,57 @@
     .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
     .conditional-box { background: #0b0b0c; padding: 15px; border-radius: 10px; margin-top: 10px; display: none; border-left: 3px solid var(--primary); border-top: 1px solid var(--border-color); border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
 
-    .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px; }
+    .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px; }
     .btn-action { border: none; padding: 16px 2px; font-weight: 700; border-radius: 12px; color: #000; font-size: 12px; cursor: pointer; text-align: center; transition: opacity 0.2s; }
     .btn-action:active { opacity: 0.8; }
     
     .saving-split-container {
         display: grid;
-        grid-template-rows: 1fr 1fr;
-        gap: 4px;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin: 0 15px 15px 15px;
     }
     .btn-action-split {
         border: none;
         font-weight: 700;
-        border-radius: 8px;
+        border-radius: 12px;
         color: #000;
-        font-size: 11px;
+        font-size: 12px;
         cursor: pointer;
         text-align: center;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: opacity 0.2s;
-        height: 100%;
+        padding: 14px;
     }
     .btn-action-split:active { opacity: 0.8; }
+
+    .inline-installments {
+        display: none;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 12px 15px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-top: none;
+        border-radius: 0 0 16px 16px;
+        margin-top: -8px;
+        margin-left: 15px;
+        margin-right: 15px;
+    }
+    .installment-chip {
+        background: var(--bg-input);
+        border: 1px solid var(--border-color);
+        color: var(--text);
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .installment-chip:active { background: var(--primary); color: #000; }
 
     .summary-grid-four { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; text-align: left; }
     .metric-box { background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.01); }
@@ -467,6 +487,31 @@
 
     .history-list { margin-top: 10px; }
     
+    .history-swipe-wrapper {
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px;
+        margin-bottom: 4px;
+    }
+    
+    .history-swipe-bg {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 100px;
+        background: var(--danger);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 14px;
+        z-index: 0;
+        border-radius: 0 8px 8px 0;
+        cursor: pointer;
+    }
+
     .history-item { 
         display: flex; 
         justify-content: space-between; 
@@ -474,15 +519,20 @@
         padding: 14px 12px; 
         border-bottom: 1px solid var(--border-color); 
         cursor: pointer; 
-        margin-bottom: 4px; 
         border-radius: 0 8px 8px 0; 
         background: rgba(255,255,255,0.01); 
-        transition: background 0.2s; 
+        transition: transform 0.2s, background 0.2s; 
         gap: 12px;
         box-sizing: border-box;
+        position: relative;
+        z-index: 1;
+        touch-action: pan-y;
+        user-select: none;
+        -webkit-user-select: none;
     }
+    .history-item:active { transform: scale(0.98); }
     .history-item:hover { background: rgba(255,255,255,0.03); }
-    .history-item:last-child { border-bottom: 1px solid var(--border-color); }
+    .history-swipe-wrapper .history-item { border-bottom: none; }
     
     .history-info { 
         display: flex; 
@@ -508,7 +558,7 @@
         letter-spacing: 0.3px; 
     }
     .history-cat-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-    .history-date { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .history-date { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
     
     .history-right { 
         display: flex; 
@@ -519,7 +569,7 @@
     }
     .history-val { 
         font-weight: 700; 
-        font-size: 14px; 
+        font-size: 16px; 
         white-space: nowrap; 
     }
     
@@ -692,27 +742,62 @@
         background: rgba(187, 134, 252, 0.05);
         border-left-width: 8px;
     }
+    
+    .accordion-header {
+        background: var(--bg-input);
+        padding: 15px;
+        border-radius: 10px;
+        margin: 15px 15px 0 15px;
+        cursor: pointer;
+        font-weight: 700;
+        border: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+        color: var(--text);
+        transition: background 0.2s;
+    }
+    .accordion-header:active { background: var(--border-color); }
+    .accordion-header::after { content: '▼'; font-size: 12px; transition: transform 0.3s; color: var(--text-muted); }
+    .accordion-header.open::after { transform: rotate(180deg); }
+    .accordion-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+        background: var(--bg-card);
+        margin: 0 15px;
+        border-radius: 0 0 16px 16px;
+        border: 1px solid var(--border-color);
+        border-top: none;
+    }
+    .accordion-content.open { max-height: 5000px; }
+    .accordion-inner-card { padding: 20px; }
+
+    .reset-long-press {
+        opacity: 0.5;
+        pointer-events: none;
+        transition: opacity 0.3s;
+    }
+    .reset-long-press.unlocked {
+        opacity: 1;
+        pointer-events: auto;
+        animation: blink 1s infinite;
+    }
 </style>
 
 <div class="success-banner" id="successBanner">🚀 Lançamento Salvo! ✓</div>
 
 <div class="header-fixed-container">
-    <div class="profile-switcher-wrapper">
+    <div class="top-bar-row">
         <div class="profile-switcher" id="profileSwitcherContainer"></div>
         <button class="btn-manage-profiles" onclick="openProfileModal()" title="Gerenciar Perfis">⚙️</button>
-    </div>
-
-    <div class="top-bar">
-        <h2 id="appTitle">💰 Finanças Pro</h2>
-        <div class="top-actions">
-            <button class="icon-btn" id="btnToggleBoxes" onclick="toggleCategoryBoxes()" title="Ver caixas de gastos">📊</button>
-            <button class="icon-btn" id="btnCortina" onclick="togglePrivacyMode()">👁️</button>
-            
-            <div class="date-navigation">
-                <button class="nav-arrow" onclick="changeMonth(-1)">‹</button>
-                <input type="date" class="date-select" id="mainDateSelector" onchange="syncDateToInputs(); loadData();">
-                <button class="nav-arrow" onclick="changeMonth(1)">›</button>
-            </div>
+        
+        <div class="date-navigation">
+            <button class="nav-arrow" onclick="changeMonth(-1)">‹</button>
+            <span id="dateDisplayText" onclick="document.getElementById('mainDateSelector').showPicker()">Outubro 2023</span>
+            <button class="nav-arrow" onclick="changeMonth(1)">›</button>
+            <input type="date" id="mainDateSelector" onchange="syncDateToInputs(); loadData(); updateDateDisplayText();">
         </div>
     </div>
     
@@ -758,7 +843,7 @@
 
         <div class="card">
             <div style="display: flex; justify-content: center; align-items: center;">
-                <div class="display-amount" id="amountDisplay">R$ 0,00</div>
+                <div class="display-amount" id="amountDisplay">R$ 0</div>
                 <span class="edit-badge" id="editBadge">MODO EDIÇÃO</span>
             </div>
             
@@ -779,8 +864,9 @@
                 <button class="key" onclick="pressKey('8')">8</button>
                 <button class="key" onclick="pressKey('9')">9</button>
                 <button class="key" onclick="pressKey('C')" style="color:var(--danger)">C</button>
-                <button class="key" onclick="pressKey('0')">0</button>
+                <button class="key" onclick="pressKey(',')">,</button>
                 <button class="key" onclick="pressKey('back')">⌫</button>
+                <button class="key key-zero" onclick="pressKey('0')">0</button>
             </div>
         </div>
 
@@ -814,12 +900,24 @@
 
         <div class="action-grid" id="actionButtonsContainer">
             <button class="btn-action" style="background: var(--success);" onclick="saveTransaction('income')">🤑 Ganhei</button>
-            <button class="btn-action" style="background: var(--danger); color: #fff;" onclick="openExpenseModal()">💸 Gastei</button>
-            <button class="btn-action" style="background: var(--accent); color: #fff;" onclick="openCreditModal()">💳 Cartão</button>
-            <div class="saving-split-container">
-                <button class="btn-action-split" style="background: #ffcc00;" onclick="saveTransaction('saving_withdrawal')">📥 Resgatar</button>
-                <button class="btn-action-split" style="background: var(--warning);" onclick="saveTransaction('saving')">💰 Guardar</button>
-            </div>
+            <button class="btn-action" style="background: var(--warning); color: #000;" onclick="saveTransaction('expense_cash', 'dinheiro')">💸 Dinheiro/Pix</button>
+            <button class="btn-action" style="background: var(--accent); color: #fff;" onclick="toggleInlineInstallments()">💳 Cartão</button>
+        </div>
+        
+        <div class="inline-installments" id="inlineInstallments">
+            <div class="installment-chip" onclick="saveCreditTransaction(1)">1x</div>
+            <div class="installment-chip" onclick="saveCreditTransaction(2)">2x</div>
+            <div class="installment-chip" onclick="saveCreditTransaction(3)">3x</div>
+            <div class="installment-chip" onclick="saveCreditTransaction(4)">4x</div>
+            <div class="installment-chip" onclick="saveCreditTransaction(5)">5x</div>
+            <div class="installment-chip" onclick="saveCreditTransaction(6)">6x</div>
+            <div class="installment-chip" onclick="saveCreditTransaction(10)">10x</div>
+            <div class="installment-chip" onclick="saveCreditTransaction(12)">12x</div>
+        </div>
+
+        <div class="saving-split-container" id="savingButtonsContainer">
+            <button class="btn-action-split" style="background: #ffcc00;" onclick="saveTransaction('saving_withdrawal')">📥 Resgatar</button>
+            <button class="btn-action-split" style="background: var(--warning);" onclick="saveTransaction('saving')">💰 Guardar</button>
         </div>
         
         <div id="editButtonsContainer" style="margin: 15px; display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -911,72 +1009,85 @@
     </div>
 
     <div id="page-categorias" class="page-content">
-        <div class="card">
-            <h3 id="categoryFormTitle" style="margin-top:0; color: var(--primary); font-size: 15px; font-weight: 700;">✨ Nova Caixa ou Editar Existente</h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Para criar, preencha os dados e clique em Salvar. Para editar, escolha uma da lista abaixo.</p>
-            
-            <div class="input-group">
-                <label>📊 Tipo de Categoria (Fluxo)</label>
-                <div class="type-toggle-container">
-                    <button class="type-toggle-btn active expense-type" id="type-btn-expense" onclick="setCategoryFormType('expense')">🔴 Gasto (Saída)</button>
-                    <button class="type-toggle-btn income-type" id="type-btn-income" onclick="setCategoryFormType('income')">🟢 Ganho (Entrada)</button>
-                </div>
-                <input type="hidden" id="new_category_type" value="expense">
-            </div>
-
-            <div class="input-group">
-                <label>🏷️ Nome da Categoria</label>
-                <input type="text" id="new_category_name" aria-label="Nome da Categoria" class="text-input" placeholder="Ex: Mercado, Viagem, Salário...">
-            </div>
-            <div class="input-group">
-                <label id="lblCategoryBudgetLimit">🎯 Teto de Gasto / Meta Mensal (Opcional)</label>
-                <input type="number" id="new_category_budget" aria-label="Teto de Gasto Mensal" class="text-input" placeholder="Ex: 500" value="0">
-            </div>
-            <div style="display: block;">
-                <button id="btnSaveCategory" class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">💾 Salvar Configuração da Caixa</button>
-                <button id="btnCancelCategoryEdit" class="btn-secondary" style="display: none; width: 100%; margin-top: 8px; padding: 12px 0;" onclick="cancelCategoryEdit()">❌ Cancelar Edição</button>
-            </div>
+        <div class="accordion-header" id="acc-header-1" onclick="toggleAccordion('1')">
+            <span>📦 Categorias e Orçamentos</span>
         </div>
-
-        <div class="card">
-            <h3 style="margin-top:0; color: var(--accent); font-size: 15px; font-weight: 700;">💳 Ciclo da Fatura</h3>
-            <div class="grid-2col">
+        <div class="accordion-content" id="acc-content-1">
+            <div class="accordion-inner-card">
+                <h3 id="categoryFormTitle" style="margin-top:0; color: var(--primary); font-size: 15px; font-weight: 700;">✨ Nova Caixa ou Editar Existente</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Para criar, preencha os dados e clique em Salvar. Para editar, escolha uma da lista abaixo.</p>
+                
                 <div class="input-group">
-                    <label>🔓 Fechamento</label>
-                    <input type="number" id="cc_close_day" aria-label="Dia de fechamento" class="text-input" min="1" max="31" value="25" onchange="saveCCConfig()">
+                    <label>📊 Tipo de Categoria (Fluxo)</label>
+                    <div class="type-toggle-container">
+                        <button class="type-toggle-btn active expense-type" id="type-btn-expense" onclick="setCategoryFormType('expense')">🔴 Gasto (Saída)</button>
+                        <button class="type-toggle-btn income-type" id="type-btn-income" onclick="setCategoryFormType('income')">🟢 Ganho (Entrada)</button>
+                    </div>
+                    <input type="hidden" id="new_category_type" value="expense">
+                </div>
+
+                <div class="input-group">
+                    <label>🏷️ Nome da Categoria</label>
+                    <input type="text" id="new_category_name" aria-label="Nome da Categoria" class="text-input" placeholder="Ex: Mercado, Viagem, Salário...">
                 </div>
                 <div class="input-group">
-                    <label>🔒 Vencimento</label>
-                    <input type="number" id="cc_due_day" aria-label="Dia de Vencimento" class="text-input" min="1" max="31" value="5" onchange="saveCCConfig()">
+                    <label id="lblCategoryBudgetLimit">🎯 Teto de Gasto / Meta Mensal (Opcional)</label>
+                    <input type="number" id="new_category_budget" aria-label="Teto de Gasto Mensal" class="text-input" placeholder="Ex: 500" value="0">
+                </div>
+                <div style="display: block;">
+                    <button id="btnSaveCategory" class="btn-action" style="background: var(--primary); width: 100%; font-size: 14px; padding: 12px 0;" onclick="addNewCategory()">💾 Salvar Configuração da Caixa</button>
+                    <button id="btnCancelCategoryEdit" class="btn-secondary" style="display: none; width: 100%; margin-top: 8px; padding: 12px 0;" onclick="cancelCategoryEdit()">❌ Cancelar Edição</button>
+                </div>
+
+                <h3 style="margin-top:20px; color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">📋 Gerenciar Estrutura das Caixas</h3>
+                <div id="categoryListContainer" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+
+        <div class="accordion-header" id="acc-header-2" onclick="toggleAccordion('2')">
+            <span>💳 Cartão e Automações</span>
+        </div>
+        <div class="accordion-content" id="acc-content-2">
+            <div class="accordion-inner-card">
+                <h3 style="margin-top:0; color: var(--accent); font-size: 15px; font-weight: 700;">💳 Ciclo da Fatura</h3>
+                <div class="grid-2col">
+                    <div class="input-group">
+                        <label>🔓 Fechamento</label>
+                        <input type="number" id="cc_close_day" aria-label="Dia de fechamento" class="text-input" min="1" max="31" value="25" onchange="saveCCConfig()">
+                    </div>
+                    <div class="input-group">
+                        <label>🔒 Vencimento</label>
+                        <input type="number" id="cc_due_day" aria-label="Dia de Vencimento" class="text-input" min="1" max="31" value="5" onchange="saveCCConfig()">
+                    </div>
+                </div>
+
+                <h3 style="margin-top:25px; color: var(--primary); font-size: 15px; font-weight: 700;">🔄 Contas Recorrentes (Fixas)</h3>
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Gastos ou ganhos automáticos que entram limpos todo mês.</p>
+                <div id="recurrentListContainer"></div>
+            </div>
+        </div>
+
+        <div class="accordion-header" id="acc-header-3" onclick="toggleAccordion('3')">
+            <span>💾 Dados e Segurança</span>
+        </div>
+        <div class="accordion-content" id="acc-content-3">
+            <div class="accordion-inner-card">
+                <h3 style="margin-top:0; color: var(--warning); font-size: 15px; font-weight: 700;">💾 Cópia de Segurança (Backup)</h3>
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">Baixe seus dados para não perder nada caso troque ou formate o celular.</p>
+                <div class="grid-2col">
+                    <button class="btn-secondary" onclick="exportBackup()">📤 Exportar</button>
+                    <button class="btn-secondary" onclick="document.getElementById('fileFileInput').click()">📥 Importar</button>
+                </div>
+                <input type="file" id="fileFileInput" style="display:none;" onchange="importBackup(event)">
+
+                <div style="margin-top: 40px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                    <button class="btn-action reset-long-press" id="resetBtn" style="background: var(--danger); color: #fff; width: 100%; font-size: 13px; padding: 16px;" 
+                        onmousedown="startResetTimer()" onmouseup="cancelResetTimer()" onmouseleave="cancelResetTimer()"
+                        ontouchstart="startResetTimer()" ontouchend="cancelResetTimer()">
+                        🗑️ Limpar Tudo e Resetar App (Segure 3s)
+                    </button>
                 </div>
             </div>
-        </div>
-
-        <div class="card">
-            <h3 style="margin-top:0; color: var(--primary); font-size: 15px; font-weight: 700;">🔄 Contas Recorrentes (Fixas)</h3>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Gastos ou ganhos automáticos que entram limpos todo mês.</p>
-            <div id="recurrentListContainer"></div>
-        </div>
-
-        <div class="card">
-            <h3 style="margin-top:0; color: var(--warning); font-size: 15px; font-weight: 700;">💾 Cópia de Segurança (Backup)</h3>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">Baixe seus dados para não perder nada caso troque ou formate o celular.</p>
-            <div class="grid-2col">
-                <button class="btn-secondary" onclick="exportBackup()">📤 Exportar</button>
-                <button class="btn-secondary" onclick="document.getElementById('fileFileInput').click()">📥 Importar</button>
-            </div>
-            <input type="file" id="fileFileInput" style="display:none;" onchange="importBackup(event)">
-        </div>
-
-        <div class="card" style="border-color: rgba(255, 23, 68, 0.3); margin-top: 30px; background: rgba(255, 23, 68, 0.02);">
-            <h3 style="margin-top:0; color: var(--danger); font-size: 15px; font-weight: 700;">🚨 Zona de Risco: Redefinição</h3>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">Esta ação irá apagar permanentemente todos os lançamentos de AMBOS os perfis. Use apenas se desejar começar do zero absoluto.</p>
-            <button class="btn-action" style="background: var(--danger); color: #fff; width: 100%; font-size: 13px;" onclick="triggerAppReset()">🗑️ Limpar Tudo e Resetar App</button>
-        </div>
-
-        <div class="card">
-            <h3 style="margin-top:0; color: var(--text-muted); font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">📋 Gerenciar Estrutura das Caixas</h3>
-            <div id="categoryListContainer"></div>
         </div>
     </div>
 
@@ -1005,43 +1116,6 @@
             <p style="font-size: 11px; color: var(--text-muted); margin: 0 0 15px 0;">Soma de todos os meses do ano por categoria.</p>
             <div class="grid-categories-panel" id="annualCategoryBoxes" style="display: grid; margin: 0;"></div>
         </div>
-    </div>
-</div>
-
-<!-- Modais -->
-<div class="modal" id="expenseModal">
-    <div class="modal-content">
-        <div class="business-alert" id="businessCreditAlert" style="display: block;">
-            💡 <strong>Nota de Lançamento:</strong> Este gasto aparecerá na sua fatura do mês que vem, conforme suas configurações de ciclo de cartão.
-        </div>
-        <div class="modal-title">💵 Forma de Pagamento</div>
-        <button class="modal-btn" style="border-left: 4px solid var(--success);" onclick="executeExpenseSave('dinheiro')">💵 Dinheiro / PIX / Débito</button>
-        <button class="modal-btn" style="border-left: 4px solid var(--accent);" onclick="closeExpenseModal(); openCreditModal();">💳 Cartão de Crédito</button>
-        <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 15px; border-color: transparent;" onclick="closeExpenseModal()">❌ Cancelar</button>
-    </div>
-</div>
-
-<div class="modal" id="creditModal">
-    <div class="modal-content">
-        <div class="modal-title">🔢 Parcelas do Cartão</div>
-        <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 15px;">Escolha em quantas vezes o valor será dividido na sua fatura.</p>
-        <button class="modal-btn" onclick="saveCreditTransaction(1)">1x (À Vista na Fatura)</button>
-        <button class="modal-btn" onclick="saveCreditTransaction(2)">2 meses seguintes</button>
-        <button class="modal-btn" onclick="saveCreditTransaction(3)">3 meses seguintes</button>
-        <button class="modal-btn" onclick="saveCreditTransaction(4)">4 meses seguintes</button>
-        <button class="modal-btn" onclick="saveCreditTransaction(5)">5 meses seguintes</button>
-        <button class="modal-btn" onclick="saveCreditTransaction(6)">6 meses seguintes</button>
-        <button class="modal-btn" onclick="saveCreditTransaction(10)">10 meses seguintes</button>
-        <button class="modal-btn" onclick="saveCreditTransaction(12)">12 meses seguintes</button>
-        
-        <div style="border-top: 1px solid var(--border-color); margin: 15px 0; padding-top: 10px;">
-            <label style="font-size: 11px; font-weight:600; color: var(--text-muted); display:block; margin-bottom:6px; text-transform: uppercase;">✍️ Outra quantidade:</label>
-            <div class="custom-installments-container">
-                <input type="number" id="custom_installments" aria-label="Quantidade de Parcelas customizada" class="text-input" min="1" max="48" placeholder="Ex: 8">
-                <button class="btn-action" style="background: var(--primary); padding: 0 15px; font-size:14px; width:auto;" onclick="saveCustomCredit()">Aplicar</button>
-            </div>
-        </div>
-        <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 10px; border-color: transparent;" onclick="closeCreditModal()">❌ Cancelar</button>
     </div>
 </div>
 
@@ -1088,10 +1162,11 @@
 
 <script>
     let currentProfile = "pessoal"; 
-    let rawDigits = "0";
+    let rawDigits = "";
     let privacyMode = false;
     let filtroCategoriaAtivo = ""; 
     let filtroPagamentoAtivo = ""; 
+    let installmentsVisible = false;
     
     let allProfiles = [];
     let transactions = [];
@@ -1251,6 +1326,14 @@
         }
     }
 
+    function updateDateDisplayText() {
+        const val = document.getElementById('mainDateSelector').value;
+        if (!val) return;
+        const d = new Date(val + 'T12:00:00');
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        document.getElementById('dateDisplayText').innerText = `${monthNames[m]} ${d.getFullYear()}`;
+    }
+
     function changeMonth(offset) {
         const currentVal = document.getElementById('mainDateSelector').value;
         const date = currentVal ? new Date(currentVal + 'T12:00:00') : new Date();
@@ -1258,13 +1341,17 @@
         const newValue = date.toISOString().substring(0, 10);
         document.getElementById('mainDateSelector').value = newValue;
         syncDateToInputs();
+        updateDateDisplayText();
         loadData();
     }
 
     function addQuickAmount(val) {
         triggerHaptic();
-        let current = parseInt(rawDigits, 10);
-        rawDigits = String(current + (val * 100));
+        let current = getNumericValue();
+        let newVal = current + val;
+        let strVal = newVal.toFixed(2);
+        let parts = strVal.split('.');
+        rawDigits = parts[0] + "," + parts[1];
         updateAmountDisplay();
         checkLiveBudget();
     }
@@ -1299,17 +1386,18 @@
         const agendaSelector = document.getElementById('agenda_category');
         
         if (selector) {
-            selector.innerHTML = '';
+            selector.innerHTML = '<option value="geral">🏷️ Geral</option>';
             categories.forEach(cat => {
                 let opt = document.createElement('option');
                 opt.value = cat.id;
                 opt.innerText = cat.name;
                 selector.appendChild(opt);
             });
+            if (!filtroCategoriaAtivo) selector.value = "geral";
         }
         
         if (agendaSelector) {
-            agendaSelector.innerHTML = '';
+            agendaSelector.innerHTML = '<option value="geral">🏷️ Geral</option>';
             categories.forEach(cat => {
                 let opt = document.createElement('option');
                 opt.value = cat.id;
@@ -1468,6 +1556,7 @@
         if(document.getElementById('agenda_date')) document.getElementById('agenda_date').value = dataFormatada;
         
         updateAmountDisplay();
+        updateDateDisplayText();
         renderTags();
         loadData();
     });
@@ -1898,7 +1987,9 @@
         if (!target) return;
 
         editingTransactionId = id;
-        rawDigits = String(Math.round(target.amount * 100));
+        let amountStr = target.amount.toFixed(2);
+        let parts = amountStr.split('.');
+        rawDigits = parts[0] + "," + parts[1];
         updateAmountDisplay();
 
         if (target.categoryId) {
@@ -1910,6 +2001,8 @@
         document.getElementById('editBadge').style.display = 'inline-block';
         
         document.getElementById('actionButtonsContainer').style.display = 'none';
+        document.getElementById('savingButtonsContainer').style.display = 'none';
+        document.getElementById('inlineInstallments').style.display = 'none';
         document.getElementById('editButtonsContainer').style.display = 'grid';
         
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1943,10 +2036,11 @@
         editingTransactionId = null;
         document.getElementById('editBadge').style.display = 'none';
         document.getElementById('actionButtonsContainer').style.display = 'grid';
+        document.getElementById('savingButtonsContainer').style.display = 'grid';
         document.getElementById('editButtonsContainer').style.display = 'none';
         
         safeLocalStorageSave();
-        rawDigits = "0";
+        rawDigits = "";
         document.getElementById('tx_free_description').value = '';
         updateAmountDisplay();
         loadData();
@@ -1956,8 +2050,9 @@
         editingTransactionId = null;
         document.getElementById('editBadge').style.display = 'none';
         document.getElementById('actionButtonsContainer').style.display = 'grid';
+        document.getElementById('savingButtonsContainer').style.display = 'grid';
         document.getElementById('editButtonsContainer').style.display = 'none';
-        rawDigits = "0";
+        rawDigits = "";
         document.getElementById('tx_free_description').value = '';
         updateAmountDisplay();
         loadData();
@@ -2016,7 +2111,7 @@
                 });
             } else {
                 agendaItems = agendaItems.filter(t => {
-                    if (i.groupId === target.groupId && i.date >= target.date) return false;
+                    if (t.groupId === target.groupId && t.date >= target.date) return false;
                     return true;
                 });
             }
@@ -2137,7 +2232,23 @@
         reader.readAsText(file);
     }
 
+    let resetTimer;
+    function startResetTimer() {
+        resetTimer = setTimeout(() => {
+            let btn = document.getElementById('resetBtn');
+            btn.classList.add('unlocked');
+            btn.innerText = "🚨 LIBERADO! CLIQUE PARA DELETAR";
+            btn.onclick = triggerAppReset;
+        }, 3000);
+    }
+    function cancelResetTimer() {
+        clearTimeout(resetTimer);
+    }
+
     function triggerAppReset() {
+        const btn = document.getElementById('resetBtn');
+        if (!btn.classList.contains('unlocked')) return;
+        
         const firstConfirmation = confirm("⚠️ ATENÇÃO CRÍTICA: Você está prestes a apagar TODOS os dados do aplicativo de todos os perfis.\n\nDeseja realmente deletar tudo?");
         if (firstConfirmation) {
             const safetyCheck = prompt("Esta ação é irreversível. Para confirmar, digite exatamente a palavra: DELETAR");
@@ -2147,7 +2258,14 @@
                 window.location.reload();
             } else {
                 alert("Confirmação incorreta. O reset foi cancelado por segurança.");
+                btn.classList.remove('unlocked');
+                btn.innerText = "🗑️ Limpar Tudo e Resetar App (Segure 3s)";
+                btn.onclick = null;
             }
+        } else {
+            btn.classList.remove('unlocked');
+            btn.innerText = "🗑️ Limpar Tudo e Resetar App (Segure 3s)";
+            btn.onclick = null;
         }
     }
 
@@ -2290,6 +2408,20 @@
         const container = document.getElementById('tagsContainer');
         if(!container) return;
         container.innerHTML = '';
+        
+        let tagGeral = document.createElement('div');
+        tagGeral.className = 'tag';
+        tagGeral.style.borderLeft = '4px solid var(--text-muted)';
+        if (filtroCategoriaAtivo === "geral" || !filtroCategoriaAtivo) tagGeral.classList.add('active-filter');
+        tagGeral.innerText = '🏷️ Geral';
+        tagGeral.onclick = (e) => { 
+            e.stopPropagation();
+            document.getElementById('sl_category').value = "geral";
+            checkLiveBudget(); 
+            filtrarExtratoPorTag("geral", tagGeral);
+        };
+        container.appendChild(tagGeral);
+
         categories.forEach(cat => {
             let tagEl = document.createElement('div');
             tagEl.className = 'tag';
@@ -2352,16 +2484,29 @@
                 filtrarExtratoPorTag(cat.id, null);
             };
 
-            box.innerHTML = `
-                <div class="category-box-header">
-                    <span class="category-box-title">${cat.name}</span>
-                    <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
-                </div>
-                <div class="category-box-footer">
-                    <span class="category-box-amount">${formatCurrency(spent)}</span>
-                    <span class="category-box-pct">${pct}%</span>
-                </div>
-            `;
+            let boxContent = '';
+            if (spent === 0 && cat.budget > 0) {
+                boxContent = `
+                    <div class="category-box-header">
+                        <span class="category-box-title">${cat.name}</span>
+                        <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
+                    </div>
+                    <div class="category-box-motivational">🎯 R$ 0 / ${formatCurrency(cat.budget)}. Comece o mês bem!</div>
+                `;
+            } else {
+                boxContent = `
+                    <div class="category-box-header">
+                        <span class="category-box-title">${cat.name}</span>
+                        <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
+                    </div>
+                    <div class="category-box-footer">
+                        <span class="category-box-amount">${formatCurrency(spent)}</span>
+                        <span class="category-box-pct">${pct}%</span>
+                    </div>
+                `;
+            }
+
+            box.innerHTML = boxContent;
             container.appendChild(box);
         });
         
@@ -2409,7 +2554,7 @@
         recurrentExpenses.forEach(rec => {
             let div = document.createElement('div');
             div.className = 'category-item';
-            div.style.borderLeft = "3 solid var(--primary)";
+            div.style.borderLeft = "3px solid var(--primary)";
             div.innerHTML = `
                 <div class="category-main-info">
                     <div>
@@ -2488,6 +2633,9 @@
         document.getElementById('categoryFormTitle').innerText = "✏️ Configurar Caixa / Categoria";
         document.getElementById('btnCancelCategoryEdit').style.display = "inline-block";
 
+        if (!document.getElementById('acc-content-1').classList.contains('open')) {
+            toggleAccordion('1');
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -2519,21 +2667,43 @@
     }
 
     function updateAmountDisplay() {
-        let numericValue = parseInt(rawDigits, 10) / 100;
-        if(document.getElementById('amountDisplay')) {
-            document.getElementById('amountDisplay').innerText = formatCurrency(numericValue);
+        let displayEl = document.getElementById('amountDisplay');
+        if (!displayEl) return;
+        if (rawDigits === "" || rawDigits === "0") {
+            displayEl.innerHTML = formatCurrency(0);
+            return;
+        }
+        
+        let parts = rawDigits.split(',');
+        let intPart = parts[0];
+        let decPart = parts.length > 1 ? parts[1] : "";
+        
+        let intFormatted = parseInt(intPart, 10).toLocaleString('pt-BR');
+        
+        if (decPart !== "") {
+            displayEl.innerHTML = `R$ ${intFormatted}<sup style="font-size:0.5em">,${decPart}</sup>`;
+        } else {
+            displayEl.innerHTML = `R$ ${intFormatted}`;
         }
     }
 
     function pressKey(key) {
         triggerHaptic();
-        if (key === 'C') { rawDigits = "0"; } 
-        else if (key === 'back') {
+        if (key === 'C') { 
+            rawDigits = ""; 
+        } else if (key === 'back') {
             rawDigits = rawDigits.slice(0, -1);
-            if (rawDigits === "" || rawDigits === "-") rawDigits = "0";
-        } else {
-            if (rawDigits === "0") { rawDigits = key; } 
-            else if (rawDigits.length < 10) { rawDigits += key; }
+        } else if (key === ',') {
+            if (!rawDigits.includes(',')) {
+                if (rawDigits === "") rawDigits = "0";
+                rawDigits += ",";
+            }
+        } else { 
+            if (rawDigits === "0") {
+                rawDigits = key;
+            } else {
+                rawDigits += key;
+            }
         }
         updateAmountDisplay(); checkLiveBudget();
     }
@@ -2547,7 +2717,10 @@
         }
     }
 
-    let getNumericValue = () => parseInt(rawDigits, 10) / 100;
+    let getNumericValue = () => {
+        let parsed = parseFloat(rawDigits.replace(',', '.') || "0");
+        return isNaN(parsed) ? 0 : parsed;
+    };
 
     function togglePrivacyMode() {
         privacyMode = !privacyMode;
@@ -2569,21 +2742,16 @@
         return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
-    function openExpenseModal() {
+    function toggleInlineInstallments() {
         const val = getNumericValue();
         if (val <= 0) { 
-            alert("⚠️ Digite um valor primeiro usando o teclado numérico.");
+            alert("⚠️ Digite um valor primeiro para usar o cartão.");
             dispararErroVisor(); 
             return; 
         }
-        document.getElementById('expenseModal').style.display = 'flex';
-    }
-
-    function closeExpenseModal() { document.getElementById('expenseModal').style.display = 'none'; }
-
-    function executeExpenseSave(method) {
-        closeExpenseModal();
-        saveTransaction('expense_cash', method);
+        let el = document.getElementById('inlineInstallments');
+        installmentsVisible = !installmentsVisible;
+        el.style.display = installmentsVisible ? 'flex' : 'none';
     }
 
     function saveTransaction(type, paymentMethod = 'dinheiro') {
@@ -2613,27 +2781,6 @@
             date: dateInput 
         });
         saveAndReset();
-    }
-
-    function openCreditModal() {
-        const val = getNumericValue();
-        if (val <= 0) { 
-            alert("⚠️ Digite um valor primeiro para usar o cartão.");
-            dispararErroVisor(); 
-            return; 
-        }
-        document.getElementById('creditModal').style.display = 'flex';
-    }
-
-    function closeCreditModal() {
-        document.getElementById('creditModal').style.display = 'none';
-        document.getElementById('custom_installments').value = '';
-    }
-
-    function saveCustomCredit() {
-        const num = parseInt(document.getElementById('custom_installments').value, 10);
-        if (isNaN(num) || num <= 0) return alert('Insira um número válido ⚠️');
-        saveCreditTransaction(num);
     }
 
     function saveCreditTransaction(installments) {
@@ -2683,13 +2830,15 @@
                 isCredit: true 
             });
         }
-        closeCreditModal();
+        
+        document.getElementById('inlineInstallments').style.display = 'none';
+        installmentsVisible = false;
         saveAndReset();
     }
 
     function saveAndReset() {
         safeLocalStorageSave();
-        rawDigits = "0";
+        rawDigits = "";
         document.getElementById('tx_free_description').value = '';
         updateAmountDisplay();
         if(document.getElementById('budgetMonitor')) document.getElementById('budgetMonitor').style.display = 'none';
@@ -2697,6 +2846,62 @@
         processRecurrentEntries();
         clearExtratoFilter();
         checkAgendaNotifications(); 
+    }
+
+    let swipeStartX = 0;
+    let swipeCurrentX = 0;
+    let isSwiping = false;
+    let longPressTimer = null;
+    let currentSwipeItem = null;
+
+    function handleTouchStart(e, itemEl, txId) {
+        swipeStartX = e.touches[0].clientX;
+        isSwiping = false;
+        currentSwipeItem = itemEl;
+        
+        document.querySelectorAll('.history-item.swiped-open').forEach(el => {
+            if(el !== itemEl) el.style.transform = 'translateX(0)';
+            el.classList.remove('swiped-open');
+        });
+
+        longPressTimer = setTimeout(() => {
+            if (!isSwiping) {
+                triggerHaptic();
+                editTransaction(txId, e);
+            }
+        }, 1000);
+    }
+
+    function handleTouchMove(e) {
+        isSwiping = true;
+        clearTimeout(longPressTimer);
+        if (!currentSwipeItem) return;
+        swipeCurrentX = e.touches[0].clientX;
+        let diffX = swipeCurrentX - swipeStartX;
+        if (diffX < 0) {
+            currentSwipeItem.style.transform = `translateX(${Math.max(diffX, -100)}px)`;
+        }
+    }
+
+    function handleTouchEnd(e, txId) {
+        clearTimeout(longPressTimer);
+        if (!currentSwipeItem) return;
+        let diffX = swipeCurrentX - swipeStartX;
+        if (diffX < -80) {
+            currentSwipeItem.style.transform = 'translateX(-100px)';
+            currentSwipeItem.classList.add('swiped-open');
+        } else {
+            currentSwipeItem.style.transform = 'translateX(0)';
+            currentSwipeItem.classList.remove('swiped-open');
+        }
+        currentSwipeItem = null;
+    }
+
+    function toggleAccordion(id) {
+        const header = document.getElementById(`acc-header-${id}`);
+        const content = document.getElementById(`acc-content-${id}`);
+        header.classList.toggle('open');
+        content.classList.toggle('open');
     }
 
     function loadData() {
@@ -2785,15 +2990,17 @@
 
             countItems++;
 
+            let wrapper = document.createElement('div');
+            wrapper.className = 'history-swipe-wrapper';
+            
             let item = document.createElement('div');
             item.className = 'history-item';
             
             if (t.isScheduled) {
                 item.style.opacity = "0.75";
                 item.style.borderStyle = "dashed";
-            } else {
-                item.setAttribute('onclick', `editTransaction('${t.id}', event)`);
-            }
+                item.style.cursor = 'default';
+            } 
             
             let catColor = 'var(--border-color)';
             let catLabel = 'Sem Categoria 📝';
@@ -2805,117 +3012,6 @@
             item.style.borderLeft = `5px solid ${catColor}`;
             
             let dateFormatted = t.date.split('-').reverse().join('/');
-            let indicatorColor = 'var(--success)'; let prefix = '+';
+            let indicatorColor = 'var(--success)'; let prefix = '↑ ';
             
-            if (t.isScheduled) {
-                indicatorColor = 'var(--text-muted)';
-                prefix = t.type === 'expense' ? '⏳ -' : '⏳ +';
-            } else {
-                if (t.type === 'expense_cash') { 
-                    indicatorColor = catColor; 
-                    prefix = '-'; 
-                } else if (t.type === 'saving') { 
-                    indicatorColor = 'var(--warning)'; 
-                    prefix = '💰'; 
-                } else if (t.type === 'saving_withdrawal') {
-                    indicatorColor = 'var(--success)';
-                    prefix = '📥 +';
-                } else if (t.type === 'income') {
-                    indicatorColor = 'var(--success)';
-                    prefix = '+';
-                }
-            }
-
-            let badgeMetodo = "";
-            if(!t.isScheduled && t.type === 'expense_cash') {
-                badgeMetodo = t.paymentMethod === 'cartao' ? " <span style='color:var(--accent); font-size:10px;'>[💳]</span>" : " <span style='color:var(--success); font-size:10px;'>[💵]</span>";
-            } else if (t.isScheduled) {
-                badgeMetodo = " <span style='color:var(--warning); font-size:9px; font-weight:bold;'>[AGENDADO]</span>";
-            }
-
-            let extraText = t.freeDescription ? ` - <span style="font-weight:400; color:var(--text);">${t.freeDescription}</span>` : '';
-
-            item.innerHTML = `
-                <div class="history-info">
-                    <span class="history-desc"><strong>${t.description}</strong>${extraText}${badgeMetodo}</span>
-                    <span class="history-cat-badge" style="color: ${catColor};">
-                        <span class="history-cat-dot" style="background-color: ${catColor};"></span>
-                        ${catLabel}
-                    </span>
-                    <span class="history-date">📅 ${dateFormatted} ${t.groupId ? `| <span style="color:var(--primary); cursor:pointer;" onclick="event.stopPropagation(); viewFullGroup('${t.groupId}')">Ver Grupo</span>` : ''}</span>
-                </div>
-                <div class="history-right">
-                    <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
-                    ${t.isScheduled ? 
-                        `<button class="btn-notification-action" onclick="claimAgendaAmount('${t.id}')" style="font-size:9px; padding:2px 6px;">BAIXAR</button>` : 
-                        `<button class="btn-delete-item" onclick="deleteTransaction('${t.id}', event)">🗑️</button>`
-                    }
-                </div>
-            `;
-            container.appendChild(item);
-        });
-
-        if (countItems === 0) {
-            container.innerHTML = `
-                <div class="empty-state-guide">
-                    <h4>🚀 Organize seus gastos hoje!</h4>
-                    <p>Parece que você ainda não tem lançamentos neste mês. Siga este roteiro simples para começar:</p>
-                    <div class="empty-state-step"><div class="empty-state-num">1</div><span>Use o <strong>teclado numérico</strong> acima para digitar o valor.</span></div>
-                    <div class="empty-state-step"><div class="empty-state-num">2</div><span>Selecione uma <strong>categoria (caixa)</strong> alvo.</span></div>
-                    <div class="empty-state-step"><div class="empty-state-num">3</div><span>Toque nos botões <strong>Ganhei</strong> ou <strong>Gastei</strong> para confirmar.</span></div>
-                    <p style="font-size: 11px; margin-top: 15px; font-style: italic;">Seus dados ficam salvos apenas no seu celular. 🔒</p>
-                </div>`;
-        }
-
-        let totalWithdrawals = realTransactions.filter(t => t.type === 'saving_withdrawal').reduce((acc, curr) => acc + curr.amount, 0);
-        let totalSavingsDeposited = realTransactions.filter(t => t.type === 'saving').reduce((acc, curr) => acc + curr.amount, 0);
-        let sobrou = totalIncome - totalExpense - totalSavingsDeposited + totalWithdrawals;
-        
-        document.getElementById('lblGanhos').innerText = formatCurrency(totalIncome);
-        document.getElementById('lblGastos').innerText = formatCurrency(totalExpense);
-        document.getElementById('lblCaixinha').innerText = formatCurrency(totalSaving);
-        document.getElementById('lblSobrou').innerText = formatCurrency(sobrou);
-        document.getElementById('dashFaturaCartao').innerText = formatCurrency(totalFaturaCartao);
-
-        let macroBudgetLimit = categories.filter(c => c.type !== 'income').reduce((acc, curr) => acc + (curr.budget || 0), 0);
-        if (macroBudgetLimit > 0) {
-            document.getElementById('macroBudgetCard').style.display = 'block';
-            document.getElementById('macroBudgetValues').innerText = `${formatCurrency(totalExpense)} / ${formatCurrency(macroBudgetLimit)}`;
-            let macroPct = Math.min((totalExpense / macroBudgetLimit) * 100, 100);
-            let macroBar = document.getElementById('macroBudgetBarFill');
-            macroBar.style.width = `${macroPct}%`;
-            if(totalExpense > macroBudgetLimit) macroBar.style.background = 'var(--danger)';
-            else if (totalExpense > macroBudgetLimit * 0.8) macroBar.style.background = 'var(--warning)';
-            else macroBar.style.background = 'var(--success)';
-        } else {
-            document.getElementById('macroBudgetCard').style.display = 'none';
-        }
-
-        let saldoFuturoAno = 0;
-        transactions.forEach(t => {
-            if(t.date.startsWith(selectedYear)) {
-                if(t.type === 'income' || t.type === 'saving_withdrawal') saldoFuturoAno += t.amount;
-                else saldoFuturoAno -= t.amount;
-            }
-        });
-        document.getElementById('dashCaixaFutFuture').innerText = formatCurrency(saldoFuturoAno);
-
-        const summaryCard = document.getElementById('summaryCard');
-        const lblSobrou = document.getElementById('lblSobrou');
-        
-        if (summaryCard && lblSobrou) {
-            if (sobrou >= 0) {
-                lblSobrou.style.color = currentProfile === 'pessoal' ? 'var(--primary)' : '#00e5ff';
-                summaryCard.classList.remove('alert-blink');
-            } else {
-                lblSobrou.style.color = 'var(--danger)';
-                summaryCard.classList.add('alert-blink');
-            }
-        }
-        
-        if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
-        checkAgendaNotifications(); 
-    }
-</script>
-</html>
-
+            if (t.is
