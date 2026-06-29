@@ -226,12 +226,11 @@
         letter-spacing: -1px;
     }
 
-    .display-amount sup, .history-val sup, .metric-box p sup, .category-box-amount sup {
+    .display-amount sup {
         font-size: 0.55em;
-        margin-left: 1px;
+        margin-left: 2px;
         vertical-align: super;
-        opacity: 0.85;
-        font-weight: 600;
+        opacity: 0.9;
     }
 
     @keyframes erroVisor {
@@ -857,12 +856,14 @@
             </div>
         </div>
 
+        <!-- NOVO FLUXO DE AÇÃO UNIFICADO -->
         <div class="action-grid" id="actionButtonsContainer">
             <button class="btn-action" style="background: var(--success);" onclick="saveTransaction('income')">🤑 Ganhei</button>
             <button class="btn-action" style="background: #e0e0e0;" onclick="saveTransaction('expense_cash', 'dinheiro')">💵 Dinheiro/Pix</button>
             <button class="btn-action" style="background: var(--accent); color: #fff;" onclick="toggleInlineInstallments()">💳 Cartão</button>
         </div>
 
+        <!-- SELETOR DE PARCELAS INLINE -->
         <div class="inline-payment-options" id="inlineInstallmentsArea">
             <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">🔢 Escolha as parcelas para salvar:</label>
             <div class="installments-grid">
@@ -888,7 +889,47 @@
         </div>
         
         <div id="editButtonsContainer" style="margin: 15px; display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <button class="btn-acti<div id="page-agenda" class="page-content">
+            <button class="btn-action" style="background: var(--success); width: 100%; font-size: 14px;" onclick="confirmEdit()">💾 Salvar</button>
+            <button class="btn-action" style="background: var(--bg-input); border: 1px solid var(--border-color); color: #fff; width: 100%; font-size: 14px;" onclick="cancelEdit()">❌ Cancelar</button>
+        </div>
+
+        <div class="card" id="summaryCard">
+            <div class="summary-grid-four">
+                <div class="metric-box">
+                    <h4 id="lblTitleGanhos">🟢 Ganhos</h4>
+                    <p style="color: var(--success);" id="lblGanhos">R$ 0,00</p>
+                </div>
+                <div class="metric-box">
+                    <h4>🔴 Gastos</h4>
+                    <p style="color: var(--danger);" id="lblGastos">R$ 0,00</p>
+                </div>
+                <div class="metric-box">
+                    <h4>🟡 Na Caixinha</h4>
+                    <p style="color: var(--warning);" id="lblCaixinha">R$ 0,00</p>
+                </div>
+                <div class="metric-box">
+                    <h4 id="lblTitleSobrou">🟣 Saldo Livre</h4>
+                    <p style="color: var(--primary);" id="lblSobrou">R$ 0,00</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="payment-filter-container">
+            <button class="pay-filter-btn active" id="payFilterAll" onclick="setPaymentFilter('')">🔄 Todos</button>
+            <button class="pay-filter-btn" id="payFilterDinheiro" onclick="setPaymentFilter('dinheiro')">💵 Dinheiro / Pix</button>
+            <button class="pay-filter-btn" id="payFilterCartao" onclick="setPaymentFilter('cartao')">💳 Cartão</button>
+        </div>
+
+        <div class="card">
+            <div class="filter-header">
+                <label style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">🧾 Extrato do Mês</label>
+                <button class="btn-clear-filter" id="btnClearFilter" onclick="clearExtratoFilter()">❌ Limpar</button>
+            </div>
+            <div class="history-list" id="historyContainer"></div>
+        </div>
+    </div>
+
+    <div id="page-agenda" class="page-content">
         <div class="card">
             <div class="agenda-switcher">
                 <button class="agenda-type-btn active inc-type" id="agenda-tab-income" onclick="switchAgendaFormType('income')">🟢 Agendar Recebimento</button>
@@ -1033,6 +1074,7 @@
     </div>
 </div>
 
+<!-- Modais -->
 <div class="modal" id="deleteSimpleModal">
     <div class="modal-content">
         <div class="modal-title" style="color: var(--danger)">🗑️ Excluir Valor</div>
@@ -1072,7 +1114,9 @@
         <button class="btn-action" style="background: var(--primary); width:100%; font-size:14px;" onclick="saveProfileChanges()">💾 Salvar Perfil</button>
         <button class="modal-btn" style="background: var(--bg-input); text-align: center; margin-top: 10px; border-color: transparent;" onclick="closeProfileModal()">Fechar</button>
     </div>
-</div><script>
+</div>
+
+<script>
     let currentProfile = "pessoal"; 
     let rawDigits = "0";
     let hasDecimal = false;
@@ -1250,8 +1294,8 @@
 
     function addQuickAmount(val) {
         triggerHaptic();
-        let current = parseFloat(rawDigits) || 0;
-        rawDigits = (current + val).toFixed(hasDecimal ? 2 : 0).toString();
+        let current = parseFloat(rawDigits);
+        rawDigits = (current + val).toString();
         updateAmountDisplay();
         checkLiveBudget();
     }
@@ -1643,7 +1687,7 @@
                     <span class="history-date">📅 ${dateFormatted} | <strong style="font-size: 9px; color: ${item.status === 'realizado' ? 'var(--success)' : 'var(--warning)'}">${statusLabel}</strong></span>
                 </div>
                 <div class="history-right">
-                    <span class="history-val" style="color: ${color}">${formatCurrency(item.amount, true)}</span>
+                    <span class="history-val" style="color: ${color}">${formatCurrency(item.amount)}</span>
                 </div>
             `;
             list.appendChild(div);
@@ -1705,7 +1749,7 @@
                         <span class="history-date">Clique para ver e baixar cada parcela individualmente</span>
                     </div>
                     <div class="history-right">
-                        <span class="history-val" style="color: ${catColor};">${formatCurrency(totalVal, true)}</span>
+                        <span class="history-val" style="color: ${catColor};">${formatCurrency(totalVal)}</span>
                         <span style="font-size: 16px; margin-left: 8px;">▼</span>
                     </div>
                 `;
@@ -1737,7 +1781,7 @@
                     </div>
                     <div class="history-right">
                         <span class="history-val" style="color: ${isInc ? 'var(--success)' : 'var(--danger)'}">
-                            ${isInc ? '+' : '-'} ${formatCurrency(item.amount, true)}
+                            ${isInc ? '+' : '-'} ${formatCurrency(item.amount)}
                         </span>
                         <button class="btn-delete-item" onclick="deleteAgendaItem('${item.id}', event)">🗑️</button>
                     </div>
@@ -1796,7 +1840,7 @@
             
             row.innerHTML = `
                 <div class="notification-item-content">
-                    <strong>${isInc ? '🟢' : '🔴'} ${item.description}</strong>${extraText} (${formatCurrency(item.amount, true)})
+                    <strong>${isInc ? '🟢' : '🔴'} ${item.description}</strong>${extraText} (${formatCurrency(item.amount)})
                 </div>
                 <div class="notification-item-actions">
                     <button class="btn-notification-action" style="background: ${isInc ? 'var(--success)' : 'var(--danger)'}; color: ${isInc ? '#000' : '#fff'};" onclick="claimAgendaAmount('${item.id}')">
@@ -2066,7 +2110,7 @@
                 else if (totalProjected > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
                 else fill.style.background = 'var(--success)';
             }
-            document.getElementById('budgetLabelValues').innerHTML = `${formatCurrency(totalProjected, true)} / ${formatCurrency(foundCat.budget, true)}`;
+            document.getElementById('budgetLabelValues').innerText = `${formatCurrency(totalProjected)} / ${formatCurrency(foundCat.budget)}`;
         } else {
             document.getElementById('budgetMonitor').style.display = 'none';
         }
@@ -2171,9 +2215,9 @@
             let tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="font-weight:500;">📅 ${monthNames[monthStr]}</td>
-                <td style="color: var(--success); font-weight: 600;">${formatCurrency(monthlyIncome, true)}</td>
-                <td style="color: var(--danger); font-weight: 600;">${formatCurrency(monthlyExpense, true)}</td>
-                <td style="color: ${balanceColor}; font-weight: bold;">${formatCurrency(monthlyBalance, true)}</td>
+                <td style="color: var(--success); font-weight: 600;">${formatCurrency(monthlyIncome)}</td>
+                <td style="color: var(--danger); font-weight: 600;">${formatCurrency(monthlyExpense)}</td>
+                <td style="color: ${balanceColor}; font-weight: bold;">${formatCurrency(monthlyBalance)}</td>
             `;
             tbody.appendChild(tr);
         }
@@ -2185,9 +2229,9 @@
         totalTr.className = 'total-row';
         totalTr.innerHTML = `
             <td>🏁 TOTAL ANO</td>
-            <td style="color: var(--success);">${formatCurrency(grandTotalIncome, true)}</td>
-            <td style="color: var(--danger);">${formatCurrency(grandTotalExpense, true)}</td>
-            <td style="color: ${totalBalanceColor}; font-weight: 700;">${formatCurrency(yearBalance, true)}</td>
+            <td style="color: var(--success);">${formatCurrency(grandTotalIncome)}</td>
+            <td style="color: var(--danger);">${formatCurrency(grandTotalExpense)}</td>
+            <td style="color: ${totalBalanceColor}; font-weight: 700;">${formatCurrency(yearBalance)}</td>
         `;
         tbody.appendChild(totalTr);
 
@@ -2223,10 +2267,10 @@
                     <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
                 </div>
                 <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 500;">
-                    ${annualBudget > 0 ? (cat.type === 'income' ? 'Meta Ano: ' : 'Teto Ano: ') + formatCurrency(annualBudget, true) : 'Sem Fluxo Fixo'}
+                    ${annualBudget > 0 ? (cat.type === 'income' ? 'Meta Ano: ' : 'Teto Ano: ') + formatCurrency(annualBudget) : 'Sem Fluxo Fixo'}
                 </div>
                 <div class="category-box-footer">
-                    <span class="category-box-amount">${formatCurrency(spent, true)}</span>
+                    <span class="category-box-amount">${formatCurrency(spent)}</span>
                     <span class="category-box-pct">${pct}%</span>
                 </div>
             `;
@@ -2342,7 +2386,7 @@
                     <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
                 </div>
                 <div class="category-box-footer">
-                    <span class="category-box-amount">${formatCurrency(spent, true)}</span>
+                    <span class="category-box-amount">${formatCurrency(spent)}</span>
                     <span class="category-box-pct">${pct}%</span>
                 </div>
             `;
@@ -2364,7 +2408,7 @@
             div.style.borderLeft = `4px solid ${cat.color || (isIncome ? 'var(--success)' : 'var(--primary)')}`;
             
             let budgetText = cat.budget > 0 ? 
-                `${isIncome ? '🟢 Meta mensal' : '🎯 Teto mensal'}: ${formatCurrency(cat.budget, true)}` : 
+                `${isIncome ? '🟢 Meta mensal' : '🎯 Teto mensal'}: ${formatCurrency(cat.budget)}` : 
                 "♾️ Sem limite estipulado";
             let badgeType = isIncome ? "🟢 Entrada / Ganho" : "🔴 Saída / Gasto";
             
@@ -2398,7 +2442,7 @@
                 <div class="category-main-info">
                     <div>
                         <strong>${rec.description}</strong>
-                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Valor: ${formatCurrency(rec.amount, true)} | Todo dia: ${rec.dueDay}</div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Valor: ${formatCurrency(rec.amount)} | Todo dia: ${rec.dueDay}</div>
                     </div>
                     <button class="btn-edit-cat" style="color:var(--danger);" onclick="deleteRecurrent('${rec.id}')">🗑️ Cancelar</button>
                 </div>
@@ -2538,7 +2582,7 @@
             if (rawDigits === "0") { rawDigits = key; } 
             else {
                 if (hasDecimal) {
-                    let decimalParts = rawDigits.split('.')[1] || "";
+                    let decimalParts = rawDigits.split('.')[1];
                     if (decimalParts.length < 2) rawDigits += key;
                 } else {
                     if (rawDigits.length < 9) rawDigits += key;
@@ -2572,14 +2616,8 @@
         }
     }
 
-    function formatCurrency(val, asHTML = false) {
+    function formatCurrency(val) {
         if (privacyMode) return "R$ ***,**";
-        if (asHTML) {
-            let parts = val.toFixed(2).split('.');
-            let integerPart = parseInt(parts[0]).toLocaleString('pt-BR');
-            let decimalPart = parts[1];
-            return `R$ ${integerPart}<sup style="font-size:0.6em">,${decimalPart}</sup>`;
-        }
         return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
@@ -2745,7 +2783,7 @@
                 item.onclick = () => toggleGroupExpansion(t.groupId);
                 let catColor = catObj ? (catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)')) : 'var(--accent)';
                 item.style.borderLeft = `8px solid ${catColor}`;
-                item.innerHTML = `<div class="history-info"><span class="history-desc">📦 <strong>${t.description}</strong> <span style="font-size:11px; color:var(--text-muted);">(Parcelado/Grupo)</span></span><span class="history-date">Clique para ver as parcelas deste mês</span></div><div class="history-right"><span class="history-val" style="color: ${catColor}">${formatCurrency(totalMonthGroup, true)}</span><span style="font-size: 16px; margin-left: 8px;">▼</span></div>`;
+                item.innerHTML = `<div class="history-info"><span class="history-desc">📦 <strong>${t.description}</strong> <span style="font-size:11px; color:var(--text-muted);">(Parcelado/Grupo)</span></span><span class="history-date">Clique para ver as parcelas deste mês</span></div><div class="history-right"><span class="history-val" style="color: ${catColor}">${formatCurrency(totalMonthGroup)}</span><span style="font-size: 16px; margin-left: 8px;">▼</span></div>`;
                 container.appendChild(item);
                 countItems++;
                 return;
@@ -2767,23 +2805,23 @@
             let badgeMetodo = !t.isScheduled && t.type === 'expense_cash' ? (t.paymentMethod === 'cartao' ? " <span style='color:var(--accent); font-size:10px;'>[💳]</span>" : " <span style='color:var(--success); font-size:10px;'>[💵]</span>") : (t.isScheduled ? " <span style='color:var(--warning); font-size:9px; font-weight:bold;'>[AGENDADO]</span>" : "");
             let extraText = t.freeDescription ? ` - <span style="font-weight:400; color:var(--text);">${t.freeDescription}</span>` : '';
 
-            item.innerHTML = `<div class="history-info"><span class="history-desc"><strong>${t.description}</strong>${extraText}${badgeMetodo}</span><span class="history-cat-badge" style="color: ${catColor};"><span class="history-cat-dot" style="background-color: ${catColor};"></span>${catLabel}</span><span class="history-date">📅 ${dateFormatted} ${t.groupId ? `| <span style="color:var(--primary); cursor:pointer;" onclick="event.stopPropagation(); viewFullGroup('${t.groupId}')">Ver Grupo</span>` : ''}</span></div><div class="history-right"><span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount, true)}</span>${t.isScheduled ? `<button class="btn-notification-action" onclick="claimAgendaAmount('${t.id}')" style="font-size:9px; padding:2px 6px;">BAIXAR</button>` : `<button class="btn-delete-item" onclick="deleteTransaction('${t.id}', event)">🗑️</button>`}</div>`;
+            item.innerHTML = `<div class="history-info"><span class="history-desc"><strong>${t.description}</strong>${extraText}${badgeMetodo}</span><span class="history-cat-badge" style="color: ${catColor};"><span class="history-cat-dot" style="background-color: ${catColor};"></span>${catLabel}</span><span class="history-date">📅 ${dateFormatted} ${t.groupId ? `| <span style="color:var(--primary); cursor:pointer;" onclick="event.stopPropagation(); viewFullGroup('${t.groupId}')">Ver Grupo</span>` : ''}</span></div><div class="history-right"><span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>${t.isScheduled ? `<button class="btn-notification-action" onclick="claimAgendaAmount('${t.id}')" style="font-size:9px; padding:2px 6px;">BAIXAR</button>` : `<button class="btn-delete-item" onclick="deleteTransaction('${t.id}', event)">🗑️</button>`}</div>`;
             container.appendChild(item);
         });
 
         if (countItems === 0) container.innerHTML = `<div class="empty-state-guide"><h4>🚀 Organize seus gastos hoje!</h4><p>Parece que você ainda não tem lançamentos neste mês. Siga este roteiro simples para começar:</p><div class="empty-state-step"><div class="empty-state-num">1</div><span>Use o <strong>teclado numérico</strong> acima para digitar o valor.</span></div><div class="empty-state-step"><div class="empty-state-num">2</div><span>Selecione uma <strong>categoria (caixa)</strong> alvo.</span></div><div class="empty-state-step"><div class="empty-state-num">3</div><span>Escolha a <strong>forma de pagamento</strong> para salvar instantaneamente.</span></div></div>`;
 
         let sobrou = totalIncome - totalExpense - realTransactions.filter(t => t.type === 'saving').reduce((acc, curr) => acc + curr.amount, 0) + realTransactions.filter(t => t.type === 'saving_withdrawal').reduce((acc, curr) => acc + curr.amount, 0);
-        document.getElementById('lblGanhos').innerHTML = formatCurrency(totalIncome, true);
-        document.getElementById('lblGastos').innerHTML = formatCurrency(totalExpense, true);
-        document.getElementById('lblCaixinha').innerHTML = formatCurrency(totalSaving, true);
-        document.getElementById('lblSobrou').innerHTML = formatCurrency(sobrou, true);
-        document.getElementById('dashFaturaCartao').innerHTML = formatCurrency(totalFaturaCartao, true);
+        document.getElementById('lblGanhos').innerText = formatCurrency(totalIncome);
+        document.getElementById('lblGastos').innerText = formatCurrency(totalExpense);
+        document.getElementById('lblCaixinha').innerText = formatCurrency(totalSaving);
+        document.getElementById('lblSobrou').innerText = formatCurrency(sobrou);
+        document.getElementById('dashFaturaCartao').innerText = formatCurrency(totalFaturaCartao);
 
         let macroBudgetLimit = categories.filter(c => c.type !== 'income').reduce((acc, curr) => acc + (curr.budget || 0), 0);
         if (macroBudgetLimit > 0) {
             document.getElementById('macroBudgetCard').style.display = 'block';
-            document.getElementById('macroBudgetValues').innerHTML = `${formatCurrency(totalExpense, true)} / ${formatCurrency(macroBudgetLimit, true)}`;
+            document.getElementById('macroBudgetValues').innerText = `${formatCurrency(totalExpense)} / ${formatCurrency(macroBudgetLimit)}`;
             let macroPct = Math.min((totalExpense / macroBudgetLimit) * 100, 100);
             let macroBar = document.getElementById('macroBudgetBarFill');
             macroBar.style.width = `${macroPct}%`;
@@ -2792,7 +2830,7 @@
 
         let saldoFuturoAno = 0;
         transactions.forEach(t => { if(t.date.startsWith(selectedYear)) { if(t.type === 'income' || t.type === 'saving_withdrawal') saldoFuturoAno += t.amount; else saldoFuturoAno -= t.amount; } });
-        document.getElementById('dashCaixaFutFuture').innerHTML = formatCurrency(saldoFuturoAno, true);
+        document.getElementById('dashCaixaFutFuture').innerText = formatCurrency(saldoFuturoAno);
 
         if (sobrou >= 0) { document.getElementById('lblSobrou').style.color = currentProfile === 'pessoal' ? 'var(--primary)' : '#00e5ff'; document.getElementById('summaryCard').classList.remove('alert-blink'); }
         else { document.getElementById('lblSobrou').style.color = 'var(--danger)'; document.getElementById('summaryCard').classList.add('alert-blink'); }
@@ -2802,3 +2840,4 @@
     }
 </script>
 </html>
+
