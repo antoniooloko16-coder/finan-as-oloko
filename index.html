@@ -862,6 +862,10 @@
             <button class="pay-filter-btn" id="statusFilterAgendado" onclick="setStatusFilter('agendados')">⏳ Previsões</button>
         </div>
 
+        <div class="payment-filter-container" id="categoryExtratoFilterContainer">
+            <!-- Gerado via JS: Filtros de Categoria para o Extrato -->
+        </div>
+
         <div class="card">
             <div class="filter-header">
                 <label id="extratoLabel" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">🧾 Extrato do Mês</label>
@@ -1428,6 +1432,7 @@
         if(document.getElementById('cc_due_day')) document.getElementById('cc_due_day').value = ccConfig.dueDay;
 
         renderTags();
+        renderExtratoCategoryFilters();
         loadData();
         
         const activeTab = document.querySelector('.tab-btn.active').id;
@@ -1480,6 +1485,7 @@
         
         updateAmountDisplay();
         renderTags();
+        renderExtratoCategoryFilters();
         loadData();
     });
 
@@ -1527,6 +1533,7 @@
         
         if(pageId === 'lançamentos') {
             processRecurrentEntries();
+            renderExtratoCategoryFilters();
             loadData();
         } else if (pageId === 'categorias') {
             renderCategoryManagement();
@@ -2272,6 +2279,7 @@
             filtroCategoriaAtivo = catObj.id;
             if(elementoTag) elementoTag.classList.add('active-filter');
             if(document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'block';
+            actualizarBotoesFiltroCategoria();
             loadData();
         }
     }
@@ -2285,6 +2293,19 @@
     function setStatusFilter(status) {
         filtroStatusAtivo = status;
         actualizarBotoesFiltroStatus();
+        loadData();
+    }
+
+    function setExtratoCategoryFilter(catId) {
+        filtroCategoriaAtivo = catId;
+        if(catId !== "") {
+            if(document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'block';
+        } else {
+            if(document.getElementById('btnClearFilter') && filtroPagamentoAtivo === "") {
+                document.getElementById('btnClearFilter').style.display = 'none';
+            }
+        }
+        actualizarBotoesFiltroCategoria();
         loadData();
     }
 
@@ -2312,10 +2333,20 @@
         }
     }
 
+    function actualizarBotoesFiltroCategoria() {
+        document.querySelectorAll('#categoryExtratoFilterContainer .pay-filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-cat-id') === filtroCategoriaAtivo) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
     function clearExtratoFilter() {
         filtroCategoriaAtivo = ""; filtroPagamentoAtivo = ""; filtroStatusAtivo = "efetuados";
         actualizarBotoesFiltroPagamento();
         actualizarBotoesFiltroStatus();
+        actualizarBotoesFiltroCategoria();
         if(document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'none';
         document.querySelectorAll('.tag').forEach(t => t.classList.remove('active-filter'));
         loadData();
@@ -2339,6 +2370,30 @@
                 filtrarExtratoPorTag(cat.id, tagEl);
             };
             container.appendChild(tagEl);
+        });
+    }
+
+    function renderExtratoCategoryFilters() {
+        const container = document.getElementById('categoryExtratoFilterContainer');
+        if(!container) return;
+        container.innerHTML = '';
+
+        // Botão "Todos"
+        let btnAll = document.createElement('button');
+        btnAll.className = `pay-filter-btn ${filtroCategoriaAtivo === "" ? 'active' : ''}`;
+        btnAll.innerText = "🔄 Todas Categorias";
+        btnAll.setAttribute('data-cat-id', "");
+        btnAll.onclick = () => setExtratoCategoryFilter("");
+        container.appendChild(btnAll);
+
+        // Botões para cada categoria
+        categories.forEach(cat => {
+            let btn = document.createElement('button');
+            btn.className = `pay-filter-btn ${filtroCategoriaAtivo === cat.id ? 'active' : ''}`;
+            btn.innerText = cat.name;
+            btn.setAttribute('data-cat-id', cat.id);
+            btn.onclick = () => setExtratoCategoryFilter(cat.id);
+            container.appendChild(btn);
         });
     }
 
@@ -2384,7 +2439,7 @@
             box.onclick = () => {
                 document.getElementById('sl_category').value = cat.id;
                 checkLiveBudget();
-                filtrarExtratoPorTag(cat.id, null);
+                setExtratoCategoryFilter(cat.id);
             };
 
             box.innerHTML = `
@@ -2495,7 +2550,7 @@
             safeLocalStorageSave();
             input.value = ''; budgetInput.value = '0';
             populateCategorySelector();
-            renderCategoryManagement(); renderTags(); loadData();
+            renderCategoryManagement(); renderTags(); renderExtratoCategoryFilters(); loadData();
             alert('Configuração actualizada com sucesso! 👍');
         } else {
             let newId = "cat_custom_" + gerarIDUnico();
@@ -2505,7 +2560,7 @@
             input.value = ''; budgetInput.value = '0';
             setCategoryFormType('expense');
             populateCategorySelector();
-            renderCategoryManagement(); renderTags(); loadData();
+            renderCategoryManagement(); renderTags(); renderExtratoCategoryFilters(); loadData();
             alert('Nova Caixa cadastrada com sucesso! 🎉');
         }
     }
@@ -2548,6 +2603,7 @@
                 populateCategorySelector();
                 renderCategoryManagement();
                 renderTags();
+                renderExtratoCategoryFilters();
                 loadData();
             }
         }
@@ -2752,7 +2808,6 @@
         let realTransactions = transactionIndexedMap.get(currentSelectedTarget) || [];
         let monthAgenda = agendaItems.filter(item => item.date.startsWith(currentSelectedTarget));
 
-        // Separando a lista com base no filtro de status solicitado
         let combinedList = [];
         if (filtroStatusAtivo === 'efetuados') {
             combinedList = realTransactions.map(t => ({...t, isScheduled: false}));
@@ -2762,7 +2817,6 @@
 
         combinedList.sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
 
-        // Dashboards e boxes consideram sempre os dados reais do mês
         let totalExpenseForBoxes = 0;
         realTransactions.forEach(t => {
             if (t.type === 'expense_cash' || t.type === 'saving') totalExpenseForBoxes += t.amount;
@@ -2786,9 +2840,6 @@
 
             if (!matchesCategory || !matchesPayment) return;
 
-            // Calcula somatórios apenas dos dados reais do mês (independentemente do que está sendo exibido na lista)
-            // Nota: Somatórios reais são processados em loop separado para evitar confusão com filtros de exibição
-            
             if (t.groupId && !expandedGroups.has(t.groupId)) {
                 if (groupsProcessed.has(t.groupId)) return;
                 groupsProcessed.add(t.groupId);
@@ -2896,7 +2947,6 @@
             container.appendChild(item);
         });
 
-        // Somatórios globais (Sempre consideram dados reais)
         realTransactions.forEach(t => {
             if (t.type === 'income') totalIncome += t.amount;
             if (t.type === 'expense_cash') totalExpense += t.amount;
@@ -2967,4 +3017,3 @@
     }
 </script>
 </html>
-
