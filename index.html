@@ -611,10 +611,11 @@
     .card-dash h3 { margin: 0 0 4px 0; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
     .card-dash p { margin: 0; font-size: 15px; font-weight: 700; }
 
-    .payment-filter-container { display: flex; gap: 6px; margin: 15px 15px 0 15px; overflow-x: auto; scrollbar-width: none; }
+    .payment-filter-container { display: flex; gap: 6px; margin: 15px 15px 0 15px; overflow-x: auto; scrollbar-width: none; align-items: center;}
     .payment-filter-container::-webkit-scrollbar { display: none; }
     .pay-filter-btn { background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
     .pay-filter-btn.active { background: rgba(187, 134, 252, 0.08); border-color: var(--primary); color: var(--primary); }
+    .filter-separator { width: 1px; height: 20px; background: var(--border-color); margin: 0 4px; flex-shrink: 0; }
 
     .business-alert {
         background: rgba(41, 121, 255, 0.1);
@@ -856,11 +857,14 @@
             <button class="pay-filter-btn active" id="payFilterAll" onclick="setPaymentFilter('')">🔄 Todos</button>
             <button class="pay-filter-btn" id="payFilterDinheiro" onclick="setPaymentFilter('dinheiro')">💵 Dinheiro / Pix</button>
             <button class="pay-filter-btn" id="payFilterCartao" onclick="setPaymentFilter('cartao')">💳 Cartão</button>
+            <div class="filter-separator"></div>
+            <button class="pay-filter-btn active" id="statusFilterEfetivo" onclick="setStatusFilter('efetuados')">✅ Lançados</button>
+            <button class="pay-filter-btn" id="statusFilterAgendado" onclick="setStatusFilter('agendados')">⏳ Previsões</button>
         </div>
 
         <div class="card">
             <div class="filter-header">
-                <label style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">🧾 Extrato do Mês</label>
+                <label id="extratoLabel" style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">🧾 Extrato do Mês</label>
                 <button class="btn-clear-filter" id="btnClearFilter" onclick="clearExtratoFilter()">❌ Limpar</button>
             </div>
             <div class="history-list" id="historyContainer"></div>
@@ -1095,6 +1099,7 @@
     let privacyMode = false;
     let filtroCategoriaAtivo = ""; 
     let filtroPagamentoAtivo = ""; 
+    let filtroStatusAtivo = "efetuados"; // 'efetuados' ou 'agendados'
     
     let allProfiles = [];
     let transactions = [];
@@ -1410,7 +1415,10 @@
 
         filtroCategoriaAtivo = "";
         filtroPagamentoAtivo = "";
+        filtroStatusAtivo = "efetuados";
         actualizarBotoesFiltroPagamento();
+        actualizarBotoesFiltroStatus();
+
         if (document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'none';
         
         renderProfileSwitcher();
@@ -2019,7 +2027,7 @@
                 });
             } else {
                 agendaItems = agendaItems.filter(t => {
-                    if (i.groupId === target.groupId && i.date >= target.date) return false;
+                    if (t.groupId === target.groupId && t.date >= target.date) return false;
                     return true;
                 });
             }
@@ -2274,16 +2282,40 @@
         loadData();
     }
 
+    function setStatusFilter(status) {
+        filtroStatusAtivo = status;
+        actualizarBotoesFiltroStatus();
+        loadData();
+    }
+
     function actualizarBotoesFiltroPagamento() {
-        document.querySelectorAll('.pay-filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.pay-filter-btn').forEach(b => {
+            if(b.id === 'payFilterAll' || b.id === 'payFilterDinheiro' || b.id === 'payFilterCartao') {
+                b.classList.remove('active');
+            }
+        });
         if(filtroPagamentoAtivo === '') document.getElementById('payFilterAll').classList.add('active');
         if(filtroPagamentoAtivo === 'dinheiro') document.getElementById('payFilterDinheiro').classList.add('active');
         if(filtroPagamentoAtivo === 'cartao') document.getElementById('payFilterCartao').classList.add('active');
     }
 
+    function actualizarBotoesFiltroStatus() {
+        document.getElementById('statusFilterEfetivo').classList.remove('active');
+        document.getElementById('statusFilterAgendado').classList.remove('active');
+        
+        if (filtroStatusAtivo === 'efetuados') {
+            document.getElementById('statusFilterEfetivo').classList.add('active');
+            document.getElementById('extratoLabel').innerText = "🧾 Extrato do Mês (Efetivado)";
+        } else {
+            document.getElementById('statusFilterAgendado').classList.add('active');
+            document.getElementById('extratoLabel').innerText = "📅 Previsões do Mês (Agendado)";
+        }
+    }
+
     function clearExtratoFilter() {
-        filtroCategoriaAtivo = ""; filtroPagamentoAtivo = "";
+        filtroCategoriaAtivo = ""; filtroPagamentoAtivo = ""; filtroStatusAtivo = "efetuados";
         actualizarBotoesFiltroPagamento();
+        actualizarBotoesFiltroStatus();
         if(document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'none';
         document.querySelectorAll('.tag').forEach(t => t.classList.remove('active-filter'));
         loadData();
@@ -2720,13 +2752,17 @@
         let realTransactions = transactionIndexedMap.get(currentSelectedTarget) || [];
         let monthAgenda = agendaItems.filter(item => item.date.startsWith(currentSelectedTarget));
 
-        let combinedList = [
-            ...realTransactions.map(t => ({...t, isScheduled: false})),
-            ...monthAgenda.map(a => ({...a, isScheduled: true}))
-        ];
+        // Separando a lista com base no filtro de status solicitado
+        let combinedList = [];
+        if (filtroStatusAtivo === 'efetuados') {
+            combinedList = realTransactions.map(t => ({...t, isScheduled: false}));
+        } else {
+            combinedList = monthAgenda.map(a => ({...a, isScheduled: true}));
+        }
 
         combinedList.sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
 
+        // Dashboards e boxes consideram sempre os dados reais do mês
         let totalExpenseForBoxes = 0;
         realTransactions.forEach(t => {
             if (t.type === 'expense_cash' || t.type === 'saving') totalExpenseForBoxes += t.amount;
@@ -2750,23 +2786,21 @@
 
             if (!matchesCategory || !matchesPayment) return;
 
-            if (!t.isScheduled) {
-                if (t.type === 'income') totalIncome += t.amount;
-                if (t.type === 'expense_cash') totalExpense += t.amount;
-                if (t.type === 'saving') totalSaving += t.amount;
-                if (t.type === 'saving_withdrawal') totalSaving -= t.amount;
-                if (t.paymentMethod === 'cartao' || t.isCredit || (t.freeDescription && t.freeDescription.includes('('))) {
-                    totalFaturaCartao += t.amount;
-                }
-            }
-
+            // Calcula somatórios apenas dos dados reais do mês (independentemente do que está sendo exibido na lista)
+            // Nota: Somatórios reais são processados em loop separado para evitar confusão com filtros de exibição
+            
             if (t.groupId && !expandedGroups.has(t.groupId)) {
                 if (groupsProcessed.has(t.groupId)) return;
                 groupsProcessed.add(t.groupId);
                 
-                const groupReal = transactions.filter(i => i.groupId === t.groupId && i.date.startsWith(currentSelectedTarget));
-                const groupScheduled = agendaItems.filter(i => i.groupId === t.groupId && i.date.startsWith(currentSelectedTarget));
-                const totalMonthGroup = [...groupReal, ...groupScheduled].reduce((acc, curr) => acc + curr.amount, 0);
+                let totalMonthGroup = 0;
+                if (!t.isScheduled) {
+                    totalMonthGroup = transactions.filter(i => i.groupId === t.groupId && i.date.startsWith(currentSelectedTarget))
+                                                 .reduce((acc, curr) => acc + curr.amount, 0);
+                } else {
+                    totalMonthGroup = agendaItems.filter(i => i.groupId === t.groupId && i.date.startsWith(currentSelectedTarget))
+                                                 .reduce((acc, curr) => acc + curr.amount, 0);
+                }
 
                 let item = document.createElement('div');
                 item.className = 'history-item group-header';
@@ -2862,14 +2896,23 @@
             container.appendChild(item);
         });
 
+        // Somatórios globais (Sempre consideram dados reais)
+        realTransactions.forEach(t => {
+            if (t.type === 'income') totalIncome += t.amount;
+            if (t.type === 'expense_cash') totalExpense += t.amount;
+            if (t.type === 'saving') totalSaving += t.amount;
+            if (t.type === 'saving_withdrawal') totalSaving -= t.amount;
+            if (t.paymentMethod === 'cartao' || t.isCredit || (t.freeDescription && t.freeDescription.includes('('))) {
+                totalFaturaCartao += t.amount;
+            }
+        });
+
         if (countItems === 0) {
+            let msgEmpty = filtroStatusAtivo === 'efetuados' ? "Parece que você ainda não tem registros efetuados neste mês." : "Nenhuma conta ou recebimento agendado para este mês.";
             container.innerHTML = `
                 <div class="empty-state-guide">
-                    <h4>🚀 Comece sua jornada!</h4>
-                    <p>Parece que você ainda não tem registros neste mês. Siga estes passos para organizar sua vida financeira:</p>
-                    <div class="empty-state-step"><div class="empty-state-num">1</div><span>Digite o valor no <strong>Teclado Numérico</strong> acima.</span></div>
-                    <div class="empty-state-step"><div class="empty-state-num">2</div><span>Escolha uma <strong>Categoria</strong> ou adicione uma nova.</span></div>
-                    <div class="empty-state-step"><div class="empty-state-num">3</div><span>Toque em <strong>Gastei</strong> ou <strong>Ganhei</strong> para salvar!</span></div>
+                    <h4>🚀 ${filtroStatusAtivo === 'efetuados' ? 'Comece sua jornada!' : 'Agenda Vazia'}</h4>
+                    <p>${msgEmpty}</p>
                 </div>`;
         }
 
