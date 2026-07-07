@@ -972,10 +972,10 @@
 
         <div class="card">
             <h3 style="margin-top:0; color: var(--warning); font-size: 15px; font-weight: 700;">💾 Cópia de Segurança (Backup)</h3>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">Baixe seus dados para não perder nada caso troque ou formate o celular.</p>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; font-weight: 500;">O backup será feito apenas do perfil que você está usando agora.</p>
             <div class="grid-2col">
-                <button class="btn-secondary" onclick="exportBackup()">📤 Exportar</button>
-                <button class="btn-secondary" onclick="document.getElementById('fileFileInput').click()">📥 Importar</button>
+                <button class="btn-secondary" onclick="exportBackup()">📤 Exportar Perfil</button>
+                <button class="btn-secondary" onclick="document.getElementById('fileFileInput').click()">📥 Importar Dados</button>
             </div>
             <input type="file" id="fileFileInput" style="display:none;" onchange="importBackup(event)">
         </div>
@@ -2106,25 +2106,35 @@
         }
     }
 
+    /**
+     * REFATORAÇÃO: EXPORTAÇÃO E IMPORTAÇÃO INTELIGENTE
+     * Exporta apenas o perfil ativo e importa sem apagar os outros.
+     */
     function exportBackup() {
-        let backupData = {};
-        allProfiles.forEach(p => {
-            backupData[p.id] = {
-                transactions: JSON.parse(localStorage.getItem(`transactions_${p.id}`)) || [],
-                categories: JSON.parse(localStorage.getItem(`categories_${p.id}`)) || [],
-                recurrent: JSON.parse(localStorage.getItem(`recurrent_${p.id}`)) || [],
-                agenda: JSON.parse(localStorage.getItem(`agenda_${p.id}`)) || [],
-                cc_config: JSON.parse(localStorage.getItem(`cc_config_${p.id}`)) || { closeDay: 25, dueDay: 5 }
-            };
-        });
-        backupData['profiles_list'] = allProfiles;
+        const prof = allProfiles.find(p => p.id === currentProfile);
+        if(!prof) return alert("Erro: Perfil não identificado.");
+
+        let backupData = {
+            version: "2.0-single-profile",
+            profileInfo: prof,
+            data: {
+                transactions: JSON.parse(localStorage.getItem(`transactions_${prof.id}`)) || [],
+                categories: JSON.parse(localStorage.getItem(`categories_${prof.id}`)) || [],
+                recurrent: JSON.parse(localStorage.getItem(`recurrent_${prof.id}`)) || [],
+                agenda: JSON.parse(localStorage.getItem(`agenda_${prof.id}`)) || [],
+                cc_config: JSON.parse(localStorage.getItem(`cc_config_${prof.id}`)) || { closeDay: 25, dueDay: 5 }
+            }
+        };
 
         let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
         let downloadAnchor = document.createElement('a');
+        let fileName = `Backup_${prof.name.replace(/[^\w\s]/gi, '')}_${new Date().toISOString().slice(0,10)}.json`;
+        
         downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `Backup_Financas_Completo.json`);
+        downloadAnchor.setAttribute("download", fileName);
         document.body.appendChild(downloadAnchor);
-        downloadAnchor.click(); downloadAnchor.remove();
+        downloadAnchor.click(); 
+        downloadAnchor.remove();
     }
 
     function importBackup(event) {
@@ -2134,9 +2144,35 @@
         reader.onload = function(e) {
             try {
                 let imported = JSON.parse(e.target.result);
-                if (imported.profiles_list) {
-                    localStorage.setItem('app_profiles_list', JSON.stringify(imported.profiles_list));
+                
+                // Cenário 1: Formato Novo (Perfil Único)
+                if (imported.version === "2.0-single-profile" && imported.profileInfo) {
+                    const p = imported.profileInfo;
+                    
+                    // Garante que o perfil está na lista de perfis do app sem sobrescrever a lista inteira
+                    if (!allProfiles.find(x => x.id === p.id)) {
+                        allProfiles.push(p);
+                        localStorage.setItem('app_profiles_list', JSON.stringify(allProfiles));
+                    }
+
+                    // Salva os dados específicos deste perfil
+                    localStorage.setItem(`transactions_${p.id}`, JSON.stringify(imported.data.transactions));
+                    localStorage.setItem(`categories_${p.id}`, JSON.stringify(imported.data.categories));
+                    localStorage.setItem(`recurrent_${p.id}`, JSON.stringify(imported.data.recurrent));
+                    localStorage.setItem(`agenda_${p.id}`, JSON.stringify(imported.data.agenda));
+                    localStorage.setItem(`cc_config_${p.id}`, JSON.stringify(imported.data.cc_config));
+
+                    alert(`Perfil "${p.name}" importado/atualizado com sucesso! Os outros perfis permanecem intactos. 🎉`);
+                    window.location.reload();
+                } 
+                // Cenário 2: Formato Antigo (Legado de múltiplos perfis)
+                else if (imported.profiles_list) {
                     imported.profiles_list.forEach(p => {
+                        // Mescla: Adiciona perfil se não existir
+                        if (!allProfiles.find(x => x.id === p.id)) {
+                            allProfiles.push(p);
+                        }
+                        // Importa dados do perfil sem mexer nos outros
                         if (imported[p.id]) {
                             localStorage.setItem(`transactions_${p.id}`, JSON.stringify(imported[p.id].transactions));
                             localStorage.setItem(`categories_${p.id}`, JSON.stringify(imported[p.id].categories));
@@ -2145,12 +2181,13 @@
                             localStorage.setItem(`cc_config_${p.id}`, JSON.stringify(imported[p.id].cc_config));
                         }
                     });
-                    alert('Backup restaurado com sucesso! 🎉');
+                    localStorage.setItem('app_profiles_list', JSON.stringify(allProfiles));
+                    alert('Backup múltiplo restaurado. Perfis existentes foram mantidos e novos foram adicionados! 🎉');
                     window.location.reload();
                 } else {
-                    alert('Arquivo de backup incompatível com o novo sistema de perfis. ❌');
+                    alert('Arquivo de backup inválido ou incompatível. ❌');
                 }
-            } catch (err) { alert('Erro ao ler arquivo.'); }
+            } catch (err) { alert('Erro ao processar o arquivo: Formato inválido.'); }
         };
         reader.readAsText(file);
     }
@@ -3017,3 +3054,4 @@
     }
 </script>
 </html>
+
