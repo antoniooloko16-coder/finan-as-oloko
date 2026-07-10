@@ -3,454 +3,307 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Retro Idle RPG - 16 Bit</title>
+    <title>Super Retro Idle RPG - PRO Edition</title>
     <style>
-        /* Estilo Geral Retro Avançado */
-        body {
-            background-color: #0b0b10;
-            color: #fff;
-            font-family: 'Courier New', Courier, monospace;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            user-select: none;
-        }
-
-        #game-container {
-            width: 620px;
-            background-color: #1c1c24;
-            border: 6px double #fff;
-            padding: 15px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.8);
-            image-rendering: pixelated; /* Garante aspecto nítido de pixel art */
-        }
-
+        /* ESTILO BASE RETRO */
+        body { background-color: #0b0b10; color: #fff; font-family: 'Courier New', monospace; margin: 0; display: flex; flex-direction: column; align-items: center; user-select: none; }
+        #game-container { width: 640px; background-color: #1c1c24; border: 6px double #fff; padding: 15px; box-shadow: 0 0 25px #000; image-rendering: pixelated; }
         .hidden { display: none !important; }
 
-        /* Interface de Customização */
-        .menu-screen {
-            text-align: center;
-            padding: 20px;
-        }
-        .setup-group { margin: 18px 0; }
-        select, input, button {
-            background: #2a2a3a;
-            color: #fff;
-            border: 3px solid #fff;
-            padding: 10px;
-            font-family: inherit;
-            font-size: 16px;
-            font-weight: bold;
-            outline: none;
-        }
-        button:hover { background: #4a4a6a; background-color: #e74c3c; cursor: pointer;}
-
-        /* Canvas de Ambientação SNES com Parallax */
+        /* CANVAS E PARALLAX */
         #stage-canvas {
-            width: 100%;
-            height: 240px;
-            background: linear-gradient(to bottom, #5c94fc 0%, #b8f8f8 60%, #f8b800 60%, #f8b800 62%, #00a800 62%, #008000 100%);
-            border: 3px solid #fff;
-            position: relative;
-            overflow: hidden;
-            box-shadow: inset 0 -10px 0 rgba(0,0,0,0.2);
+            width: 100%; height: 260px;
+            background: linear-gradient(to bottom, #4a90e2 0%, #a3d2ff 60%, #edce82 60%, #edce82 62%, #3a913f 62%, #2d6a30 100%);
+            border: 3px solid #fff; position: relative; overflow: hidden;
         }
+        .mountain-back { position: absolute; bottom: 100px; width: 220px; height: 90px; background: #2d6a30; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); opacity: 0.5; }
 
-        /* Camadas de Parallax Decorativas */
-        .mountain-back {
-            position: absolute; bottom: 90px; width: 200px; height: 80px;
-            background: #008000; clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-            opacity: 0.4;
-        }
-        .cloud {
-            position: absolute; top: 30px; width: 60px; height: 20px;
-            background: #fff; border-radius: 10px; opacity: 0.8;
-        }
-
-        /* COMPOSIÇÃO DO PERSONAGEM (Camadas de Equipamento) */
+        /* ANATOMIA DO PERSONAGEM (HUMANOIDE) */
         #player-anchor {
-            width: 48px; height: 70px;
-            position: absolute; bottom: 38px; left: 286px;
-            transition: transform 0.05s ease-in-out;
+            width: 50px; height: 80px; position: absolute; bottom: 40px; left: 120px;
+            display: flex; justify-content: center; transition: 0.1s;
         }
-        .body-layer { position: absolute; width: 100%; height: 100%; }
-        
-        .p-skin { background-color: #ffcc99; width: 32px; height: 45px; bottom: 10px; left: 8px; position: absolute; border-radius: 4px; }
-        .p-eyes { position: absolute; top: 10px; left: 22px; width: 4px; height: 6px; background: #000; box-shadow: 4px 0 #000; }
-        .p-hair { position: absolute; top: -6px; left: 6px; width: 34px; height: 16px; border-radius: 4px; }
-        
-        /* Equipamentos Visuais dinâmicos */
-        .p-suit { position: absolute; bottom: 10px; left: 8px; width: 32px; height: 28px; background: transparent; }
-        .p-helmet { position: absolute; top: -8px; left: 4px; width: 38px; height: 20px; background: transparent; border-radius: 4px; }
-        .p-boots { position: absolute; bottom: 0px; left: 6px; width: 36px; height: 12px; background: transparent; }
-        .p-weapon { position: absolute; top: 15px; left: 36px; width: 10px; height: 40px; background: transparent; transform-origin: bottom center; }
+        .p-head { width: 24px; height: 24px; background: #ffcc99; position: absolute; top: 0; border-radius: 4px; z-index: 5; }
+        .p-body { width: 26px; height: 32px; background: #34495e; position: absolute; top: 24px; border-radius: 2px; z-index: 4; }
+        .p-arm { width: 8px; height: 22px; background: #ffcc99; position: absolute; top: 26px; transform-origin: top; z-index: 6; border: 1px solid #000; }
+        .arm-l { left: -6px; }
+        .arm-r { right: -6px; }
+        .p-leg { width: 10px; height: 24px; background: #2c3e50; position: absolute; bottom: 0; border-radius: 2px; }
+        .leg-l { left: 4px; }
+        .leg-r { right: 4px; }
+        .p-weapon-hand { position: absolute; bottom: -15px; width: 12px; height: 45px; transform-origin: top center; transition: 0.2s; }
 
-        /* COMPOSIÇÃO DO MONSTRO */
-        #monster-anchor {
-            width: 50px; height: 50px;
-            position: absolute; bottom: 38px; right: -60px;
-        }
-        .m-body { width: 100%; height: 100%; background: #990000; border-radius: 50% 50% 0 0; position: relative; }
-        .m-eyes { position: absolute; top: 12px; left: 8px; width: 6px; height: 6px; background: #fff; box-shadow: 20px 0 #fff; }
-        .m-pupils { position: absolute; top: 14px; left: 10px; width: 2px; height: 2px; background: #000; box-shadow: 20px 0 #000; }
-        .m-mouth { position: absolute; bottom: 12px; left: 15px; width: 20px; height: 4px; background: #000; }
-
-        /* Estilo customizado de Chefe */
-        .boss-scale { transform: scale(1.7); filter: hue-rotate(140deg); bottom: 50px !important; }
-
-        /* Interface de Dados Inferior */
-        .game-ui {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;
-        }
-        .panel {
-            border: 3px solid #fff; padding: 12px; background: #0f0f14;
-            height: 220px; overflow-y: auto; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
-        }
-        h3 { margin-top: 0; border-bottom: 2px dashed #fff; padding-bottom: 4px; color: #f1c40f; }
-        .item-slot {
-            background: #1c1c24; border: 2px solid #3a3a4a; padding: 6px;
-            margin: 5px 0; font-size: 13px; display: flex; justify-content: space-between;
-        }
-        .rare-item { color: #ff00ff; border-color: #ff00ff; font-weight: bold; background: #2a002a; }
+        /* ANIMAÇÕES */
+        .anim-idle { animation: idleBreath 1.5s infinite ease-in-out; }
+        @keyframes idleBreath { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         
-        /* Contadores superiores */
-        .top-bar { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 6px; }
-        .progress-container { background: #333; width: 100%; height: 10px; border: 2px solid #fff; margin-bottom: 10px; }
-        .progress-bar { background: #e74c3c; height: 100%; width: 100%; transition: width 0.1s; }
+        .attack-swing { animation: swing 0.3s ease-in-out; }
+        @keyframes swing { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg) translateX(10px); } 100% { transform: rotate(0deg); } }
+
+        /* MONSTRO */
+        #monster-anchor { width: 60px; height: 60px; position: absolute; bottom: 40px; right: -80px; transition: 0.1s; }
+        .m-body { width: 100%; height: 100%; background: #c0392b; border-radius: 10px; position: relative; border: 3px solid #000; }
+        .m-eye { position: absolute; width: 8px; height: 8px; background: #fff; top: 15px; left: 10px; box-shadow: 25px 0 #fff; }
+
+        /* DANO FLUTUANTE */
+        .dmg-popup { position: absolute; color: #ff4757; font-weight: bold; font-size: 20px; text-shadow: 2px 2px #000; animation: floatUp 0.6s forwards; z-index: 100; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-50px); opacity: 0; } }
+
+        /* UI */
+        .game-ui { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .panel { border: 3px solid #fff; padding: 12px; background: #0f0f14; height: 250px; overflow-y: auto; }
+        .item-slot { background: #1c1c24; border: 2px solid #3a3a4a; padding: 6px; margin: 4px 0; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+        .equipped { border-color: #f1c40f; background: #2c2c10; }
+        .top-bar { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
+        .progress-container { background: #333; height: 12px; border: 2px solid #fff; margin-bottom: 10px; }
+        .progress-bar { background: #e74c3c; height: 100%; width: 100%; transition: 0.1s; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <!-- CRIAÇÃO DE PERSONAGEM -->
+    <!-- MENU INICIAL -->
     <div id="creation-screen" class="menu-screen">
-        <h2>SUPER NINTENDO IDLE RPG</h2>
-        <div class="setup-group">
-            <label>Nome do Herói: </label>
-            <input type="text" id="char-name" value="Mario" maxlength="12">
-        </div>
-        <div class="setup-group">
-            <label>Classe Inicial: </label>
+        <h2 style="text-align:center">RPG ENGENHARIA DE SOLUÇÕES</h2>
+        <div style="margin: 20px 0; text-align:center">
+            <input type="text" id="char-name" value="Herói" placeholder="Nome">
             <select id="char-class">
-                <option value="Guerreiro">Guerreiro (+FORÇA)</option>
-                <option value="Mago">Mago (+INTELIGÊNCIA)</option>
-                <option value="Arqueiro">Arqueiro (+AGILIDADE)</option>
+                <option value="Guerreiro">Guerreiro (FOR)</option>
+                <option value="Mago">Mago (INT)</option>
+                <option value="Arqueiro">Arqueiro (AGI)</option>
             </select>
+            <button onclick="startGame()" style="padding: 10px 20px; cursor:pointer">INICIAR</button>
         </div>
-        <div class="setup-group">
-            <label>Cor do Cabelo: </label>
-            <select id="char-hair">
-                <option value="#d35400">Ruivo</option>
-                <option value="#2c3e50">Preto</option>
-                <option value="#f1c40f">Loiro</option>
-                <option value="#95a5a6">Prateado</option>
-            </select>
-        </div>
-        <button onclick="startGame()">CONSTRUIR JORNADA</button>
     </div>
 
-    <!-- TELA PRINCIPAL DO JOGO -->
+    <!-- TELA DE JOGO -->
     <div id="game-screen" class="hidden">
         <div class="top-bar">
-            <span id="ui-name-lvl">Nome - Lvl 1</span>
-            <span id="ui-monsters-count" style="color: #95a5a6;">Progresso: 1/30</span>
-            <span id="ui-stage" style="color: #f1c40f;">Mundo: 1</span>
+            <span id="ui-name-lvl">Nível 1</span>
+            <span id="ui-stage" style="color:#f1c40f">Mundo 1</span>
         </div>
         
-        <!-- Barra de Vida do Inimigo Atual -->
         <div class="progress-container"><div id="enemy-hp-bar" class="progress-bar"></div></div>
 
-        <!-- Área Gráfica com Parallax -->
         <div id="stage-canvas">
-            <div class="mountain-back" style="left: 50px;"></div>
-            <div class="mountain-back" style="left: 350px;"></div>
-            <div class="cloud" style="left: 80px; top: 20px;"></div>
-            <div class="cloud" style="left: 400px; top: 40px;"></div>
-
-            <!-- Camadas Visuais do Herói Central -->
-            <div id="player-anchor">
-                <div class="p-skin">
-                    <div class="p-eyes"></div>
-                </div>
-                <div id="v-hair" class="p-hair"></div>
-                <div id="v-suit" class="p-suit"></div>
-                <div id="v-helmet" class="p-helmet"></div>
-                <div id="v-boots" class="p-boots"></div>
-                <div id="v-weapon" class="p-weapon"></div>
+            <div id="parallax-container">
+                <div class="mountain-back" style="left: 100px;"></div>
+                <div class="mountain-back" style="left: 400px;"></div>
             </div>
 
-            <!-- Camadas do Monstro -->
+            <!-- HERÓI MODULAR -->
+            <div id="player-anchor" class="anim-idle">
+                <div id="v-head" class="p-head"><div class="p-eyes"></div></div>
+                <div id="v-suit" class="p-body"></div>
+                <div class="p-arm arm-l"></div>
+                <div class="p-arm arm-r" id="v-arm-main">
+                    <div id="v-weapon" class="p-weapon-hand"></div>
+                </div>
+                <div id="v-leg-l" class="p-leg leg-l"></div>
+                <div id="v-leg-r" class="p-leg leg-r"></div>
+            </div>
+
+            <!-- MONSTRO -->
             <div id="monster-anchor">
                 <div class="m-body" id="v-monster-body">
-                    <div class="m-eyes"></div>
-                    <div class="m-pupils"></div>
-                    <div class="m-mouth"></div>
+                    <div class="m-eye"></div>
                 </div>
             </div>
         </div>
 
-        <!-- UI e Equipamentos -->
         <div class="game-ui">
             <div class="panel">
-                <h3>Atributos Atuais</h3>
-                <div id="stats-display">Processando atributos...</div>
+                <h3>Atributos</h3>
+                <div id="stats-display"></div>
             </div>
             <div class="panel">
-                <h3>Equipamentos e Loot</h3>
-                <div id="loot-display">Caçando monstros iniciais...</div>
+                <h3>Inventário (Top 3)</h3>
+                <div id="loot-display"></div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // ESTADO E ATRIBUTOS COMPLETOS
     let player = {
         name: "", class: "", lvl: 1, exp: 0, expNeeded: 100,
-        hp: 100, maxHp: 100, str: 10, def: 5, int: 5, agi: 5, luk: 5, esq: 5,
-        equipment: { weapon: null, helmet: null, suit: null, boots: null, ring: null }
+        hp: 100, maxHp: 100, str: 10, int: 10, agi: 10, def: 5, luk: 5,
+        // Inventário Inteligente: Armazena arrays de até 3 itens
+        inventory: { weapon: [], helmet: [], suit: [], boots: [], ring: [] }
     };
 
     let currentStage = 1;
-    let monstersKilled = 0; 
-    const BOSS_THRESHOLD = 30; // 30 combates para invocar o Chefe
-
+    let monstersKilled = 0;
     let monster = null;
-    let monsterPos = 650;
-    let parallaxOffset = 0;
+    let isAttacking = false;
 
     function startGame() {
         player.name = document.getElementById("char-name").value;
         player.class = document.getElementById("char-class").value;
-        let hairColor = document.getElementById("char-hair").value;
+        
+        // Bonus Inicial por Classe
+        if(player.class === "Guerreiro") player.str += 10;
+        if(player.class === "Mago") player.int += 10;
+        if(player.class === "Arqueiro") player.agi += 10;
 
-        document.getElementById("v-hair").style.backgroundColor = hairColor;
-
-        if(player.class === "Guerreiro") { player.str += 8; player.maxHp += 30; }
-        if(player.class === "Mago") { player.int += 8; player.luk += 3; }
-        if(player.class === "Arqueiro") { player.agi += 8; player.esq += 5; }
-        player.hp = player.maxHp;
-
-        document.getElementById("creation-screen").classList.add("hidden");
-        document.getElementById("game-screen").classList.remove("hidden");
-
+        document.getElementById("creation-screen").className = "hidden";
+        document.getElementById("game-screen").className = "";
+        
         spawnMonster();
-        gameLoop();
+        requestAnimationFrame(gameLoop);
     }
 
     function spawnMonster() {
-        monsterPos = 650;
-        let isBoss = (monstersKilled >= BOSS_THRESHOLD - 1);
-        
-        let multiplier = isBoss ? currentStage * 4.5 : currentStage;
-        
+        let isBoss = (monstersKilled >= 10);
+        let difficulty = currentStage * (isBoss ? 5 : 1);
         monster = {
             isBoss: isBoss,
-            lvl: currentStage,
-            hp: Math.floor(25 * Math.pow(1.22, multiplier)),
-            maxHp: Math.floor(25 * Math.pow(1.22, multiplier)),
-            atk: Math.floor(5 * Math.pow(1.16, multiplier)),
-            def: Math.floor(1 * Math.pow(1.12, multiplier))
+            hp: 30 * difficulty,
+            maxHp: 30 * difficulty,
+            atk: 5 * difficulty,
+            pos: 650
+        };
+        document.getElementById("monster-anchor").style.right = "-80px";
+    }
+
+    function createDmgPopup(amount, x, y) {
+        const popup = document.createElement("div");
+        popup.className = "dmg-popup";
+        popup.innerText = amount;
+        popup.style.left = x + "px";
+        popup.style.top = y + "px";
+        document.getElementById("stage-canvas").appendChild(popup);
+        setTimeout(() => popup.remove(), 600);
+    }
+
+    function performAttack() {
+        if(isAttacking) return;
+        isAttacking = true;
+
+        // Animação do Braço
+        const arm = document.getElementById("v-arm-main");
+        arm.classList.add("attack-swing");
+
+        // Cálculo de Dano Dinâmico
+        let attrBase = player.class === "Guerreiro" ? player.str : (player.class === "Mago" ? player.int : player.agi);
+        let dmg = Math.floor(attrBase * (0.8 + Math.random() * 0.4));
+        
+        // Aplicar no Monstro
+        monster.hp -= dmg;
+        createDmgPopup(dmg, 450, 100);
+
+        setTimeout(() => {
+            arm.classList.remove("attack-swing");
+            isAttacking = false;
+            if(monster.hp <= 0) processVictory();
+        }, 300);
+    }
+
+    function processVictory() {
+        monstersKilled++;
+        player.exp += 20 * currentStage;
+        
+        // DROP DE ITEM
+        generateSmartLoot();
+
+        if(player.exp >= player.expNeeded) {
+            player.lvl++;
+            player.exp = 0;
+            player.expNeeded *= 1.5;
+            player.maxHp += 20;
+            player.hp = player.maxHp;
+            player.str += 2; player.int += 2; player.agi += 2;
+        }
+
+        if(monstersKilled > 10) {
+            currentStage++;
+            monstersKilled = 0;
+        }
+        spawnMonster();
+    }
+
+    function generateSmartLoot() {
+        const types = ["weapon", "helmet", "suit", "boots", "ring"];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const power = Math.floor(currentStage * 2 + Math.random() * 5);
+        
+        let newItem = {
+            id: Date.now(),
+            name: `${type.toUpperCase()} +${power}`,
+            type: type,
+            power: power
         };
 
-        // Renderização customizada para Chefes no DOM
-        let mAnchor = document.getElementById("monster-anchor");
-        let mBody = document.getElementById("v-monster-body");
-        if(isBoss) {
-            mAnchor.classList.add("boss-scale");
-            mBody.style.backgroundColor = "#4a0082"; // Roxo Escuro de Boss
-        } else {
-            mAnchor.classList.remove("boss-scale");
-            mBody.style.backgroundColor = `hsl(${(currentStage * 45) % 360}, 85%, 35%)`; // Cor varia por mundo
+        // Lógica TOP 3
+        let slot = player.inventory[type];
+        slot.push(newItem);
+        slot.sort((a, b) => b.power - a.power); // Ordena do mais forte pro mais fraco
+
+        if(slot.length > 3) {
+            slot.pop(); // Descarta o 4º item (o mais fraco)
+        }
+
+        updateInventoryUI();
+        updateVisuals();
+    }
+
+    function updateInventoryUI() {
+        let html = "";
+        for(let type in player.inventory) {
+            player.inventory[type].forEach((item, index) => {
+                let isEquipped = index === 0;
+                html += `<div class="item-slot ${isEquipped ? 'equipped' : ''}">
+                    <span>${item.name}</span>
+                    <span>${isEquipped ? '[EQUIPADO]' : ''}</span>
+                </div>`;
+            });
+        }
+        document.getElementById("loot-display").innerHTML = html;
+    }
+
+    function updateVisuals() {
+        // Atualiza cores baseadas nos itens equipados (index 0 de cada slot)
+        const weapon = player.inventory.weapon[0];
+        if(weapon) {
+            document.getElementById("v-weapon").style.backgroundColor = "#f1c40f";
+            document.getElementById("v-weapon").style.boxShadow = "0 0 5px #fff";
+        }
+        const suit = player.inventory.suit[0];
+        if(suit) {
+            document.getElementById("v-suit").style.backgroundColor = "#e67e22";
         }
     }
 
     function gameLoop() {
-        let monsterEl = document.getElementById("monster-anchor");
-        let playerEl = document.getElementById("player-anchor");
-
-        // Efeito Parallax nos fundos simulando movimento real de corrida
-        parallaxOffset -= 0.8;
-        let mountains = document.querySelectorAll('.mountain-back');
-        mountains.forEach((m, idx) => {
-            let pos = (idx * 300 + parallaxOffset) % 700;
-            if(pos < -200) pos += 800;
-            m.style.left = pos + "px";
-        });
-
-        // Movimentação do Monstro até o Herói
-        if (monsterPos > 324) {
-            monsterPos -= 2.5 + (player.agi * 0.08);
-            monsterEl.style.left = monsterPos + "px";
+        // Movimento do Monstro
+        let mAnchor = document.getElementById("monster-anchor");
+        let currentRight = parseInt(mAnchor.style.right);
+        
+        if(currentRight < 120) {
+            mAnchor.style.right = (currentRight + 2) + "px";
         } else {
-            // Colisão de Turno de Dano Fino
-            // Turno do Jogador (Dano baseado em Classe + Força/Inteligência)
-            let baseDmg = player.class === "Mago" ? player.int : player.str;
-            if (Math.random() * 100 < player.luk) baseDmg *= 2; // Crítico por Sorte
-            
-            let damageToMonster = Math.max(1, baseDmg - monster.def);
-            monster.hp -= damageToMonster;
-            
-            playerEl.style.transform = "scale(1.1) translateX(8px)";
-            setTimeout(() => { playerEl.style.transform = "scale(1) translateX(0px)"; }, 40);
-
-            if (monster.hp <= 0) {
-                processVictory();
-                spawnMonster();
-            } else {
-                // Turno do Inimigo com Checagem de Esquiva
-                if (Math.random() * 100 > player.esq) {
-                    let damageToPlayer = Math.max(1, monster.atk - player.def);
-                    player.hp -= damageToPlayer;
-                    monsterEl.style.transform = "translateX(-8px)";
-                    setTimeout(() => { monsterEl.style.transform = "translateX(0px)"; }, 40);
-                }
-                
-                if (player.hp <= 0) {
-                    processDefeat();
-                    spawnMonster();
-                }
-            }
+            performAttack();
         }
 
-        updateUI();
+        // Atualização de UI
+        document.getElementById("enemy-hp-bar").style.width = (monster.hp / monster.maxHp * 100) + "%";
+        document.getElementById("ui-name-lvl").innerText = `${player.name} Lvl.${player.lvl} (${player.class})`;
+        document.getElementById("ui-stage").innerText = `Mundo ${currentStage} - Progresso: ${monstersKilled}/10`;
+        
+        // Soma atributos dos itens equipados (os primeiros de cada lista)
+        let bonusStr = player.inventory.weapon[0] ? player.inventory.weapon[0].power : 0;
+        let bonusDef = player.inventory.suit[0] ? player.inventory.suit[0].power : 0;
+
+        document.getElementById("stats-display").innerHTML = `
+            FOR: ${player.str} (+${bonusStr})<br>
+            INT: ${player.int}<br>
+            AGI: ${player.agi}<br>
+            DEF: ${player.def} (+${bonusDef})<br>
+            HP: ${Math.floor(player.hp)}/${player.maxHp}
+        `;
+
         requestAnimationFrame(gameLoop);
     }
-
-    function processVictory() {
-        player.exp += 15 * currentStage;
-        if(player.exp >= player.expNeeded) {
-            player.lvl++;
-            player.exp = 0;
-            player.expNeeded = Math.floor(player.expNeeded * 1.45);
-            player.maxHp += 12;
-            player.str += 2; player.def += 1; player.int += 1; player.agi += 1;
-            player.hp = player.maxHp;
-        }
-
-        // Se venceu o Chefe (Monstro número 30)
-        if(monster.isBoss) {
-            let rollRaro = Math.random();
-            let isRare = rollRaro <= 0.0001; // Sorte fina de 0,01%
-            generateLoot(isRare);
-            
-            currentStage++; // Troca de mundo global
-            monstersKilled = 0; // Reseta lista para o próximo chefe
-        } else {
-            monstersKilled++;
-        }
-    }
-
-    function processDefeat() {
-        if (currentStage > 1) {
-            currentStage--; 
-        }
-        monstersKilled = 0; // Reinicia a contagem de monstros para segurança do farm
-        player.hp = player.maxHp;
-    }
-
-    function generateLoot(isRare) {
-        const slots = ["weapon", "helmet", "suit", "boots", "ring"];
-        const slot = slots[Math.floor(Math.random() * slots.length)];
-        
-        let power = currentStage * (isRare ? 6 : 1);
-        let statVal = Math.floor(1 + (Math.random() * power));
-        
-        const nomes = {
-            weapon: ["Espada Nobre", "Cajado Arcano", "Arco Longo"],
-            helmet: ["Capacete de Ferro", "Chapéu de Feiticeiro", "Diadema Ágil"],
-            suit: ["Cota de Malha", "Manto Elemental", "Traje de Couro"],
-            boots: ["Botas Pesadas", "Sapatilhas Leves", "Botas de Viagem"],
-            ring: ["Anel de Rubi", "Anel de Safira", "Selo da Sorte"]
-        };
-
-        let nomeFinal = nomes[slot][Math.floor(Math.random() * nomes[slot].length)];
-        let itemObj = {
-            nome: `${nomeFinal} Lvl.${currentStage} ${isRare ? "[RARO]" : ""}`,
-            slot: slot, stat: statVal, rare: isRare
-        };
-
-        // Equipamento Automático Superior
-        let currentEquip = player.equipment[slot];
-        if(!currentEquip || statVal > currentEquip.stat) {
-            player.equipment[slot] = itemObj;
-            applyEquipmentStats();
-            updateVisualEquipment();
-        }
-
-        // Display Histórico
-        let lootBox = document.getElementById("loot-display");
-        let rareClass = isRare ? "item-slot rare-item" : "item-slot";
-        lootBox.innerHTML = `<div class="${rareClass}"><span>Drop: ${itemObj.nome}</span><span>+${statVal} Atrib</span></div>` + lootBox.innerHTML;
-    }
-
-    function applyEquipmentStats() {
-        // Reseta bônus e recalcula baseado no inventário ativo
-        player.def = 5 + (player.class === "Guerreiro" ? 2 : 0);
-        player.str = player.class === "Guerreiro" ? 18 : 10;
-        player.int = player.class === "Mago" ? 18 : 5;
-        player.agi = player.class === "Arqueiro" ? 18 : 5;
-
-        for(let slot in player.equipment) {
-            let item = player.equipment[slot];
-            if(item) {
-                if(slot === "weapon") player.str += item.stat;
-                if(slot === "helmet") player.def += item.stat;
-                if(slot === "suit") player.def += Math.floor(item.stat * 1.5);
-                if(slot === "boots") player.agi += item.stat;
-                if(slot === "ring") { player.luk += item.stat; player.esq += Math.floor(item.stat * 0.5); }
-            }
-        }
-    }
-
-    // ATUALIZAÇÃO VISUAL REAL DOS DETALHES EQUIPADOS
-    function updateVisualEquipment() {
-        let eq = player.equipment;
-        
-        // Cores mudam de acordo com o nível/raridade do equipamento real
-        if(eq.weapon) {
-            let w = document.getElementById("v-weapon");
-            w.style.backgroundColor = eq.weapon.rare ? "#ff00ff" : "#f1c40f";
-            w.style.border = "1px solid #fff";
-        }
-        if(eq.helmet) {
-            let h = document.getElementById("v-helmet");
-            h.style.backgroundColor = eq.helmet.rare ? "#ff00ff" : "#7f8c8d";
-            h.style.borderBottom = "3px solid #34495e";
-        }
-        if(eq.suit) {
-            document.getElementById("v-suit").style.backgroundColor = eq.suit.rare ? "#ff00ff" : "#e67e22";
-        }
-        if(eq.boots) {
-            document.getElementById("v-boots").style.backgroundColor = eq.boots.rare ? "#ff00ff" : "#8e44ad";
-        }
-    }
-
-    function updateUI() {
-        // Atualiza barras e textos de combate
-        let pctEnemy = Math.max(0, (monster.hp / monster.maxHp) * 100);
-        document.getElementById("enemy-hp-bar").style.width = pctEnemy + "%";
-        document.getElementById("enemy-hp-bar").style.backgroundColor = monster.isBoss ? "#9b59b6" : "#e74c3c";
-
-        document.getElementById("ui-stage").innerText = `Mundo: ${currentStage}`;
-        document.getElementById("ui-monsters-count").innerText = monster.isBoss ? "CHEFE DA FASE!" : `Progressos: ${monstersKilled}/30`;
-        document.getElementById("ui-name-lvl").innerText = `${player.name} (${player.class}) - Lvl ${player.lvl}`;
-        
-        document.getElementById("stats-display").innerHTML = `
-            <b>HP:</b> ${player.hp}/${player.maxHp}<br>
-            <b>XP:</b> ${player.exp}/${player.expNeeded}<br><br>
-            <b>Força (FOR):</b> ${player.str}<br>
-            <b>Defesa (DEF):</b> ${player.def}<br>
-            <b>Inteligência (INT):</b> ${player.int}<br>
-            <b>Agilidade (AGI):</b> ${player.agi}<br>
-            <b>Esquiva (ESQ):</b> ${player.esq}%<br>
-            <b>Sorte (LUK):</b> ${player.luk}%
-        `;
-    }
 </script>
-
 </body>
 </html>
-
