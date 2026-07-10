@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Idle RPG - 16 Bit</title>
+    <title>Super Retro Idle RPG - 16 Bit</title>
     <style>
-        /* Estilo Geral - Visual SNES/Retro */
+        /* Estilo Geral Retro Avançado */
         body {
-            background-color: #111;
+            background-color: #0b0b10;
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
             margin: 0;
@@ -19,185 +19,220 @@
         }
 
         #game-container {
-            width: 600px;
-            background-color: #222;
-            border: 4px solid #fff;
+            width: 620px;
+            background-color: #1c1c24;
+            border: 6px double #fff;
             padding: 15px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            box-shadow: 0 0 25px rgba(0,0,0,0.8);
+            image-rendering: pixelated; /* Garante aspecto nítido de pixel art */
         }
 
         .hidden { display: none !important; }
 
-        /* Tela de Criação */
+        /* Interface de Customização */
         .menu-screen {
             text-align: center;
+            padding: 20px;
         }
-        .setup-group {
-            margin: 15px 0;
-        }
+        .setup-group { margin: 18px 0; }
         select, input, button {
-            background: #333;
+            background: #2a2a3a;
             color: #fff;
-            border: 2px solid #fff;
-            padding: 8px;
+            border: 3px solid #fff;
+            padding: 10px;
             font-family: inherit;
             font-size: 16px;
-            cursor: pointer;
+            font-weight: bold;
+            outline: none;
         }
-        button:hover { background: #555; }
+        button:hover { background: #4a4a6a; background-color: #e74c3c; cursor: pointer;}
 
-        /* Tela de Jogo */
-        /* Cenário estilo Super Mario (Fixo no centro, monstros andam) */
+        /* Canvas de Ambientação SNES com Parallax */
         #stage-canvas {
             width: 100%;
-            height: 200px;
-            background: linear-gradient(to bottom, #5c94fc 0%, #5c94fc 70%, #00a800 70%, #00a800 100%);
-            border: 2px solid #fff;
+            height: 240px;
+            background: linear-gradient(to bottom, #5c94fc 0%, #b8f8f8 60%, #f8b800 60%, #f8b800 62%, #00a800 62%, #008000 100%);
+            border: 3px solid #fff;
             position: relative;
             overflow: hidden;
+            box-shadow: inset 0 -10px 0 rgba(0,0,0,0.2);
         }
 
-        #player-sprite {
-            width: 32px;
-            height: 48px;
-            background-color: #ffcc99; /* Cor base da pele */
-            position: absolute;
-            bottom: 30px;
-            left: 284px; /* Centro exato do Canvas de 600px (600/2 - 16) */
-            border-radius: 4px;
-            transition: transform 0.1s;
+        /* Camadas de Parallax Decorativas */
+        .mountain-back {
+            position: absolute; bottom: 90px; width: 200px; height: 80px;
+            background: #008000; clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            opacity: 0.4;
+        }
+        .cloud {
+            position: absolute; top: 30px; width: 60px; height: 20px;
+            background: #fff; border-radius: 10px; opacity: 0.8;
         }
 
-        #player-hair {
-            width: 32px;
-            height: 16px;
-            background-color: #ff0000; /* Cor base do cabelo */
-            position: absolute;
-            top: -12px;
-            left: 0;
+        /* COMPOSIÇÃO DO PERSONAGEM (Camadas de Equipamento) */
+        #player-anchor {
+            width: 48px; height: 70px;
+            position: absolute; bottom: 38px; left: 286px;
+            transition: transform 0.05s ease-in-out;
         }
+        .body-layer { position: absolute; width: 100%; height: 100%; }
+        
+        .p-skin { background-color: #ffcc99; width: 32px; height: 45px; bottom: 10px; left: 8px; position: absolute; border-radius: 4px; }
+        .p-eyes { position: absolute; top: 10px; left: 22px; width: 4px; height: 6px; background: #000; box-shadow: 4px 0 #000; }
+        .p-hair { position: absolute; top: -6px; left: 6px; width: 34px; height: 16px; border-radius: 4px; }
+        
+        /* Equipamentos Visuais dinâmicos */
+        .p-suit { position: absolute; bottom: 10px; left: 8px; width: 32px; height: 28px; background: transparent; }
+        .p-helmet { position: absolute; top: -8px; left: 4px; width: 38px; height: 20px; background: transparent; border-radius: 4px; }
+        .p-boots { position: absolute; bottom: 0px; left: 6px; width: 36px; height: 12px; background: transparent; }
+        .p-weapon { position: absolute; top: 15px; left: 36px; width: 10px; height: 40px; background: transparent; transform-origin: bottom center; }
 
-        #monster-sprite {
-            width: 32px;
-            height: 32px;
-            background-color: #990000;
-            position: absolute;
-            bottom: 30px;
-            right: -40px;
+        /* COMPOSIÇÃO DO MONSTRO */
+        #monster-anchor {
+            width: 50px; height: 50px;
+            position: absolute; bottom: 38px; right: -60px;
         }
+        .m-body { width: 100%; height: 100%; background: #990000; border-radius: 50% 50% 0 0; position: relative; }
+        .m-eyes { position: absolute; top: 12px; left: 8px; width: 6px; height: 6px; background: #fff; box-shadow: 20px 0 #fff; }
+        .m-pupils { position: absolute; top: 14px; left: 10px; width: 2px; height: 2px; background: #000; box-shadow: 20px 0 #000; }
+        .m-mouth { position: absolute; bottom: 12px; left: 15px; width: 20px; height: 4px; background: #000; }
 
-        /* Interface Inferior (Status e Inventário) */
+        /* Estilo customizado de Chefe */
+        .boss-scale { transform: scale(1.7); filter: hue-rotate(140deg); bottom: 50px !important; }
+
+        /* Interface de Dados Inferior */
         .game-ui {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 15px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;
         }
         .panel {
-            border: 2px solid #fff;
-            padding: 10px;
-            background: #111;
-            height: 180px;
-            overflow-y: auto;
+            border: 3px solid #fff; padding: 12px; background: #0f0f14;
+            height: 220px; overflow-y: auto; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
         }
+        h3 { margin-top: 0; border-bottom: 2px dashed #fff; padding-bottom: 4px; color: #f1c40f; }
         .item-slot {
-            background: #333;
-            border: 1px solid #777;
-            padding: 3px;
-            margin: 4px 0;
-            font-size: 12px;
+            background: #1c1c24; border: 2px solid #3a3a4a; padding: 6px;
+            margin: 5px 0; font-size: 13px; display: flex; justify-content: space-between;
         }
-        .rare-item { color: #ff00ff; font-weight: bold; } /* Rosa/Roxo para Raros */
+        .rare-item { color: #ff00ff; border-color: #ff00ff; font-weight: bold; background: #2a002a; }
+        
+        /* Contadores superiores */
+        .top-bar { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 6px; }
+        .progress-container { background: #333; width: 100%; height: 10px; border: 2px solid #fff; margin-bottom: 10px; }
+        .progress-bar { background: #e74c3c; height: 100%; width: 100%; transition: width 0.1s; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <!-- TELA INICIAL / CUSTOMIZAÇÃO -->
+    <!-- CRIAÇÃO DE PERSONAGEM -->
     <div id="creation-screen" class="menu-screen">
-        <h2>NINTENDO IDLE RPG</h2>
+        <h2>SUPER NINTENDO IDLE RPG</h2>
         <div class="setup-group">
-            <label>Nome: </label>
-            <input type="text" id="char-name" value="Heroi">
+            <label>Nome do Herói: </label>
+            <input type="text" id="char-name" value="Mario" maxlength="12">
         </div>
         <div class="setup-group">
-            <label>Classe: </label>
+            <label>Classe Inicial: </label>
             <select id="char-class">
-                <option value="Guerreiro">Guerreiro (+Força)</option>
-                <option value="Mago">Mago (+Inteligência)</option>
-                <option value="Arqueiro">Arqueiro (+Agilidade)</option>
+                <option value="Guerreiro">Guerreiro (+FORÇA)</option>
+                <option value="Mago">Mago (+INTELIGÊNCIA)</option>
+                <option value="Arqueiro">Arqueiro (+AGILIDADE)</option>
             </select>
         </div>
         <div class="setup-group">
             <label>Cor do Cabelo: </label>
             <select id="char-hair">
-                <option value="#ff0000">Vermelho</option>
-                <option value="#0000ff">Azul</option>
+                <option value="#d35400">Ruivo</option>
+                <option value="#2c3e50">Preto</option>
                 <option value="#f1c40f">Loiro</option>
-                <option value="#ffffff">Branco</option>
+                <option value="#95a5a6">Prateado</option>
             </select>
         </div>
-        <button onclick="startGame()">INICIAR JOGO</button>
+        <button onclick="startGame()">CONSTRUIR JORNADA</button>
     </div>
 
-    <!-- TELA DO JOGO ATIVO -->
+    <!-- TELA PRINCIPAL DO JOGO -->
     <div id="game-screen" class="hidden">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <span id="ui-name-lvl">Heroi - Lvl 1</span>
-            <span id="ui-stage" style="color: #f1c40f; font-weight: bold;">Fase: 1</span>
+        <div class="top-bar">
+            <span id="ui-name-lvl">Nome - Lvl 1</span>
+            <span id="ui-monsters-count" style="color: #95a5a6;">Progresso: 1/30</span>
+            <span id="ui-stage" style="color: #f1c40f;">Mundo: 1</span>
         </div>
         
-        <!-- Área Visual do Combate -->
+        <!-- Barra de Vida do Inimigo Atual -->
+        <div class="progress-container"><div id="enemy-hp-bar" class="progress-bar"></div></div>
+
+        <!-- Área Gráfica com Parallax -->
         <div id="stage-canvas">
-            <div id="player-sprite">
-                <div id="player-hair"></div>
+            <div class="mountain-back" style="left: 50px;"></div>
+            <div class="mountain-back" style="left: 350px;"></div>
+            <div class="cloud" style="left: 80px; top: 20px;"></div>
+            <div class="cloud" style="left: 400px; top: 40px;"></div>
+
+            <!-- Camadas Visuais do Herói Central -->
+            <div id="player-anchor">
+                <div class="p-skin">
+                    <div class="p-eyes"></div>
+                </div>
+                <div id="v-hair" class="p-hair"></div>
+                <div id="v-suit" class="p-suit"></div>
+                <div id="v-helmet" class="p-helmet"></div>
+                <div id="v-boots" class="p-boots"></div>
+                <div id="v-weapon" class="p-weapon"></div>
             </div>
-            <div id="monster-sprite"></div>
+
+            <!-- Camadas do Monstro -->
+            <div id="monster-anchor">
+                <div class="m-body" id="v-monster-body">
+                    <div class="m-eyes"></div>
+                    <div class="m-pupils"></div>
+                    <div class="m-mouth"></div>
+                </div>
+            </div>
         </div>
 
-        <!-- Painéis de Dados -->
+        <!-- UI e Equipamentos -->
         <div class="game-ui">
             <div class="panel">
-                <h3>Atributos</h3>
-                <div id="stats-display">Carregando...</div>
+                <h3>Atributos Atuais</h3>
+                <div id="stats-display">Processando atributos...</div>
             </div>
             <div class="panel">
-                <h3>Últimos Loots</h3>
-                <div id="loot-display">Nenhum item dropado ainda.</div>
+                <h3>Equipamentos e Loot</h3>
+                <div id="loot-display">Caçando monstros iniciais...</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // ESTADO GLOBAL DO JOGO
+    // ESTADO E ATRIBUTOS COMPLETOS
     let player = {
         name: "", class: "", lvl: 1, exp: 0, expNeeded: 100,
-        hp: 100, maxHp: 100, str: 10, def: 5, int: 5, agi: 5, luk: 5,
-        eq_weapon: "Espada Quebrada"
+        hp: 100, maxHp: 100, str: 10, def: 5, int: 5, agi: 5, luk: 5, esq: 5,
+        equipment: { weapon: null, helmet: null, suit: null, boots: null, ring: null }
     };
 
     let currentStage = 1;
-    let monster = null;
-    let monsterPos = 600; // Começa fora da tela à direita
+    let monstersKilled = 0; 
+    const BOSS_THRESHOLD = 30; // 30 combates para invocar o Chefe
 
-    // INICIAR JOGO
+    let monster = null;
+    let monsterPos = 650;
+    let parallaxOffset = 0;
+
     function startGame() {
         player.name = document.getElementById("char-name").value;
         player.class = document.getElementById("char-class").value;
         let hairColor = document.getElementById("char-hair").value;
 
-        // Aplica customização visual básica
-        document.getElementById("player-hair").style.backgroundColor = hairColor;
-        document.getElementById("ui-name-lvl").innerText = `${player.name} (${player.class}) - Lvl ${player.lvl}`;
+        document.getElementById("v-hair").style.backgroundColor = hairColor;
 
-        // Ajusta status inicial baseado na classe
-        if(player.class === "Guerreiro") { player.str += 5; player.maxHp += 20; }
-        if(player.class === "Mago") player.int += 5;
-        if(player.class === "Arqueiro") player.agi += 5;
+        if(player.class === "Guerreiro") { player.str += 8; player.maxHp += 30; }
+        if(player.class === "Mago") { player.int += 8; player.luk += 3; }
+        if(player.class === "Arqueiro") { player.agi += 8; player.esq += 5; }
         player.hp = player.maxHp;
 
-        // Troca de tela
         document.getElementById("creation-screen").classList.add("hidden");
         document.getElementById("game-screen").classList.remove("hidden");
 
@@ -205,46 +240,74 @@
         gameLoop();
     }
 
-    // SPAWN DE MONSTROS (Escala matemática infinita)
     function spawnMonster() {
-        monsterPos = 600; // Reseta posição na direita
-        // A matemática abaixo faz os monstros escalarem infinitamente baseados no nível da fase
+        monsterPos = 650;
+        let isBoss = (monstersKilled >= BOSS_THRESHOLD - 1);
+        
+        let multiplier = isBoss ? currentStage * 4.5 : currentStage;
+        
         monster = {
+            isBoss: isBoss,
             lvl: currentStage,
-            hp: Math.floor(20 * Math.pow(1.2, currentStage)),
-            maxHp: Math.floor(20 * Math.pow(1.2, currentStage)),
-            atk: Math.floor(4 * Math.pow(1.15, currentStage)),
-            def: Math.floor(1 * Math.pow(1.1, currentStage))
+            hp: Math.floor(25 * Math.pow(1.22, multiplier)),
+            maxHp: Math.floor(25 * Math.pow(1.22, multiplier)),
+            atk: Math.floor(5 * Math.pow(1.16, multiplier)),
+            def: Math.floor(1 * Math.pow(1.12, multiplier))
         };
+
+        // Renderização customizada para Chefes no DOM
+        let mAnchor = document.getElementById("monster-anchor");
+        let mBody = document.getElementById("v-monster-body");
+        if(isBoss) {
+            mAnchor.classList.add("boss-scale");
+            mBody.style.backgroundColor = "#4a0082"; // Roxo Escuro de Boss
+        } else {
+            mAnchor.classList.remove("boss-scale");
+            mBody.style.backgroundColor = `hsl(${(currentStage * 45) % 360}, 85%, 35%)`; // Cor varia por mundo
+        }
     }
 
-    // GAME LOOP PRINCIPAL (Roda a cada quadro)
     function gameLoop() {
-        let monsterEl = document.getElementById("monster-sprite");
-        let playerEl = document.getElementById("player-sprite");
+        let monsterEl = document.getElementById("monster-anchor");
+        let playerEl = document.getElementById("player-anchor");
 
-        // 1. Movimento: O monstro se mexe em direção ao jogador no centro
-        if (monsterPos > 316) { // 316 é a colisão com o jogador que está em 284 + 32 de largura
-            monsterPos -= 3 + (player.agi * 0.1); // Velocidade aumenta de leve com a agilidade do player
+        // Efeito Parallax nos fundos simulando movimento real de corrida
+        parallaxOffset -= 0.8;
+        let mountains = document.querySelectorAll('.mountain-back');
+        mountains.forEach((m, idx) => {
+            let pos = (idx * 300 + parallaxOffset) % 700;
+            if(pos < -200) pos += 800;
+            m.style.left = pos + "px";
+        });
+
+        // Movimentação do Monstro até o Herói
+        if (monsterPos > 324) {
+            monsterPos -= 2.5 + (player.agi * 0.08);
             monsterEl.style.left = monsterPos + "px";
         } else {
-            // 2. Colisão / Combate (Troca de golpes rápida)
-            // Player ataca monstro
-            let damageToMonster = Math.max(1, (player.str + (player.class === "Mago" ? player.int : 0)) - monster.def);
+            // Colisão de Turno de Dano Fino
+            // Turno do Jogador (Dano baseado em Classe + Força/Inteligência)
+            let baseDmg = player.class === "Mago" ? player.int : player.str;
+            if (Math.random() * 100 < player.luk) baseDmg *= 2; // Crítico por Sorte
+            
+            let damageToMonster = Math.max(1, baseDmg - monster.def);
             monster.hp -= damageToMonster;
             
-            // Feedback visual de ataque (pequeno tranco)
-            playerEl.style.transform = "translateX(10px)";
-            setTimeout(() => { playerEl.style.transform = "translateX(0px)"; }, 50);
+            playerEl.style.transform = "scale(1.1) translateX(8px)";
+            setTimeout(() => { playerEl.style.transform = "scale(1) translateX(0px)"; }, 40);
 
             if (monster.hp <= 0) {
                 processVictory();
                 spawnMonster();
             } else {
-                // Monstro revida se sobreviver
-                let damageToPlayer = Math.max(1, monster.atk - player.def);
-                player.hp -= damageToPlayer;
-
+                // Turno do Inimigo com Checagem de Esquiva
+                if (Math.random() * 100 > player.esq) {
+                    let damageToPlayer = Math.max(1, monster.atk - player.def);
+                    player.hp -= damageToPlayer;
+                    monsterEl.style.transform = "translateX(-8px)";
+                    setTimeout(() => { monsterEl.style.transform = "translateX(0px)"; }, 40);
+                }
+                
                 if (player.hp <= 0) {
                     processDefeat();
                     spawnMonster();
@@ -253,77 +316,141 @@
         }
 
         updateUI();
-        requestAnimationFrame(gameLoop); // Mantém o loop ativo e fluido
+        requestAnimationFrame(gameLoop);
     }
 
-    // PROCESSAR VITÓRIA E GERAR LOOT
     function processVictory() {
-        // Ganho de XP e avanço de fase
-        player.exp += 20 * currentStage;
+        player.exp += 15 * currentStage;
         if(player.exp >= player.expNeeded) {
             player.lvl++;
             player.exp = 0;
-            player.expNeeded = Math.floor(player.expNeeded * 1.5);
-            player.maxHp += 10;
-            player.str += 2;
-            player.def += 1;
+            player.expNeeded = Math.floor(player.expNeeded * 1.45);
+            player.maxHp += 12;
+            player.str += 2; player.def += 1; player.int += 1; player.agi += 1;
             player.hp = player.maxHp;
         }
 
-        // Drop de Itens (Chance base + 0.01% para Raros)
-        let rollRaro = Math.random(); // Gera número entre 0 e 1
-        let isRare = rollRaro <= 0.0001; // 0.01% de chance
-        
-        generateLoot(isRare);
-
-        currentStage++; // Avança de fase infinitamente
+        // Se venceu o Chefe (Monstro número 30)
+        if(monster.isBoss) {
+            let rollRaro = Math.random();
+            let isRare = rollRaro <= 0.0001; // Sorte fina de 0,01%
+            generateLoot(isRare);
+            
+            currentStage++; // Troca de mundo global
+            monstersKilled = 0; // Reseta lista para o próximo chefe
+        } else {
+            monstersKilled++;
+        }
     }
 
-    // SE MORRER: REGRA DE OURO (Retorna 1 nível)
     function processDefeat() {
         if (currentStage > 1) {
-            currentStage--; // Retorna para a fase anterior para farmar itens melhores
+            currentStage--; 
         }
-        player.hp = player.maxHp; // Cura o herói para tentar novamente
+        monstersKilled = 0; // Reinicia a contagem de monstros para segurança do farm
+        player.hp = player.maxHp;
     }
 
-    // GERADOR DE EQUIPAMENTOS
     function generateLoot(isRare) {
-        const tipos = ["Espada", "Capacete", "Bota", "Traje", "Anel"];
-        const tipo = tipos[Math.floor(Math.random() * tipos.length)];
-        let powerMultiplier = currentStage * (isRare ? 5 : 1); // Itens raros são 5x mais fortes
+        const slots = ["weapon", "helmet", "suit", "boots", "ring"];
+        const slot = slots[Math.floor(Math.random() * slots.length)];
         
-        let statusAdicional = Math.floor(1 + (Math.random() * powerMultiplier));
-        let itemNome = `${tipo} de Lvl ${currentStage} ${isRare ? "[RARO]" : ""}`;
+        let power = currentStage * (isRare ? 6 : 1);
+        let statVal = Math.floor(1 + (Math.random() * power));
+        
+        const nomes = {
+            weapon: ["Espada Nobre", "Cajado Arcano", "Arco Longo"],
+            helmet: ["Capacete de Ferro", "Chapéu de Feiticeiro", "Diadema Ágil"],
+            suit: ["Cota de Malha", "Manto Elemental", "Traje de Couro"],
+            boots: ["Botas Pesadas", "Sapatilhas Leves", "Botas de Viagem"],
+            ring: ["Anel de Rubi", "Anel de Safira", "Selo da Sorte"]
+        };
 
-        // Equipamento Automático se for melhor (Simulação simples para o Core)
-        if (tipo === "Espada") {
-            player.str += statusAdicional;
-            player.eq_weapon = itemNome;
-        } else {
-            player.def += statusAdicional; // Outros itens dão defesa nesta versão base
+        let nomeFinal = nomes[slot][Math.floor(Math.random() * nomes[slot].length)];
+        let itemObj = {
+            nome: `${nomeFinal} Lvl.${currentStage} ${isRare ? "[RARO]" : ""}`,
+            slot: slot, stat: statVal, rare: isRare
+        };
+
+        // Equipamento Automático Superior
+        let currentEquip = player.equipment[slot];
+        if(!currentEquip || statVal > currentEquip.stat) {
+            player.equipment[slot] = itemObj;
+            applyEquipmentStats();
+            updateVisualEquipment();
         }
 
-        // Interface do Histórico de Loot
+        // Display Histórico
         let lootBox = document.getElementById("loot-display");
-        let itemClass = isRare ? "item-slot rare-item" : "item-slot";
-        lootBox.innerHTML = `<div class="${itemClass}">Ganhou: ${itemNome} (+${statusAdicional} Status)</div>` + lootBox.innerHTML;
+        let rareClass = isRare ? "item-slot rare-item" : "item-slot";
+        lootBox.innerHTML = `<div class="${rareClass}"><span>Drop: ${itemObj.nome}</span><span>+${statVal} Atrib</span></div>` + lootBox.innerHTML;
     }
 
-    // ATUALIZAR INTERFACE TEXTUAL
+    function applyEquipmentStats() {
+        // Reseta bônus e recalcula baseado no inventário ativo
+        player.def = 5 + (player.class === "Guerreiro" ? 2 : 0);
+        player.str = player.class === "Guerreiro" ? 18 : 10;
+        player.int = player.class === "Mago" ? 18 : 5;
+        player.agi = player.class === "Arqueiro" ? 18 : 5;
+
+        for(let slot in player.equipment) {
+            let item = player.equipment[slot];
+            if(item) {
+                if(slot === "weapon") player.str += item.stat;
+                if(slot === "helmet") player.def += item.stat;
+                if(slot === "suit") player.def += Math.floor(item.stat * 1.5);
+                if(slot === "boots") player.agi += item.stat;
+                if(slot === "ring") { player.luk += item.stat; player.esq += Math.floor(item.stat * 0.5); }
+            }
+        }
+    }
+
+    // ATUALIZAÇÃO VISUAL REAL DOS DETALHES EQUIPADOS
+    function updateVisualEquipment() {
+        let eq = player.equipment;
+        
+        // Cores mudam de acordo com o nível/raridade do equipamento real
+        if(eq.weapon) {
+            let w = document.getElementById("v-weapon");
+            w.style.backgroundColor = eq.weapon.rare ? "#ff00ff" : "#f1c40f";
+            w.style.border = "1px solid #fff";
+        }
+        if(eq.helmet) {
+            let h = document.getElementById("v-helmet");
+            h.style.backgroundColor = eq.helmet.rare ? "#ff00ff" : "#7f8c8d";
+            h.style.borderBottom = "3px solid #34495e";
+        }
+        if(eq.suit) {
+            document.getElementById("v-suit").style.backgroundColor = eq.suit.rare ? "#ff00ff" : "#e67e22";
+        }
+        if(eq.boots) {
+            document.getElementById("v-boots").style.backgroundColor = eq.boots.rare ? "#ff00ff" : "#8e44ad";
+        }
+    }
+
     function updateUI() {
-        document.getElementById("ui-stage").innerText = `Fase: ${currentStage}`;
+        // Atualiza barras e textos de combate
+        let pctEnemy = Math.max(0, (monster.hp / monster.maxHp) * 100);
+        document.getElementById("enemy-hp-bar").style.width = pctEnemy + "%";
+        document.getElementById("enemy-hp-bar").style.backgroundColor = monster.isBoss ? "#9b59b6" : "#e74c3c";
+
+        document.getElementById("ui-stage").innerText = `Mundo: ${currentStage}`;
+        document.getElementById("ui-monsters-count").innerText = monster.isBoss ? "CHEFE DA FASE!" : `Progressos: ${monstersKilled}/30`;
         document.getElementById("ui-name-lvl").innerText = `${player.name} (${player.class}) - Lvl ${player.lvl}`;
         
         document.getElementById("stats-display").innerHTML = `
             <b>HP:</b> ${player.hp}/${player.maxHp}<br>
-            <b>XP:</b> ${player.exp}/${player.expNeeded}<br>
-            <b>Força:</b> ${player.str}<br>
-            <b>Defesa:</b> ${player.def}<br>
-            <b>Arma Atual:</b> <span style="color:#2ecc71">${player.eq_weapon}</span>
+            <b>XP:</b> ${player.exp}/${player.expNeeded}<br><br>
+            <b>Força (FOR):</b> ${player.str}<br>
+            <b>Defesa (DEF):</b> ${player.def}<br>
+            <b>Inteligência (INT):</b> ${player.int}<br>
+            <b>Agilidade (AGI):</b> ${player.agi}<br>
+            <b>Esquiva (ESQ):</b> ${player.esq}%<br>
+            <b>Sorte (LUK):</b> ${player.luk}%
         `;
     }
 </script>
 
 </body>
 </html>
+
