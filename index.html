@@ -56,7 +56,19 @@
         .p-arm { width: 10px; height: 22px; background: var(--skin); position: absolute; top: 4px; right: -6px; transform-origin: top center; border: 2px solid #000; z-index: 5; border-radius: 6px; }
         .p-weapon { position: absolute; bottom: -12px; width: 6px; height: 32px; background: #f1f2f6; border: 2px solid #000; transform-origin: top center; border-radius: 3px; }
 
-        #monster { position: absolute; bottom: 6%; right: 30px; width: 75px; height: 75px; z-index: 5; transition: transform 0.1s; filter: drop-shadow(0 6px 4px rgba(0,0,0,0.5)); }
+        #monster { 
+            position: absolute; 
+            bottom: 6%; 
+            right: 30px; 
+            width: 75px; 
+            height: 75px; 
+            z-index: 5; 
+            transition: transform 0.1s; 
+            filter: drop-shadow(0 6px 4px rgba(0,0,0,0.5)); 
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: bottom center;
+        }
         .m-body { 
             width: 100%; height: 100%; background: #2f3542; border: 3px solid #000; 
             border-radius: 24px; position: relative; overflow: hidden;
@@ -216,9 +228,13 @@
     };
 
     const assets = {
-        playerGif: "https://i.postimg.cc/mD363f8m/warrior-idle.gif", 
-        // Atualizado com novo asset
-        backgroundLandscape: "https://latin-salmon-sldip5ie.edgeone.dev/7d095ae81e099c20e7db776ea1a6e2ea.gif"
+        playerGif: "https://visual-aquamarine-74uhjc6d.edgeone.dev/7d4920500a20bf03aa226c3d206999a9.gif", 
+        backgroundLandscape: "https://latin-salmon-sldip5ie.edgeone.dev/7d095ae81e099c20e7db776ea1a6e2ea.gif",
+        normalMonsters: [
+            "https://working-blush-wvzi37my.edgeone.dev/joe-dupras-revenant.gif",
+            "https://kommodo.ai/i/w0XzNFb9471bzv4bpBJK"
+        ],
+        bossMonster: "https://kommodo.ai/i/L4rBRYTZ3QxvrxM6IiT0"
     };
 
     function selClass(c) {
@@ -276,16 +292,35 @@
 
     function spawnMonster() {
         const isBoss = (game.kills >= 10);
+        
+        // Ajuste de dificuldade: Se for o primeiro level (stage = 1), reduz os atributos do monstro pela metade (fácil). Do estágio 2 em diante, mantém a fórmula normal.
+        const difficultyMultiplier = (game.stage === 1) ? 0.5 : 1.0;
+        
+        const baseHp = (50 + (game.stage * 30)) * (isBoss ? 5 : 1) * difficultyMultiplier;
+        const baseAtk = (5 + (game.stage * 2)) * difficultyMultiplier;
+        const baseDef = (2 + (game.stage * 1)) * difficultyMultiplier;
+
         game.monster = {
             isBoss: isBoss,
-            maxHp: (50 + (game.stage * 30)) * (isBoss ? 5 : 1),
-            hp: (50 + (game.stage * 30)) * (isBoss ? 5 : 1),
-            atk: 5 + (game.stage * 2),
-            def: 2 + (game.stage * 1)
+            maxHp: Math.max(10, Math.floor(baseHp)),
+            hp: Math.max(10, Math.floor(baseHp)),
+            atk: Math.max(1, Math.floor(baseAtk)),
+            def: Math.max(0, Math.floor(baseDef))
         };
         
+        const mEl = document.getElementById('monster');
         const mBody = document.getElementById('m-body-color');
-        mBody.style.background = isBoss ? 'linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%)' : 'linear-gradient(135deg, #2c3e50 0%, #1a252f 100%)';
+        
+        if (isBoss) {
+            mEl.style.backgroundImage = `url('${assets.bossMonster}')`;
+            mBody.style.display = 'none';
+        } else {
+            // Escolhe aleatoriamente um dos dois monstros normais fornecidos
+            const randomNormalImg = assets.normalMonsters[Math.floor(Math.random() * assets.normalMonsters.length)];
+            mEl.style.backgroundImage = `url('${randomNormalImg}')`;
+            mBody.style.display = 'none';
+        }
+        
         updateUI();
     }
 
@@ -359,6 +394,28 @@
         }, 16);
     }
 
+    function createLoot() {
+        const slots = ['Espada', 'Elmo', 'Armadura', 'Botas', 'Anel'];
+        const stats = ['str', 'def', 'luk', 'agi', 'eva', 'int'];
+        const isRare = Math.random() < 0.25;
+
+        const item = {
+            id: Date.now(),
+            slot: slots[Math.floor(Math.random() * slots.length)],
+            mainStat: stats[Math.floor(Math.random() * stats.length)],
+            val: Math.floor(game.stage * (isRare ? 12 : 3) + Math.random() * 5),
+            rare: isRare
+        };
+
+        player.inventory.unshift(item);
+        if(player.inventory.length > 5) player.inventory.pop();
+
+        if(!player.equipped[item.slot] || item.val > player.equipped[item.slot].val) {
+            player.equipped[item.slot] = item;
+        }
+        updateUI();
+    }
+
     function applyDamage(stats) {
         let crit = Math.random() * 100 < stats.luk;
         let dmg = Math.max(1, (stats.str + stats.int) - (game.monster.def / 2));
@@ -386,28 +443,6 @@
                 game.kills++;
             }
             spawnMonster();
-        }
-        updateUI();
-    }
-
-    function createLoot() {
-        const slots = ['Espada', 'Elmo', 'Armadura', 'Botas', 'Anel'];
-        const stats = ['str', 'def', 'luk', 'agi', 'eva', 'int'];
-        const isRare = Math.random() < 0.25;
-
-        const item = {
-            id: Date.now(),
-            slot: slots[Math.floor(Math.random() * slots.length)],
-            mainStat: stats[Math.floor(Math.random() * stats.length)],
-            val: Math.floor(game.stage * (isRare ? 12 : 3) + Math.random() * 5),
-            rare: isRare
-        };
-
-        player.inventory.unshift(item);
-        if(player.inventory.length > 5) player.inventory.pop();
-
-        if(!player.equipped[item.slot] || item.val > player.equipped[item.slot].val) {
-            player.equipped[item.slot] = item;
         }
         updateUI();
     }
@@ -465,4 +500,3 @@
 </script>
 </body>
 </html>
-
