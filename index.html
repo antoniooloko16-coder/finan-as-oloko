@@ -6,7 +6,9 @@
     <title>SHADOW LEGENDS: INFINITE</title>
     <style>
         :root {
-            --raro: #ffcc00; --comum: #a4b0be; --bg: #05070a;
+            --raro: #ffcc00; 
+            --epic: #a55eea; /* Cor Roxa para os itens Épicos */
+            --comum: #a4b0be; --bg: #05070a;
             --panel: linear-gradient(180deg, #161a26 0%, #0a0d14 100%); 
             --accent: #ff4757;
             --hp-player: linear-gradient(90deg, #10ac84, #1dd1a1);
@@ -25,7 +27,6 @@
 
         #game-arena {
             position: relative; width: 100%; height: 42vh;
-            /* Atualizado com novo asset */
             background-image: url('https://latin-salmon-sldip5ie.edgeone.dev/7d095ae81e099c20e7db776ea1a6e2ea.gif'), linear-gradient(to bottom, #111, #222);
             background-size: cover;
             background-position: center bottom;
@@ -98,6 +99,7 @@
             padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;
         }
         .item-card.rare { border-left: 4px solid var(--raro); background: linear-gradient(90deg, rgba(255,204,0,0.04) 0%, rgba(0,0,0,0) 100%); }
+        .item-card.epic { border-left: 4px solid var(--epic); background: linear-gradient(90deg, rgba(165,94,234,0.06) 0%, rgba(0,0,0,0) 100%); }
         .equipped-badge { background: #1dd1a1; color: #000; font-size: 8px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
 
         .dmg-popup { 
@@ -221,22 +223,24 @@
         inventory: []
     };
 
-    let game = { stage: 1, kills: 0, isAttacking: false, monster: null };
+    let game = { 
+        stage: 1, kills: 0, isAttacking: false, monster: null, 
+        lastAttackTime: 0, attackCounter: 0 
+    };
 
     const classColors = {
         'Guerreiro': '#57606f', 'Arqueiro': '#2ed573', 'Mago': '#574b90',
         'Assassino': '#2f3542', 'Paladino': '#f1f2f6', 'Druida': '#10ac84'
     };
 
-    // Corrigido links diretos das imagens que estavam invisíveis
     const assets = {
         playerGif: "https://visual-aquamarine-74uhjc6d.edgeone.dev/7d4920500a20bf03aa226c3d206999a9.gif", 
         backgroundLandscape: "https://latin-salmon-sldip5ie.edgeone.dev/7d095ae81e099c20e7db776ea1a6e2ea.gif",
         normalMonsters: [
             "https://working-blush-wvzi37my.edgeone.dev/joe-dupras-revenant.gif",
-            "https://i.ibb.co/S7c8BKMG/image.png" // Monstro 2 direto
+            "https://i.ibb.co/S7c8BKMG/image.png"
         ],
-        bossMonster: "https://i.ibb.co/3y8WY1B9/image.png" // Chefe direto
+        bossMonster: "https://i.ibb.co/3y8WY1B9/image.png"
     };
 
     function selClass(c) {
@@ -281,6 +285,9 @@
         if(c === "Paladino") { player.def += 12; player.str += 3; player.range = "melee"; }
         if(c === "Druida") { player.int += 5; player.def += 5; player.range = "magic"; }
 
+        const initialStats = calcStats();
+        player.hp = initialStats.maxHp;
+
         document.getElementById('screen-setup').style.display = 'none';
         document.getElementById('game-main').style.display = 'flex';
         document.getElementById('p-class-ui').innerText = player.class;
@@ -289,12 +296,13 @@
         
         updateVisual();
         spawnMonster();
+        
+        game.lastAttackTime = performance.now();
         engine();
     }
 
     function spawnMonster() {
         const isBoss = (game.kills >= 10);
-        
         const difficultyMultiplier = (game.stage === 1) ? 0.5 : 1.0;
         
         const baseHp = (50 + (game.stage * 30)) * (isBoss ? 5 : 1) * difficultyMultiplier;
@@ -314,14 +322,12 @@
         
         if (isBoss) {
             mEl.style.backgroundImage = `url('${assets.bossMonster}')`;
-            // Ajusta o tamanho do contêiner para o chefe ficar maior e imponente
             mEl.style.width = '100px';
             mEl.style.height = '100px';
             mBody.style.display = 'none';
         } else {
             const randomNormalImg = assets.normalMonsters[Math.floor(Math.random() * assets.normalMonsters.length)];
             mEl.style.backgroundImage = `url('${randomNormalImg}')`;
-            // Retorna ao tamanho padrão para monstros normais
             mEl.style.width = '75px';
             mEl.style.height = '75px';
             mBody.style.display = 'none';
@@ -331,15 +337,34 @@
     }
 
     function engine() {
-        if(!game.isAttacking) combatCycle();
+        const currentTime = performance.now();
+        const stats = calcStats();
+        
+        // Cooldown base calculado por AGI
+        let attackCooldown = 1400 - (stats.agi * 12);
+
+        // REQUISITO: ITEM ÉPICO - Efeito "Duas vezes mais rápido" (Sem travas de velocidade mínima)
+        if (stats.hasEpicBonus === "speed") {
+            attackCooldown = attackCooldown / 2;
+        }
+
+        // Sem travas artificiais de limite inferior (pode reduzir abaixo de 200ms se focar em muita AGI)
+        if (attackCooldown < 50) attackCooldown = 50; 
+
+        if (!game.isAttacking && (currentTime - game.lastAttackTime >= attackCooldown)) {
+            combatCycle(stats);
+            game.lastAttackTime = currentTime;
+        }
         requestAnimationFrame(engine);
     }
 
-    function combatCycle() {
+    function combatCycle(stats) {
         game.isAttacking = true;
-        const stats = calcStats();
         const pEl = document.getElementById('player');
         const arm = document.getElementById('main-arm');
+
+        // Incrementa contador de golpes aplicados
+        game.attackCounter++;
 
         if(player.range === "melee") {
             const containerWidth = document.getElementById('game-arena').clientWidth;
@@ -347,7 +372,7 @@
             setTimeout(() => { 
                 if(player.class !== 'Guerreiro') arm.style.transform = "rotate(-90deg)";
                 applyDamage(stats); 
-            }, 180);
+            }, 120);
         } else {
             if(player.class !== 'Guerreiro') arm.style.transform = "rotate(-45deg)";
             createProjectile(player.range, stats);
@@ -369,14 +394,13 @@
                         showDmg("MISS", 'player', true);
                     }
                     checkGameState(stats);
-                }, 220);
+                }, 150);
             } else {
                 checkGameState(stats);
             }
             
-            let speed = Math.max(400, 1400 - (stats.agi * 10));
-            setTimeout(() => { game.isAttacking = false; }, speed);
-        }, 450);
+            game.isAttacking = false;
+        }, 300);
     }
 
     function createProjectile(type, stats) {
@@ -390,7 +414,7 @@
         let pos = 90;
         const containerWidth = document.getElementById('game-arena').clientWidth;
         let id = setInterval(() => {
-            pos += 14;
+            pos += 16;
             proj.style.left = pos + "px";
             if(pos >= containerWidth - 100) {
                 clearInterval(id);
@@ -402,33 +426,83 @@
 
     function createLoot() {
         const slots = ['Espada', 'Elmo', 'Armadura', 'Botas', 'Anel'];
-        const stats = ['str', 'def', 'luk', 'agi', 'eva', 'int'];
-        const isRare = Math.random() < 0.25;
+        const allStats = ['str', 'def', 'luk', 'agi', 'eva', 'int'];
+        
+        // Geração probabilística refinada baseada no feedback
+        const roll = Math.random();
+        let rarity = 'comum';
+        let attributesCount = 1;
+        let specialBonus = null;
+
+        if (roll <= 0.00001) {       // 0,001% Chance Épico
+            rarity = 'epic';
+            attributesCount = 4;
+            const bonuses = ['triple_attack', 'double_hp', 'speed'];
+            specialBonus = bonuses[Math.floor(Math.random() * bonuses.length)];
+        } else if (roll <= 0.001) {  // 0,01% Chance Raro Avançado
+            rarity = 'rare';
+            attributesCount = 3;
+        } else if (roll <= 0.25) {   // Incomum Padrão
+            rarity = 'uncommon';
+            attributesCount = 1;
+        }
+
+        // Criar lista de atributos únicos para o item
+        let selectedStats = [];
+        let statsPool = [...allStats];
+        for(let n = 0; n < attributesCount; n++) {
+            if(statsPool.length === 0) break;
+            let index = Math.floor(Math.random() * statsPool.length);
+            selectedStats.push({
+                name: statsPool[index],
+                val: Math.floor(game.stage * (rarity === 'epic' ? 25 : rarity === 'rare' ? 14 : 4) + Math.random() * 6)
+            });
+            statsPool.splice(index, 1);
+        }
 
         const item = {
             id: Date.now(),
             slot: slots[Math.floor(Math.random() * slots.length)],
-            mainStat: stats[Math.floor(Math.random() * stats.length)],
-            val: Math.floor(game.stage * (isRare ? 12 : 3) + Math.random() * 5),
-            rare: isRare
+            rarity: rarity,
+            stats: selectedStats,
+            epicBonus: specialBonus
         };
 
         player.inventory.unshift(item);
         if(player.inventory.length > 5) player.inventory.pop();
 
-        if(!player.equipped[item.slot] || item.val > player.equipped[item.slot].val) {
+        // Sistema inteligente de Auto-Equipamento avaliando o peso total de status do novo item
+        const currentEquipped = player.equipped[item.slot];
+        let totalNewVal = item.stats.reduce((acc, s) => acc + s.val, 0);
+        let totalCurrentVal = currentEquipped ? currentEquipped.stats.reduce((acc, s) => acc + s.val, 0) : -1;
+
+        if(!currentEquipped || totalNewVal > totalCurrentVal || rarity === 'epic') {
+            const oldStats = calcStats();
+            const hpPercent = player.hp / oldStats.maxHp;
+            
             player.equipped[item.slot] = item;
+            
+            const newStats = calcStats();
+            player.hp = Math.round(hpPercent * newStats.maxHp);
         }
         updateUI();
     }
 
     function applyDamage(stats) {
-        let crit = Math.random() * 100 < stats.luk;
-        let dmg = Math.max(1, (stats.str + stats.int) - (game.monster.def / 2));
-        if(crit) dmg *= 2;
+        if (game.monster.hp <= 0) return;
         
-        game.monster.hp -= dmg;
-        showDmg(Math.floor(dmg), 'monster', crit);
+        let crit = Math.random() * 100 < stats.luk;
+        let baseDmg = Math.max(1, (stats.str + stats.int) - (game.monster.def / 2));
+        if(crit) baseDmg *= 2;
+        
+        // REQUISITO: ITEM ÉPICO - Efeito de Triplo Ataque a cada 3 turnos
+        if (stats.hasEpicBonus === "triple_attack" && game.attackCounter % 3 === 0) {
+            baseDmg *= 3;
+            showDmg("TRIPLO!", 'monster', true);
+        }
+
+        game.monster.hp -= baseDmg;
+        showDmg(Math.floor(baseDmg), 'monster', crit || (stats.hasEpicBonus === "triple_attack" && game.attackCounter % 3 === 0));
         updateUI();
     }
 
@@ -444,7 +518,8 @@
                 game.kills = 0;
                 createLoot();
                 player.lvl++;
-                player.hp = stats.maxHp;
+                const currentStats = calcStats();
+                player.hp = currentStats.maxHp;
             } else {
                 game.kills++;
             }
@@ -454,11 +529,32 @@
     }
 
     function calcStats() {
-        let s = {...player};
-        Object.values(player.equipped).forEach(i => {
-            if(i) s[i.mainStat] += i.val;
+        let s = {
+            str: player.str, def: player.def, luk: player.luk,
+            agi: player.agi, eva: player.eva, int: player.int,
+            hasEpicBonus: null
+        };
+        
+        let multiplierHp = 1;
+
+        // Loop completo mapeando múltiplos atributos simultâneos por item
+        Object.values(player.equipped).forEach(item => {
+            if(item && item.stats) {
+                item.stats.forEach(stat => {
+                    if(s[stat.name] !== undefined) {
+                        s[stat.name] += stat.val;
+                    }
+                });
+                if (item.rarity === 'epic' && item.epicBonus) {
+                    s.hasEpicBonus = item.epicBonus;
+                    if(item.epicBonus === 'double_hp') {
+                        multiplierHp = 2; // REQUISITO: ITEM ÉPICO - Dobro de Vida ativo
+                    }
+                }
+            }
         });
-        s.maxHp = 100 + (player.lvl * 20) + (s.def * 5);
+        
+        s.maxHp = (100 + (player.lvl * 20) + (s.def * 5)) * multiplierHp;
         return s;
     }
 
@@ -484,18 +580,38 @@
         document.getElementById('p-hp-bar').style.width = Math.min(100, Math.max(0, (player.hp / stats.maxHp * 100))) + "%";
         document.getElementById('m-hp-bar').style.width = Math.min(100, Math.max(0, (game.monster.hp / game.monster.maxHp * 100))) + "%";
 
-        ['str','def','luk','agi','eva','int'].forEach(s => {
-            document.getElementById('st-'+s).innerText = stats[s];
+        ['str','def','luk','agi','eva','int'].forEach(st => {
+            document.getElementById('st-'+st).innerText = stats[st];
         });
 
         let invH = "";
         player.inventory.forEach(i => {
             const isEq = player.equipped[i.slot] === i;
+            
+            // Compilar string com a listagem dinâmica de todos os sub-atributos do item
+            let statsLabels = "";
+            i.stats.forEach(st => {
+                statsLabels += `+${st.val} ${st.name.toUpperCase()} | `;
+            });
+            statsLabels = statsLabels.slice(0, -3); // Remove o último divisor espaciado
+
+            // Adicionar rótulo visual no card do item caso possua bônus passivo Épico
+            let bonusDescription = "";
+            if(i.rarity === 'epic' && i.epicBonus) {
+                if(i.epicBonus === 'triple_attack') bonusDescription = "<br><small style='color:#ff7675;'>★ TRIPLO ATAQUE ATIVO</small>";
+                if(i.epicBonus === 'double_hp') bonusDescription = "<br><small style='color:#2ed573;'>★ DOBRO DE VIDA ATIVO</small>";
+                if(i.epicBonus === 'speed') bonusDescription = "<br><small style='color:#00cea6;'>★ 2X VELOCIDADE ATIVA</small>";
+            }
+
+            let cardClass = i.rarity === 'epic' ? 'epic' : (i.rarity === 'rare' ? 'rare' : '');
+            let titleColor = i.rarity === 'epic' ? 'var(--epic)' : (i.rarity === 'rare' ? 'var(--raro)' : '#fff');
+
             invH += `
-                <div class="item-card ${i.rare ? 'rare' : ''}">
+                <div class="item-card ${cardClass}">
                     <div>
-                        <strong style="font-size:12px; color: ${i.rare ? 'var(--raro)' : '#fff'}">${i.slot.toUpperCase()}</strong><br>
-                        <small style="color: #a4b0be; font-size:10px;">+${i.val} ${i.mainStat.toUpperCase()}</small>
+                        <strong style="font-size:12px; color: ${titleColor}">${i.slot.toUpperCase()} (${i.rarity.toUpperCase()})</strong><br>
+                        <small style="color: #a4b0be; font-size:10px;">${statsLabels}</small>
+                        ${bonusDescription}
                     </div>
                     ${isEq ? '<span class="equipped-badge">USA</span>' : ''}
                 </div>
