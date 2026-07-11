@@ -541,36 +541,44 @@
         
         const roll = Math.random() * 100; 
         let rarity = 'comum';
-        let attributesCount = 1;
+        let attributesCount = 3; // Modificado: Comum agora ganha +2 (Era 1, foi para 3)
 
         if (roll <= 0.0008) {       
             rarity = 'diamante';
-            attributesCount = 6;
+            attributesCount = 8; // Modificado: Diamante ganha +2 (Era 6, foi para 8)
         } else if (roll <= 0.008) {  
             rarity = 'super-rare';
-            attributesCount = 4;
+            attributesCount = 6; // Modificado: Super-Rare ganha +2 (Era 4, foi para 6)
         } else if (roll <= 0.01) {   
             rarity = 'rare';
-            attributesCount = 3;
+            attributesCount = 5; // Modificado: Rare ganha +2 (Era 3, foi para 5)
         } else if (roll <= 25.0) {
             rarity = 'uncommon';
-            attributesCount = 2;
+            attributesCount = 4; // Modificado: Uncommon ganha +2 (Era 2, foi para 4)
         }
 
         let selectedStats = [];
         let statsPool = [...allStats];
         
         for(let n = 0; n < attributesCount; n++) {
-            if(statsPool.length === 0) break;
+            // Se esgotar a pool única de atributos (max 6), reinicia para permitir atributos duplicados ou extras
+            if(statsPool.length === 0) statsPool = [...allStats];
+            
             let index = Math.floor(Math.random() * statsPool.length);
             
             let statValBase = game.stage * (rarity === 'diamante' ? 3.0 : rarity === 'super-rare' ? 2.0 : rarity === 'rare' ? 1.4 : rarity === 'uncommon' ? 0.8 : 0.4);
             let finalVal = Math.max(1, Math.floor(statValBase + Math.random() * 2));
 
-            selectedStats.push({
-                name: statsPool[index],
-                val: finalVal
-            });
+            // Se o atributo já existir no item, acumula o valor em vez de criar uma nova linha visual
+            let existingStat = selectedStats.find(s => s.name === statsPool[index]);
+            if (existingStat) {
+                existingStat.val += finalVal;
+            } else {
+                selectedStats.push({
+                    name: statsPool[index],
+                    val: finalVal
+                });
+            }
             statsPool.splice(index, 1);
         }
 
@@ -607,25 +615,22 @@
         updateUI();
     }
 
-    // Distribui 2 status aleatórios baseados na classe ao passar de nível
     function gainRandomStatsByClass() {
         const classPools = {
-            'Guerreiro': ['str', 'str', 'def', 'agi'],          // Focado em Força e Defesa
-            'Arqueiro': ['agi', 'agi', 'luk', 'eva'],           // Focado em Agilidade e Sorte/Esquiva
-            'Mago': ['int', 'int', 'luk', 'def'],               // Focado em Inteligência e Sorte
-            'Assassino': ['agi', 'eva', 'str', 'luk'],          // Focado em Agilidade e Esquiva
-            'Paladino': ['def', 'def', 'str', 'int'],           // Focado em Defesa robusta
-            'Druida': ['int', 'def', 'eva', 'str']              // Híbrido equilibrado
+            'Guerreiro': ['str', 'str', 'def', 'agi'],
+            'Arqueiro': ['agi', 'agi', 'luk', 'eva'],
+            'Mago': ['int', 'int', 'luk', 'def'],
+            'Assassino': ['agi', 'eva', 'str', 'luk'],
+            'Paladino': ['def', 'def', 'str', 'int'],
+            'Druida': ['int', 'def', 'eva', 'str']
         };
 
         const pool = classPools[player.class] || ['str', 'def', 'luk', 'agi', 'eva', 'int'];
         
-        // Sorteia 2 atributos (pode repetir o mesmo atributo nas duas rolagens)
         for (let i = 0; i < 2; i++) {
             const randomStat = pool[Math.floor(Math.random() * pool.length)];
-            player[randomStat] += 1; // Incrementa o atributo base do jogador em +1
+            player[randomStat] += 1;
             
-            // Exibe um popup visual na arena mostrando o ganho após um leve delay
             setTimeout(() => {
                 showStatGainPopup(`+1 ${randomStat.toUpperCase()}`);
             }, i * 250);
@@ -636,7 +641,7 @@
         const d = document.createElement('div');
         d.className = 'dmg-popup';
         d.innerText = text;
-        d.style.color = '#2ed573'; // Cor verde para status obtidos
+        d.style.color = '#2ed573';
         d.style.fontSize = '20px';
         
         const containerWidth = document.getElementById('game-arena').clientWidth;
@@ -670,9 +675,8 @@
                 game.kills = 0;
                 createLoot();
                 
-                // Evolução de Nível do Jogador
                 player.lvl++;
-                gainRandomStatsByClass(); // Sorteia os 2 atributos balanceados
+                gainRandomStatsByClass();
                 
                 const currentStats = calcStats();
                 player.hp = currentStats.maxHp;
