@@ -173,6 +173,12 @@
             border-top-right-radius: 16px; display: none; flex-direction: column; gap: 8px;
             box-shadow: 0 -10px 25px rgba(0,0,0,0.8); z-index: 2100;
         }
+        
+        .reset-save-btn {
+            background: transparent; border: 1px solid #ff4757; color: #ff4757;
+            font-size: 9px; padding: 4px 8px; border-radius: 6px; cursor: pointer;
+            margin-top: 15px; text-transform: uppercase; font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -262,6 +268,8 @@
             </div>
 
             <div class="inventory-list" id="inv-ui" style="display: none;"></div>
+            
+            <center><button class="reset-save-btn" onclick="resetGameSave()">⚠️ Resetar Progresso</button></center>
         </div>
     </div>
 
@@ -302,8 +310,9 @@
 <script>
     let player = {
         name: "", class: "Guerreiro", lvl: 1, 
-        hp: 100, maxHp: 100,
+        hp: 100, maxHp: 100, range: "melee",
         str: 5, def: 5, luk: 5, agi: 5, eva: 5, int: 5,
+        skinColor: "#ffdbac", hairColor: "#4b3621",
         equipped: { weapon: null, head: null, torso: null, feet: null, ring: null },
         inventory: []
     };
@@ -339,6 +348,44 @@
         bossMonster: "https://i.ibb.co/3y8WY1B9/image.png"
     };
 
+    // --- FUNÇÕES DE SALVAMENTO ---
+    function saveGame() {
+        const saveData = {
+            player: player,
+            game: { stage: game.stage, kills: game.kills }
+        };
+        localStorage.setItem('shadow_legends_infinite_save', JSON.stringify(saveData));
+    }
+
+    function loadGame() {
+        const rawData = localStorage.getItem('shadow_legends_infinite_save');
+        if (!rawData) return false;
+
+        try {
+            const saved = JSON.parse(rawData);
+            player = Object.assign(player, saved.player);
+            game.stage = saved.game.stage;
+            game.kills = saved.game.kills;
+
+            // Restaura as cores nos inputs visuais da tela setup caso queira editar depois
+            if(document.getElementById('p-skin')) document.getElementById('p-skin').value = player.skinColor || "#ffdbac";
+            if(document.getElementById('p-hair')) document.getElementById('p-hair').value = player.hairColor || "#4b3621";
+
+            return true;
+        } catch(e) {
+            console.error("Erro ao carregar o save corrompido:", e);
+            return false;
+        }
+    }
+
+    function resetGameSave() {
+        if(confirm("Tem certeza que deseja apagar todo o progresso do seu herói?")) {
+            localStorage.removeItem('shadow_legends_infinite_save');
+            window.location.reload();
+        }
+    }
+    // -----------------------------
+
     function selClass(c) {
         player.class = c;
         document.querySelectorAll('.class-btn').forEach(b => {
@@ -359,8 +406,12 @@
             pEl.style.backgroundImage = 'none';
             vSprite.style.display = 'flex';
             
-            document.documentElement.style.setProperty('--skin', document.getElementById('p-skin').value);
-            document.documentElement.style.setProperty('--hair', document.getElementById('p-hair').value);
+            // Salva as configurações de cores escolhidas
+            if(document.getElementById('p-skin')) player.skinColor = document.getElementById('p-skin').value;
+            if(document.getElementById('p-hair')) player.hairColor = document.getElementById('p-hair').value;
+
+            document.documentElement.style.setProperty('--skin', player.skinColor);
+            document.documentElement.style.setProperty('--hair', player.hairColor);
             document.documentElement.style.setProperty('--armor', classColors[player.class] || '#57606f');
             
             const w = document.getElementById('weapon-visual');
@@ -384,6 +435,10 @@
         const initialStats = calcStats();
         player.hp = initialStats.maxHp;
 
+        initGameEngine();
+    }
+
+    function initGameEngine() {
         document.getElementById('screen-setup').style.display = 'none';
         document.getElementById('game-main').style.display = 'flex';
         document.getElementById('p-class-ui').innerText = player.class;
@@ -393,6 +448,7 @@
         spawnMonster();
         
         game.lastAttackTime = performance.now();
+        saveGame();
         engine();
     }
 
@@ -610,6 +666,8 @@
             const newStats = calcStats();
             player.hp = Math.round(hpPercent * newStats.maxHp);
         }
+        
+        saveGame();
         updateUI();
     }
 
@@ -666,10 +724,10 @@
             game.stage = Math.max(1, game.stage - 1);
             game.kills = 0;
             player.hp = stats.maxHp;
+            saveGame();
             spawnMonster();
         } else if(game.monster.hp <= 0) {
             if(game.monster.isBoss) {
-                // Recupera 10% do HP Máximo ao abater Boss
                 let healAmount = Math.floor(stats.maxHp * 0.10);
                 player.hp = Math.min(stats.maxHp, player.hp + healAmount);
                 showHealPopup(`+${healAmount} HP`);
@@ -681,17 +739,16 @@
                 player.lvl++;
                 gainRandomStatsByClass();
                 
-                // O level up ressetava o HP para 100%, mantido após os cálculos normais do jogo
                 const currentStats = calcStats();
                 player.hp = currentStats.maxHp;
             } else {
-                // Recupera 5% do HP Máximo ao abater Monstro Normal
                 let healAmount = Math.floor(stats.maxHp * 0.05);
                 player.hp = Math.min(stats.maxHp, player.hp + healAmount);
                 showHealPopup(`+${healAmount} HP`);
 
                 game.kills++;
             }
+            saveGame();
             spawnMonster();
         }
         updateUI();
@@ -801,7 +858,7 @@
                 backpackBox.classList.add(item.rarity);
                 backpackBox.innerHTML = item.icon;
                 
-                if(player.equipped[item.slot] === item) {
+                if(player.equipped[item.slot] && player.equipped[item.slot].id === item.id) {
                     backpackBox.style.boxShadow = 'inset 0 0 0 2px #1dd1a1';
                 }
                 
@@ -842,7 +899,7 @@
             actionBtn.style.borderColor = '#ff4757';
             actionBtn.style.color = '#ff4757';
         } else {
-            const currentEquippedOnSlot = player.equipped[item.slot] === item;
+            const currentEquippedOnSlot = player.equipped[item.slot] && player.equipped[item.slot].id === item.id;
             if(currentEquippedOnSlot) {
                 actionBtn.innerText = 'EQUIPADO';
                 actionBtn.style.borderColor = '#1dd1a1';
@@ -867,7 +924,7 @@
         if(selectedItemIsEquipped) {
             player.equipped[item.slot] = null;
         } else {
-            if(player.equipped[item.slot] === item) {
+            if(player.equipped[item.slot] && player.equipped[item.slot].id === item.id) {
                 player.equipped[item.slot] = null;
             } else {
                 player.equipped[item.slot] = item;
@@ -879,6 +936,7 @@
         if(player.hp <= 0) player.hp = 1;
 
         closeDetailsPop();
+        saveGame();
         renderBagUI();
         updateUI();
     }
@@ -905,6 +963,16 @@
             renderBagUI();
         }
     }
+
+    // --- CARREGAMENTO INICIAL ---
+    window.onload = function() {
+        const hasSave = loadGame();
+        if (hasSave) {
+            initGameEngine();
+        } else {
+            updateVisual();
+        }
+    };
 </script>
 </body>
 </html>
