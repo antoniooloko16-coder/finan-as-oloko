@@ -8,6 +8,7 @@
         :root {
             --raro: #ffcc00; 
             --epic: #a55eea; /* Cor Roxa para os itens Épicos */
+            --uncommon: #2ed573;
             --comum: #a4b0be; --bg: #05070a;
             --panel: linear-gradient(180deg, #161a26 0%, #0a0d14 100%); 
             --accent: #ff4757;
@@ -124,6 +125,66 @@
         .projectile {
             position: absolute; width: 25px; height: 6px; background: linear-gradient(90deg, #fff, #00c6ff); border-radius: 10px; z-index: 100;
         }
+
+        /* ESTILOS DA NOVA UI DE INVENTÁRIO (BASEADO NA IMAGEM) */
+        .bag-trigger-btn {
+            background: linear-gradient(135deg, #2c3e50 0%, #0f171e 100%);
+            border: 1px solid var(--raro); color: #fff; font-weight: bold; font-size: 12px;
+            padding: 10px; border-radius: 10px; cursor: pointer; text-transform: uppercase;
+            letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .bag-container {
+            display: grid; grid-template-columns: 1fr 1.2fr; gap: 10px; width: 100%; height: 75vh; margin-top: 10px;
+        }
+        .bag-column {
+            background: rgba(15, 23, 36, 0.6); border: 1px solid var(--border-ui);
+            border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
+        }
+        .bag-col-header {
+            background: rgba(255,255,255,0.04); padding: 8px; text-align: center;
+            font-size: 12px; font-weight: bold; letter-spacing: 1px; color: #fff;
+            border-bottom: 1px solid var(--border-ui); text-transform: uppercase;
+        }
+        .eq-slots-list {
+            padding: 10px; display: flex; flex-direction: column; gap: 8px; justify-content: center; height: 100%; overflow-y: auto;
+        }
+        .eq-slot-box {
+            background: rgba(0,0,0,0.3); border: 1px dashed rgba(255,255,255,0.2);
+            border-radius: 10px; padding: 6px; display: flex; align-items: center; gap: 8px;
+            cursor: pointer; min-height: 48px; transition: all 0.2s;
+        }
+        .eq-slot-box.filled-comum { border: 1px solid var(--comum); background: rgba(164,176,190,0.08); }
+        .eq-slot-box.filled-uncommon { border: 1px solid var(--uncommon); background: rgba(46,213,115,0.08); }
+        .eq-slot-box.filled-rare { border: 1px solid var(--raro); background: rgba(255,204,0,0.08); }
+        .eq-slot-box.filled-epic { border: 1px solid var(--epic); background: rgba(165,94,234,0.08); }
+        .eq-slot-icon { font-size: 22px; width: 32px; text-align: center; }
+        .eq-slot-info { display: flex; flex-direction: column; }
+        .eq-slot-name { font-size: 10px; font-weight: bold; }
+        .eq-slot-type { font-size: 8px; color: #a4b0be; text-transform: uppercase; }
+
+        .grid-backpack {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px;
+            overflow-y: auto; align-content: start; height: 100%;
+        }
+        .grid-item-slot {
+            aspect-ratio: 1; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; cursor: pointer; position: relative; transition: all 0.15s;
+        }
+        .grid-item-slot.comum { border: 1px solid var(--comum); background: rgba(164,176,190,0.12); }
+        .grid-item-slot.uncommon { border: 1px solid var(--uncommon); background: rgba(46,213,115,0.12); }
+        .grid-item-slot.rare { border: 1px solid var(--raro); background: rgba(255,204,0,0.12); }
+        .grid-item-slot.epic { border: 1px solid var(--epic); background: rgba(165,94,234,0.12); }
+        .grid-item-slot:active { transform: scale(0.95); }
+
+        /* POPUP DE DETALHES DO ITEM */
+        .item-details-pop {
+            position: absolute; bottom: 0; left: 0; right: 0; background: #0f131c;
+            border-top: 3px solid var(--raro); padding: 14px; border-top-left-radius: 16px;
+            border-top-right-radius: 16px; display: none; flex-direction: column; gap: 8px;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.8); z-index: 2100;
+        }
     </style>
 </head>
 <body>
@@ -201,6 +262,9 @@
         </div>
 
         <div class="dashboard">
+            <!-- BOTÃO PARA ABRIR O INVENTÁRIO ESTILO RPG -->
+            <button class="bag-trigger-btn" onclick="openBagModal()">🎒 Ver Equipamentos & Mochila</button>
+
             <div class="stats-grid">
                 <div class="stat-box"><span class="stat-val" id="st-str">0</span><span class="stat-label">FOR</span></div>
                 <div class="stat-box"><span class="stat-val" id="st-def">0</span><span class="stat-label">DEF</span></div>
@@ -210,7 +274,51 @@
                 <div class="stat-box"><span class="stat-val" id="st-int">0</span><span class="stat-label">INT</span></div>
             </div>
 
-            <div class="inventory-list" id="inv-ui"></div>
+            <div class="inventory-list" id="inv-ui" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL DO INVENTÁRIO COMPLETO E DETALHADO (IGUAL DA IMAGEM) -->
+    <div id="bag-modal" class="modal" style="display:none; background: rgba(5, 7, 10, 0.98); padding: 12px; justify-content: flex-start;">
+        <div style="width:100%; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-ui); padding-bottom:8px;">
+            <span style="color:var(--raro); font-weight:bold; font-size:16px; letter-spacing:1px;">EQUIPAMENTO & ARMAZÉM</span>
+            <button onclick="closeBagModal()" style="background:transparent; border:none; color:#ff4757; font-size:20px; font-weight:bold; cursor:pointer;">✕</button>
+        </div>
+
+        <div class="bag-container">
+            <!-- COLUNA ESQUERDA: PERSONAGEM / SLOTS -->
+            <div class="bag-column">
+                <div class="bag-col-header">Personagem</div>
+                <div class="eq-slots-list" id="eq-slots-ui">
+                    <!-- Gerado dinamicamente -->
+                </div>
+            </div>
+
+            <!-- COLUNA DIREITA: MOCHILA EM GRADE -->
+            <div class="bag-column">
+                <div class="bag-col-header">Mochila</div>
+                <div class="grid-backpack" id="backpack-grid-ui">
+                    <!-- Gerado dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- POPUP COMPACTO DE DETALHES AO CLICAR NO ITEM -->
+        <div id="item-details" class="item-details-pop">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div id="pop-item-title-wrapper">
+                    <strong id="pop-item-name" style="font-size:14px; display:block;">Nome do Item</strong>
+                    <span id="pop-item-rarity" style="font-size:9px; text-transform:uppercase; font-weight:bold;">RARIDADE</span>
+                </div>
+                <span id="pop-item-icon" style="font-size:28px;">⚔️</span>
+            </div>
+            <div id="pop-item-stats" style="color:#a4b0be; font-size:11px; background:rgba(0,0,0,0.2); padding:6px; border-radius:6px; margin:4px 0;">
+                <!-- Status -->
+            </div>
+            <div style="display:flex; gap:8px; margin-top:4px;">
+                <button id="pop-action-btn" class="class-btn" style="flex:1; border-color:#1dd1a1; color:#1dd1a1; padding:6px;" onclick="executeItemAction()">EQUIPAR</button>
+                <button class="class-btn" style="flex:1; padding:6px;" onclick="closeDetailsPop()">FECHAR</button>
+            </div>
         </div>
     </div>
 
@@ -227,6 +335,18 @@
         stage: 1, kills: 0, isAttacking: false, monster: null, 
         lastAttackTime: 0, attackCounter: 0 
     };
+
+    // Mapeamento visual estrito para a nova mecânica de inventário
+    const slotMapping = {
+        weapon: { label: 'Arma', icon: '⚔️' },
+        head: { label: 'Elmo', icon: '🪖' },
+        torso: { label: 'Armadura', icon: '🛡️' },
+        feet: { label: 'Botas', icon: '🥾' },
+        ring: { label: 'Anel', icon: '💍' }
+    };
+
+    let selectedItemContext = null; 
+    let selectedItemIsEquipped = false;
 
     const classColors = {
         'Guerreiro': '#57606f', 'Arqueiro': '#2ed573', 'Mago': '#574b90',
@@ -340,15 +460,12 @@
         const currentTime = performance.now();
         const stats = calcStats();
         
-        // Cooldown base calculado por AGI
         let attackCooldown = 1400 - (stats.agi * 12);
 
-        // REQUISITO: ITEM ÉPICO - Efeito "Duas vezes mais rápido" (Sem travas de velocidade mínima)
         if (stats.hasEpicBonus === "speed") {
             attackCooldown = attackCooldown / 2;
         }
 
-        // Sem travas artificiais de limite inferior (pode reduzir abaixo de 200ms se focar em muita AGI)
         if (attackCooldown < 50) attackCooldown = 50; 
 
         if (!game.isAttacking && (currentTime - game.lastAttackTime >= attackCooldown)) {
@@ -363,7 +480,6 @@
         const pEl = document.getElementById('player');
         const arm = document.getElementById('main-arm');
 
-        // Incrementa contador de golpes aplicados
         game.attackCounter++;
 
         if(player.range === "melee") {
@@ -424,30 +540,61 @@
         }, 16);
     }
 
+    // BANCO DE NOMES LEGAIS PROCEDURAIS PARA EQUIPAMENTOS EXCLUSIVOS
+    const itemNamingData = {
+        prefixes: {
+            comum: ['Gasto', 'Treino', 'Ferrugem', 'Recruta', 'Padrão'],
+            uncommon: ['Forjado', 'Aço Frio', 'Caçador', 'Guardião', 'Vanguardista'],
+            rare: ['Místico', 'Obsidiana', 'Tempestade', 'Rúnico', 'Assombrado'],
+            epic: ['Lendário', 'Eclipse Eterno', 'Soberano', 'Arauto do Abismo', 'Divindade']
+        },
+        slots: {
+            weapon: ['Gume', 'Lâmina', 'Disruptor', 'Montante', 'Cetro'],
+            head: ['Visor', 'Yoroi', 'Coroa', 'Diadema', 'Casco'],
+            torso: ['Manto', 'Peitoral', 'Placa Pesada', 'Cota Runada', 'Couraça'],
+            feet: ['Grevas', 'Botas', 'Passos Rápidos', 'Sapatilhas Solares', 'Coturnos'],
+            ring: ['Anel', 'Selo Mágico', 'Aliança', 'Signo do Caos', 'Eternidade']
+        },
+        suffixes: ['do Infinito', 'de Sangue', 'das Sombras', 'da Aurora', 'da Linha de Frente', 'Void']
+    };
+
+    function generateCoolItemName(slotKey, rarity) {
+        const prefList = itemNamingData.prefixes[rarity] || itemNamingData.prefixes.comum;
+        const baseList = itemNamingData.slots[slotKey] || ['Item'];
+        const sufList = itemNamingData.suffixes;
+        
+        const p = prefList[Math.floor(Math.random() * prefList.length)];
+        const b = baseList[Math.floor(Math.random() * baseList.length)];
+        const s = sufList[Math.floor(Math.random() * sufList.length)];
+        
+        if(rarity === 'epic' || rarity === 'rare') {
+            return `${p} ${b} ${s}`;
+        }
+        return `${p} ${b}`;
+    }
+
     function createLoot() {
-        const slots = ['Espada', 'Elmo', 'Armadura', 'Botas', 'Anel'];
+        const slotKeys = ['weapon', 'head', 'torso', 'feet', 'ring'];
         const allStats = ['str', 'def', 'luk', 'agi', 'eva', 'int'];
         
-        // Geração probabilística refinada baseada no feedback
         const roll = Math.random();
         let rarity = 'comum';
         let attributesCount = 1;
         let specialBonus = null;
 
-        if (roll <= 0.00001) {       // 0,001% Chance Épico
+        if (roll <= 0.08) {       
             rarity = 'epic';
             attributesCount = 4;
             const bonuses = ['triple_attack', 'double_hp', 'speed'];
             specialBonus = bonuses[Math.floor(Math.random() * bonuses.length)];
-        } else if (roll <= 0.001) {  // 0,01% Chance Raro Avançado
+        } else if (roll <= 0.35) {  
             rarity = 'rare';
             attributesCount = 3;
-        } else if (roll <= 0.25) {   // Incomum Padrão
+        } else if (roll <= 0.70) {   
             rarity = 'uncommon';
-            attributesCount = 1;
+            attributesCount = 2;
         }
 
-        // Criar lista de atributos únicos para o item
         let selectedStats = [];
         let statsPool = [...allStats];
         for(let n = 0; n < attributesCount; n++) {
@@ -455,23 +602,32 @@
             let index = Math.floor(Math.random() * statsPool.length);
             selectedStats.push({
                 name: statsPool[index],
-                val: Math.floor(game.stage * (rarity === 'epic' ? 25 : rarity === 'rare' ? 14 : 4) + Math.random() * 6)
+                val: Math.floor(game.stage * (rarity === 'epic' ? 25 : rarity === 'rare' ? 14 : rarity === 'uncommon' ? 7 : 4) + Math.random() * 6)
             });
             statsPool.splice(index, 1);
         }
 
+        const pickedSlot = slotKeys[Math.floor(Math.random() * slotKeys.length)];
+        const customName = generateCoolItemName(pickedSlot, rarity);
+
         const item = {
-            id: Date.now(),
-            slot: slots[Math.floor(Math.random() * slots.length)],
+            id: Date.now() + Math.random(),
+            slot: pickedSlot,
+            name: customName,
             rarity: rarity,
             stats: selectedStats,
-            epicBonus: specialBonus
+            epicBonus: specialBonus,
+            icon: slotMapping[pickedSlot].icon
         };
 
-        player.inventory.unshift(item);
-        if(player.inventory.length > 5) player.inventory.pop();
+        // Aumentado espaço da mochila para 24 itens
+        if(player.inventory.length < 24) {
+            player.inventory.unshift(item);
+        } else {
+            player.inventory.pop();
+            player.inventory.unshift(item);
+        }
 
-        // Sistema inteligente de Auto-Equipamento avaliando o peso total de status do novo item
         const currentEquipped = player.equipped[item.slot];
         let totalNewVal = item.stats.reduce((acc, s) => acc + s.val, 0);
         let totalCurrentVal = currentEquipped ? currentEquipped.stats.reduce((acc, s) => acc + s.val, 0) : -1;
@@ -495,7 +651,6 @@
         let baseDmg = Math.max(1, (stats.str + stats.int) - (game.monster.def / 2));
         if(crit) baseDmg *= 2;
         
-        // REQUISITO: ITEM ÉPICO - Efeito de Triplo Ataque a cada 3 turnos
         if (stats.hasEpicBonus === "triple_attack" && game.attackCounter % 3 === 0) {
             baseDmg *= 3;
             showDmg("TRIPLO!", 'monster', true);
@@ -537,7 +692,6 @@
         
         let multiplierHp = 1;
 
-        // Loop completo mapeando múltiplos atributos simultâneos por item
         Object.values(player.equipped).forEach(item => {
             if(item && item.stats) {
                 item.stats.forEach(stat => {
@@ -548,7 +702,7 @@
                 if (item.rarity === 'epic' && item.epicBonus) {
                     s.hasEpicBonus = item.epicBonus;
                     if(item.epicBonus === 'double_hp') {
-                        multiplierHp = 2; // REQUISITO: ITEM ÉPICO - Dobro de Vida ativo
+                        multiplierHp = 2; 
                     }
                 }
             }
@@ -571,6 +725,166 @@
         setTimeout(() => d.remove(), 600);
     }
 
+    // INTERFACE MODAL AVANÇADA DE INVENTÁRIO (SISTEMA DE MOCHILA E EQUIPAMENTOS)
+    function openBagModal() {
+        document.getElementById('bag-modal').style.display = 'flex';
+        closeDetailsPop();
+        renderBagUI();
+    }
+
+    function closeBagModal() {
+        document.getElementById('bag-modal').style.display = 'none';
+    }
+
+    function renderBagUI() {
+        // Renderizar Coluna Personagem (Slots de Equipamento Atuais)
+        const eqContainer = document.getElementById('eq-slots-ui');
+        eqContainer.innerHTML = '';
+        
+        const slotsOrder = ['head', 'weapon', 'torso', 'feet', 'ring'];
+        slotsOrder.forEach(slotKey => {
+            const currentItem = player.equipped[slotKey];
+            const meta = slotMapping[slotKey];
+            
+            let boxClass = 'eq-slot-box';
+            let contentHtml = `
+                <div class="eq-slot-icon">${meta.icon}</div>
+                <div class="eq-slot-info">
+                    <div class="eq-slot-name" style="color:#747d8c;">Vazio</div>
+                    <div class="eq-slot-type">${meta.label}</div>
+                </div>
+            `;
+            
+            if(currentItem) {
+                boxClass += ` filled-${currentItem.rarity}`;
+                let rarityColor = `var(--${currentItem.rarity})`;
+                contentHtml = `
+                    <div class="eq-slot-icon">${currentItem.icon}</div>
+                    <div class="eq-slot-info">
+                        <div class="eq-slot-name" style="color:${rarityColor};">${currentItem.name}</div>
+                        <div class="eq-slot-type">${meta.label} (${currentItem.rarity})</div>
+                    </div>
+                `;
+            }
+            
+            const slotBox = document.createElement('div');
+            slotBox.className = boxClass;
+            slotBox.innerHTML = contentHtml;
+            slotBox.onclick = () => {
+                if(currentItem) showItemDetails(currentItem, true);
+            };
+            eqContainer.appendChild(slotBox);
+        });
+
+        // Renderizar Mochila em Grade Estilo Imagem (Fixado 24 slots visuais)
+        const backpackGrid = document.getElementById('backpack-grid-ui');
+        backpackGrid.innerHTML = '';
+        
+        for(let idx = 0; idx < 24; idx++) {
+            const backpackBox = document.createElement('div');
+            backpackBox.className = 'grid-item-slot';
+            
+            if(player.inventory[idx]) {
+                const item = player.inventory[idx];
+                backpackBox.classList.add(item.rarity);
+                backpackBox.innerHTML = item.icon;
+                
+                // Marca se o item guardado na mochila está sendo usado (Garante sincronização)
+                if(player.equipped[item.slot] === item) {
+                    backpackBox.style.boxShadow = 'inset 0 0 0 2px #1dd1a1';
+                }
+                
+                backpackBox.onclick = () => showItemDetails(item, false);
+            } else {
+                backpackBox.innerHTML = '';
+                backpackBox.style.opacity = '0.3';
+            }
+            backpackGrid.appendChild(backpackBox);
+        }
+    }
+
+    function showItemDetails(item, isEquippedContext) {
+        selectedItemContext = item;
+        selectedItemIsEquipped = isEquippedContext;
+        
+        const detailsPop = document.getElementById('item-details');
+        const nameEl = document.getElementById('pop-item-name');
+        const rarityEl = document.getElementById('pop-item-rarity');
+        const iconEl = document.getElementById('pop-item-icon');
+        const statsEl = document.getElementById('pop-item-stats');
+        const actionBtn = document.getElementById('pop-action-btn');
+
+        nameEl.innerText = item.name;
+        nameEl.style.color = `var(--${item.rarity})`;
+        rarityEl.innerText = `${item.rarity} | Slot: ${slotMapping[item.slot].label}`;
+        rarityEl.style.color = `var(--${item.rarity})`;
+        iconEl.innerText = item.icon;
+
+        let statStr = '';
+        item.stats.forEach(st => {
+            statStr += `<div>+${st.val} ${st.name.toUpperCase()}</div>`;
+        });
+        if(item.epicBonus) {
+            if(item.epicBonus === 'triple_attack') statStr += `<div style="color:#ff7675; font-weight:bold; margin-top:2px;">★ TRIPLO ATAQUE</div>`;
+            if(item.epicBonus === 'double_hp') statStr += `<div style="color:#2ed573; font-weight:bold; margin-top:2px;">★ DOBRO DE VIDA</div>`;
+            if(item.epicBonus === 'speed') statStr += `<div style="color:#00cea6; font-weight:bold; margin-top:2px;">★ 2X VELOCIDADE</div>`;
+        }
+        statsEl.innerHTML = statStr;
+
+        if(isEquippedContext) {
+            actionBtn.innerText = 'DESEQUIPAR';
+            actionBtn.style.borderColor = '#ff4757';
+            actionBtn.style.color = '#ff4757';
+        } else {
+            const currentEquippedOnSlot = player.equipped[item.slot] === item;
+            if(currentEquippedOnSlot) {
+                actionBtn.innerText = 'EQUIPADO';
+                actionBtn.style.borderColor = '#1dd1a1';
+                actionBtn.style.color = '#1dd1a1';
+            } else {
+                actionBtn.innerText = 'EQUIPAR';
+                actionBtn.style.borderColor = '#ffcc00';
+                actionBtn.style.color = '#ffcc00';
+            }
+        }
+        
+        detailsPop.style.display = 'flex';
+    }
+
+    function executeItemAction() {
+        if(!selectedItemContext) return;
+        
+        const item = selectedItemContext;
+        const oldStats = calcStats();
+        const hpPercent = player.hp / oldStats.maxHp;
+
+        if(selectedItemIsEquipped) {
+            // Desequipar Item Ativo
+            player.equipped[item.slot] = null;
+        } else {
+            // Equipar Item da Mochila
+            if(player.equipped[item.slot] === item) {
+                // Se já estiver equipado por algum motivo, desequipa ao clicar novamente na mochila
+                player.equipped[item.slot] = null;
+            } else {
+                player.equipped[item.slot] = item;
+            }
+        }
+
+        const newStats = calcStats();
+        player.hp = Math.round(hpPercent * newStats.maxHp);
+        if(player.hp <= 0) player.hp = 1;
+
+        closeDetailsPop();
+        renderBagUI();
+        updateUI();
+    }
+
+    function closeDetailsPop() {
+        document.getElementById('item-details').style.display = 'none';
+        selectedItemContext = null;
+    }
+
     function updateUI() {
         const stats = calcStats();
         document.getElementById('p-lvl').innerText = player.lvl;
@@ -584,42 +898,11 @@
             document.getElementById('st-'+st).innerText = stats[st];
         });
 
-        let invH = "";
-        player.inventory.forEach(i => {
-            const isEq = player.equipped[i.slot] === i;
-            
-            // Compilar string com a listagem dinâmica de todos os sub-atributos do item
-            let statsLabels = "";
-            i.stats.forEach(st => {
-                statsLabels += `+${st.val} ${st.name.toUpperCase()} | `;
-            });
-            statsLabels = statsLabels.slice(0, -3); // Remove o último divisor espaciado
-
-            // Adicionar rótulo visual no card do item caso possua bônus passivo Épico
-            let bonusDescription = "";
-            if(i.rarity === 'epic' && i.epicBonus) {
-                if(i.epicBonus === 'triple_attack') bonusDescription = "<br><small style='color:#ff7675;'>★ TRIPLO ATAQUE ATIVO</small>";
-                if(i.epicBonus === 'double_hp') bonusDescription = "<br><small style='color:#2ed573;'>★ DOBRO DE VIDA ATIVO</small>";
-                if(i.epicBonus === 'speed') bonusDescription = "<br><small style='color:#00cea6;'>★ 2X VELOCIDADE ATIVA</small>";
-            }
-
-            let cardClass = i.rarity === 'epic' ? 'epic' : (i.rarity === 'rare' ? 'rare' : '');
-            let titleColor = i.rarity === 'epic' ? 'var(--epic)' : (i.rarity === 'rare' ? 'var(--raro)' : '#fff');
-
-            invH += `
-                <div class="item-card ${cardClass}">
-                    <div>
-                        <strong style="font-size:12px; color: ${titleColor}">${i.slot.toUpperCase()} (${i.rarity.toUpperCase()})</strong><br>
-                        <small style="color: #a4b0be; font-size:10px;">${statsLabels}</small>
-                        ${bonusDescription}
-                    </div>
-                    ${isEq ? '<span class="equipped-badge">USA</span>' : ''}
-                </div>
-            `;
-        });
-        document.getElementById('inv-ui').innerHTML = invH;
+        // Caso a modal esteja aberta, sincroniza os dados dinamicamente em tempo real
+        if(document.getElementById('bag-modal').style.display === 'flex') {
+            renderBagUI();
+        }
     }
 </script>
 </body>
 </html>
-
