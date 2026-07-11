@@ -398,7 +398,6 @@
 
     function spawnMonster() {
         const isBoss = (game.kills >= 10);
-        // Apenas no nível 1 (estágio 1) o jogo fica fácil
         const difficultyMultiplier = (game.stage === 1) ? 0.4 : (1.0 + (game.stage * 0.25));
         
         const baseHp = (60 + (game.stage * 45)) * (isBoss ? 5 : 1) * difficultyMultiplier;
@@ -540,11 +539,10 @@
         const slotKeys = ['weapon', 'head', 'torso', 'feet', 'ring'];
         const allStats = ['str', 'def', 'luk', 'agi', 'eva', 'int'];
         
-        const roll = Math.random() * 100; // Rolagem de 0% a 100%
+        const roll = Math.random() * 100; 
         let rarity = 'comum';
         let attributesCount = 1;
 
-        // Tabelas de Drop exatas baseadas nas suas especificações
         if (roll <= 0.0008) {       
             rarity = 'diamante';
             attributesCount = 6;
@@ -566,7 +564,6 @@
             if(statsPool.length === 0) break;
             let index = Math.floor(Math.random() * statsPool.length);
             
-            // REDUZIDO SIGNIFICATIVAMENTE OS ATRIBUTOS PARA DEIXAR O JOGO MAIS LENTO
             let statValBase = game.stage * (rarity === 'diamante' ? 3.0 : rarity === 'super-rare' ? 2.0 : rarity === 'rare' ? 1.4 : rarity === 'uncommon' ? 0.8 : 0.4);
             let finalVal = Math.max(1, Math.floor(statValBase + Math.random() * 2));
 
@@ -596,7 +593,6 @@
             player.inventory.unshift(item);
         }
 
-        // Auto-equipar inteligente apenas se for estritamente superior
         const currentEquipped = player.equipped[item.slot];
         let totalNewVal = item.stats.reduce((acc, s) => acc + s.val, 0);
         let totalCurrentVal = currentEquipped ? currentEquipped.stats.reduce((acc, s) => acc + s.val, 0) : -1;
@@ -611,12 +607,51 @@
         updateUI();
     }
 
+    // Distribui 2 status aleatórios baseados na classe ao passar de nível
+    function gainRandomStatsByClass() {
+        const classPools = {
+            'Guerreiro': ['str', 'str', 'def', 'agi'],          // Focado em Força e Defesa
+            'Arqueiro': ['agi', 'agi', 'luk', 'eva'],           // Focado em Agilidade e Sorte/Esquiva
+            'Mago': ['int', 'int', 'luk', 'def'],               // Focado em Inteligência e Sorte
+            'Assassino': ['agi', 'eva', 'str', 'luk'],          // Focado em Agilidade e Esquiva
+            'Paladino': ['def', 'def', 'str', 'int'],           // Focado em Defesa robusta
+            'Druida': ['int', 'def', 'eva', 'str']              // Híbrido equilibrado
+        };
+
+        const pool = classPools[player.class] || ['str', 'def', 'luk', 'agi', 'eva', 'int'];
+        
+        // Sorteia 2 atributos (pode repetir o mesmo atributo nas duas rolagens)
+        for (let i = 0; i < 2; i++) {
+            const randomStat = pool[Math.floor(Math.random() * pool.length)];
+            player[randomStat] += 1; // Incrementa o atributo base do jogador em +1
+            
+            // Exibe um popup visual na arena mostrando o ganho após um leve delay
+            setTimeout(() => {
+                showStatGainPopup(`+1 ${randomStat.toUpperCase()}`);
+            }, i * 250);
+        }
+    }
+
+    function showStatGainPopup(text) {
+        const d = document.createElement('div');
+        d.className = 'dmg-popup';
+        d.innerText = text;
+        d.style.color = '#2ed573'; // Cor verde para status obtidos
+        d.style.fontSize = '20px';
+        
+        const containerWidth = document.getElementById('game-arena').clientWidth;
+        d.style.left = '40px';
+        d.style.bottom = '40%';
+        document.getElementById('game-arena').appendChild(d);
+        setTimeout(() => d.remove(), 800);
+    }
+
     function applyDamage(stats) {
         if (game.monster.hp <= 0) return;
         
         let crit = Math.random() * 100 < stats.luk;
         let baseDmg = Math.max(1, (stats.str + stats.int) - (game.monster.def * 0.5));
-        if(crit) baseDmg *= 1.5; // Reduzido bônus crítico para balanceamento
+        if(crit) baseDmg *= 1.5;
 
         game.monster.hp -= baseDmg;
         showDmg(Math.floor(baseDmg), 'monster', crit);
@@ -634,7 +669,11 @@
                 game.stage++;
                 game.kills = 0;
                 createLoot();
+                
+                // Evolução de Nível do Jogador
                 player.lvl++;
+                gainRandomStatsByClass(); // Sorteia os 2 atributos balanceados
+                
                 const currentStats = calcStats();
                 player.hp = currentStats.maxHp;
             } else {
