@@ -541,27 +541,26 @@
         
         const roll = Math.random() * 100; 
         let rarity = 'comum';
-        let attributesCount = 3; // Modificado: Comum agora ganha +2 (Era 1, foi para 3)
+        let attributesCount = 3; 
 
         if (roll <= 0.0008) {       
             rarity = 'diamante';
-            attributesCount = 8; // Modificado: Diamante ganha +2 (Era 6, foi para 8)
+            attributesCount = 8; 
         } else if (roll <= 0.008) {  
             rarity = 'super-rare';
-            attributesCount = 6; // Modificado: Super-Rare ganha +2 (Era 4, foi para 6)
+            attributesCount = 6; 
         } else if (roll <= 0.01) {   
             rarity = 'rare';
-            attributesCount = 5; // Modificado: Rare ganha +2 (Era 3, foi para 5)
+            attributesCount = 5; 
         } else if (roll <= 25.0) {
             rarity = 'uncommon';
-            attributesCount = 4; // Modificado: Uncommon ganha +2 (Era 2, foi para 4)
+            attributesCount = 4; 
         }
 
         let selectedStats = [];
         let statsPool = [...allStats];
         
         for(let n = 0; n < attributesCount; n++) {
-            // Se esgotar a pool única de atributos (max 6), reinicia para permitir atributos duplicados ou extras
             if(statsPool.length === 0) statsPool = [...allStats];
             
             let index = Math.floor(Math.random() * statsPool.length);
@@ -569,7 +568,6 @@
             let statValBase = game.stage * (rarity === 'diamante' ? 3.0 : rarity === 'super-rare' ? 2.0 : rarity === 'rare' ? 1.4 : rarity === 'uncommon' ? 0.8 : 0.4);
             let finalVal = Math.max(1, Math.floor(statValBase + Math.random() * 2));
 
-            // Se o atributo já existir no item, acumula o valor em vez de criar uma nova linha visual
             let existingStat = selectedStats.find(s => s.name === statsPool[index]);
             if (existingStat) {
                 existingStat.val += finalVal;
@@ -671,6 +669,11 @@
             spawnMonster();
         } else if(game.monster.hp <= 0) {
             if(game.monster.isBoss) {
+                // Recupera 10% do HP Máximo ao abater Boss
+                let healAmount = Math.floor(stats.maxHp * 0.10);
+                player.hp = Math.min(stats.maxHp, player.hp + healAmount);
+                showHealPopup(`+${healAmount} HP`);
+
                 game.stage++;
                 game.kills = 0;
                 createLoot();
@@ -678,14 +681,33 @@
                 player.lvl++;
                 gainRandomStatsByClass();
                 
+                // O level up ressetava o HP para 100%, mantido após os cálculos normais do jogo
                 const currentStats = calcStats();
                 player.hp = currentStats.maxHp;
             } else {
+                // Recupera 5% do HP Máximo ao abater Monstro Normal
+                let healAmount = Math.floor(stats.maxHp * 0.05);
+                player.hp = Math.min(stats.maxHp, player.hp + healAmount);
+                showHealPopup(`+${healAmount} HP`);
+
                 game.kills++;
             }
             spawnMonster();
         }
         updateUI();
+    }
+
+    function showHealPopup(text) {
+        const d = document.createElement('div');
+        d.className = 'dmg-popup';
+        d.innerText = text;
+        d.style.color = '#1dd1a1';
+        d.style.fontSize = '22px';
+        
+        d.style.left = '80px';
+        d.style.bottom = '30%';
+        document.getElementById('game-arena').appendChild(d);
+        setTimeout(() => d.remove(), 650);
     }
 
     function calcStats() {
