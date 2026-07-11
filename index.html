@@ -64,7 +64,7 @@
             width: 75px; 
             height: 75px; 
             z-index: 5; 
-            transition: transform 0.1s; 
+            transition: transform 0.1s, width 0.2s, height 0.2s; 
             filter: drop-shadow(0 6px 4px rgba(0,0,0,0.5)); 
             background-size: contain;
             background-repeat: no-repeat;
@@ -179,7 +179,7 @@
             </div>
             
             <div id="monster">
-                <div class="m-body" id="m-body-color">
+                <div class="m-body" id="m-body-color" style="display: none;">
                     <div class="m-eye"></div>
                 </div>
             </div>
@@ -228,14 +228,15 @@
         'Assassino': '#2f3542', 'Paladino': '#f1f2f6', 'Druida': '#10ac84'
     };
 
+    // Corrigido links diretos das imagens que estavam invisíveis
     const assets = {
         playerGif: "https://visual-aquamarine-74uhjc6d.edgeone.dev/7d4920500a20bf03aa226c3d206999a9.gif", 
         backgroundLandscape: "https://latin-salmon-sldip5ie.edgeone.dev/7d095ae81e099c20e7db776ea1a6e2ea.gif",
         normalMonsters: [
             "https://working-blush-wvzi37my.edgeone.dev/joe-dupras-revenant.gif",
-            "https://kommodo.ai/i/w0XzNFb9471bzv4bpBJK"
+            "https://i.ibb.co/S7c8BKMG/image.png" // Monstro 2 direto
         ],
-        bossMonster: "https://kommodo.ai/i/L4rBRYTZ3QxvrxM6IiT0"
+        bossMonster: "https://i.ibb.co/3y8WY1B9/image.png" // Chefe direto
     };
 
     function selClass(c) {
@@ -294,7 +295,6 @@
     function spawnMonster() {
         const isBoss = (game.kills >= 10);
         
-        // Ajuste de dificuldade: Se for o primeiro level (stage = 1), reduz os atributos do monstro pela metade (fácil). Do estágio 2 em diante, mantém a fórmula normal.
         const difficultyMultiplier = (game.stage === 1) ? 0.5 : 1.0;
         
         const baseHp = (50 + (game.stage * 30)) * (isBoss ? 5 : 1) * difficultyMultiplier;
@@ -314,11 +314,16 @@
         
         if (isBoss) {
             mEl.style.backgroundImage = `url('${assets.bossMonster}')`;
+            // Ajusta o tamanho do contêiner para o chefe ficar maior e imponente
+            mEl.style.width = '100px';
+            mEl.style.height = '100px';
             mBody.style.display = 'none';
         } else {
-            // Escolhe aleatoriamente um dos dois monstros normais fornecidos
             const randomNormalImg = assets.normalMonsters[Math.floor(Math.random() * assets.normalMonsters.length)];
             mEl.style.backgroundImage = `url('${randomNormalImg}')`;
+            // Retorna ao tamanho padrão para monstros normais
+            mEl.style.width = '75px';
+            mEl.style.height = '75px';
             mBody.style.display = 'none';
         }
         
