@@ -445,19 +445,19 @@
         let baseHp, baseAtk, baseDef;
 
         if (game.stage === 1) {
-            // Nível 1 reajustado para ficar exatamente 60% MAIS DIFÍCIL que o padrão anterior
-            baseHp = isBoss ? 72.0 : 19.2;  
-            baseAtk = isBoss ? 3.2 : 1.6;   
+            // Nível 1 reajustado para ficar exatamente TRÊS VEZES MAIS DIFÍCIL (3x)
+            baseHp = isBoss ? 172.8 : 46.08;  
+            baseAtk = isBoss ? 7.68 : 3.84;   
             baseDef = 0;                
         } else {
-            // Outros níveis reajustados para ficarem 20% MAIS FÁCEIS na progressão geral de atributos
-            const levelScale = 1.0 + (player.lvl * 0.28); // Reduzido de 0.35 para 0.28 (20% mais fácil)
-            const stageScale = 1.0 + (game.stage * 0.32);  // Reduzido de 0.40 para 0.32 (20% mais fácil)
+            // Outros níveis reajustados para ficarem DUAS VEZES MAIS FÁCEIS (2x) na progressão
+            const levelScale = 1.0 + (player.lvl * 0.14); // Reduzido pela metade (0.28 -> 0.14)
+            const stageScale = 1.0 + (game.stage * 0.16);  // Reduzido pela metade (0.32 -> 0.16)
             const totalMultiplier = levelScale * stageScale;
             
-            baseHp = (70 + (game.stage * 55)) * (isBoss ? 5.5 : 1) * totalMultiplier;
-            baseAtk = (8 + (game.stage * 5) + (player.lvl * 3)) * (isBoss ? 1.5 : 1) * stageScale;
-            baseDef = (3 + (game.stage * 3) + (player.lvl * 2)) * stageScale;
+            baseHp = ((70 + (game.stage * 55)) * (isBoss ? 5.5 : 1) * totalMultiplier) * 0.5; // Multiplicador final de facilidade de 50%
+            baseAtk = ((8 + (game.stage * 5) + (player.lvl * 3)) * (isBoss ? 1.5 : 1) * stageScale) * 0.5;
+            baseDef = ((3 + (game.stage * 3) + (player.lvl * 2)) * stageScale) * 0.5;
         }
 
         game.monster = {
