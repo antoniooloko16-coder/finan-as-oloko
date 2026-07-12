@@ -445,17 +445,18 @@
         let baseHp, baseAtk, baseDef;
 
         if (game.stage === 1) {
-            // Nível 1 reajustado para ficar exatamente TRÊS VEZES MAIS DIFÍCIL (3x)
+            // Nível 1 ligeiramente ajustado para dar firmeza ao combate inicial
             baseHp = isBoss ? 172.8 : 46.08;  
             baseAtk = isBoss ? 7.68 : 3.84;   
             baseDef = 0;                
         } else {
-            // Outros níveis reajustados para ficarem DUAS VEZES MAIS FÁCEIS (2x) na progressão
-            const levelScale = 1.0 + (player.lvl * 0.14); // Reduzido pela metade (0.28 -> 0.14)
-            const stageScale = 1.0 + (game.stage * 0.16);  // Reduzido pela metade (0.32 -> 0.16)
+            // PROGRESSÃO CORRIGIDA E EQUILIBRADA (2x mais justa)
+            const levelScale = 1.0 + (player.lvl * 0.14); // Reduzido o impacto pesado por nível
+            const stageScale = 1.0 + (game.stage * 0.16);  // Curva de crescimento suavizada
             const totalMultiplier = levelScale * stageScale;
             
-            baseHp = ((70 + (game.stage * 55)) * (isBoss ? 5.5 : 1) * totalMultiplier) * 0.5; // Multiplicador final de facilidade de 50%
+            // Redução direta de 50% nos atributos finais dos inimigos a partir do nível 2
+            baseHp = ((70 + (game.stage * 55)) * (isBoss ? 5.5 : 1) * totalMultiplier) * 0.5; 
             baseAtk = ((8 + (game.stage * 5) + (player.lvl * 3)) * (isBoss ? 1.5 : 1) * stageScale) * 0.5;
             baseDef = ((3 + (game.stage * 3) + (player.lvl * 2)) * stageScale) * 0.5;
         }
@@ -607,7 +608,7 @@
             feet: ['Grevas', 'Botas', 'Passos Rápidos', 'Sapatilhas', 'Coturnos'],
             ring: ['Anel', 'Selo Mágico', 'Aliança', 'Signo', 'Eternidade'],
             shield: ['Brocquel', 'Escudo Real', 'Égide', 'Baluarte', 'Grande Muralha'],
-            wings: ['Asas Celestiais', 'Plumas Flamejantes', 'Planador Corrompido', 'Asas Arcânicas', 'Mantofólio']
+            wings: ['Asas Celestiales', 'Plumas Flamejantes', 'Planador Corrompido', 'Asas Arcânicas', 'Mantofólio']
         }
     };
 
