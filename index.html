@@ -545,6 +545,15 @@
                         showDmg(Math.floor(mDmg), 'player');
                         document.getElementById('game-main').classList.add('shake');
                         setTimeout(()=>document.getElementById('game-main').classList.remove('shake'), 150);
+
+                        // Mecânica de Reflexo de Dano (Reflect)
+                        if(stats.bonusReflect > 0 && game.monster.hp > 0) {
+                            let reflectedDmg = Math.floor(mDmg * (stats.bonusReflect / 100));
+                            if(reflectedDmg > 0) {
+                                game.monster.hp = Math.max(0, game.monster.hp - reflectedDmg);
+                                showDmg(reflectedDmg, 'monster', true);
+                            }
+                        }
                     } else {
                         showDmg("MISS", 'player', true);
                     }
@@ -652,11 +661,21 @@
 
         // Geração dos novos bônus em porcentagem baseados estritamente na Raridade
         const bounds = rarityBonusConfig[rarity];
-        const pctShield = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
-        const pctLifesteal = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
-        const pctCritDmg = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
+        let pctShield = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
+        let pctLifesteal = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
+        let pctCritDmg = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
+        let pctReflect = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
 
         const pickedSlot = slotKeys[Math.floor(Math.random() * slotKeys.length)];
+
+        // Tratamento especial para Equipamentos Comuns (Apenas 1 bônus aleatório correspondente)
+        if (rarity === 'comum') {
+            if (pickedSlot !== 'torso') pctShield = 0;
+            if (pickedSlot !== 'weapon') pctLifesteal = 0;
+            if (pickedSlot !== 'head') pctCritDmg = 0;
+            if (pickedSlot !== 'feet' && pickedSlot !== 'ring') pctReflect = 0;
+        }
+
         const customName = generateCoolItemName(pickedSlot, rarity);
 
         const item = {
@@ -668,6 +687,7 @@
             bonusShield: pctShield,
             bonusLifesteal: pctLifesteal,
             bonusCritDmg: pctCritDmg,
+            bonusReflect: pctReflect,
             icon: slotMapping[pickedSlot].icon
         };
 
@@ -810,7 +830,7 @@
         let s = { 
             str: player.str, def: player.def, luk: player.luk, 
             agi: player.agi, eva: player.eva, int: player.int,
-            bonusShield: 0, bonusLifesteal: 0, bonusCritDmg: 0 
+            bonusShield: 0, bonusLifesteal: 0, bonusCritDmg: 0, bonusReflect: 0 
         };
         
         Object.values(player.equipped).forEach(item => {
@@ -826,6 +846,7 @@
                 if(item.bonusShield) s.bonusShield += item.bonusShield;
                 if(item.bonusLifesteal) s.bonusLifesteal += item.bonusLifesteal;
                 if(item.bonusCritDmg) s.bonusCritDmg += item.bonusCritDmg;
+                if(item.bonusReflect) s.bonusReflect += item.bonusReflect;
             }
         });
         
@@ -945,9 +966,10 @@
         }
         
         // Exibição amigável dos bônus percentuais mapeados
-        if(item.bonusShield)    statStr += `<div style="color:#00ecec; font-weight:bold;">+${item.bonusShield}% ESCUDO</div>`;
+        if(item.bonusShield)    statStr += `<div style="color:#00ecec; font-weight:bold;">+${item.bonusShield}% PROTEÇÃO</div>`;
         if(item.bonusLifesteal) statStr += `<div style="color:#ff4757; font-weight:bold;">+${item.bonusLifesteal}% ROUBO DE VIDA</div>`;
         if(item.bonusCritDmg)   statStr += `<div style="color:#ffcc00; font-weight:bold;">+${item.bonusCritDmg}% DANO CRÍTICO</div>`;
+        if(item.bonusReflect)   statStr += `<div style="color:#a55eea; font-weight:bold;">+${item.bonusReflect}% REFLETIR GOLPE</div>`;
 
         statsEl.innerHTML = statStr;
 
