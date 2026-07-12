@@ -287,7 +287,7 @@
 
     let game = { 
         stage: 1, kills: 0, isAttacking: false, monster: null, 
-        lastAttackTime: 0, attackCounter: 0 
+        lastAttackTime: 0, attackCounter: 0, isEngineRunning: false
     };
 
     const slotMapping = {
@@ -333,17 +333,15 @@
         try {
             const saved = JSON.parse(rawData);
             if (!saved || !saved.player || !saved.game) return false;
-
-            // Fusão profunda e segura para evitar quebra por saves antigos/corrompidos
-            player = Object.assign({}, player, saved.player);
+            
+            player = Object.assign(player, saved.player);
             
             if(!player.equipped) player.equipped = { weapon: null, head: null, torso: null, feet: null, ring: null, shield: null, wings: null };
             if(!player.equipped.shield) player.equipped.shield = null;
             if(!player.equipped.wings) player.equipped.wings = null;
-            if(!player.inventory) player.inventory = [];
-            
             if(player.dex === undefined) player.dex = 5;
             if(player.vit === undefined) player.vit = 5;
+            if(!player.inventory) player.inventory = [];
 
             game.stage = saved.game.stage || 1;
             game.kills = saved.game.kills || 0;
@@ -354,7 +352,6 @@
             return true;
         } catch(e) {
             console.error("Erro ao carregar o save corrompido:", e);
-            localStorage.removeItem('shadow_legends_infinite_save'); // Limpa preventivamente se estiver ilegível
             return false;
         }
     }
@@ -407,6 +404,10 @@
     function startGame() {
         player.name = document.getElementById('p-name').value || "HERÓI";
         const c = player.class;
+        
+        player.str = 5; player.def = 5; player.luk = 5; player.agi = 5;
+        player.eva = 5; player.int = 5; player.dex = 5; player.vit = 5;
+
         if(c === "Guerreiro") { player.str += 10; player.def += 5; player.vit += 5; player.range = "melee"; }
         if(c === "Arqueiro") { player.agi += 10; player.luk += 5; player.dex += 5; player.range = "ranged"; }
         if(c === "Mago") { player.int += 10; player.luk += 5; player.dex += 3; player.range = "magic"; }
@@ -431,7 +432,11 @@
         
         game.lastAttackTime = performance.now();
         saveGame();
-        engine();
+        
+        if (!game.isEngineRunning) {
+            game.isEngineRunning = true;
+            engine();
+        }
     }
 
     function spawnMonster() {
@@ -456,30 +461,32 @@
         const mEl = document.getElementById('monster');
         const mBody = document.getElementById('m-body-color');
         
-        if (isBoss) {
-            mEl.style.backgroundImage = `url('${assets.bossMonster}')`;
-            mEl.style.width = '100px';
-            mEl.style.height = '100px';
-            if(mBody) mBody.style.display = 'none';
-        } else {
-            const randomNormalImg = assets.normalMonsters[Math.floor(Math.random() * assets.normalMonsters.length)];
-            mEl.style.backgroundImage = `url('${randomNormalImg}')`;
-            mEl.style.width = '75px';
-            mEl.style.height = '75px';
-            if(mBody) mBody.style.display = 'none';
+        if (mEl) {
+            if (isBoss) {
+                mEl.style.backgroundImage = `url('${assets.bossMonster}')`;
+                mEl.style.width = '100px';
+                mEl.style.height = '100px';
+            } else {
+                const randomNormalImg = assets.normalMonsters[Math.floor(Math.random() * assets.normalMonsters.length)];
+                mEl.style.backgroundImage = `url('${randomNormalImg}')`;
+                mEl.style.width = '75px';
+                mEl.style.height = '75px';
+            }
         }
+        if (mBody) mBody.style.display = 'none';
         
         updateUI();
     }
 
     function engine() {
+        if (!game.isEngineRunning) return;
         const currentTime = performance.now();
         const stats = calcStats();
         let attackCooldown = 1500 - (stats.agi * 8) - (stats.dex * 2);
 
         if (attackCooldown < 200) attackCooldown = 200; 
 
-        if (!game.isAttacking && (currentTime - game.lastAttackTime >= attackCooldown)) {
+        if (!game.isAttacking && game.monster && game.monster.hp > 0 && (currentTime - game.lastAttackTime >= attackCooldown)) {
             combatCycle(stats);
             game.lastAttackTime = currentTime;
         }
@@ -487,6 +494,7 @@
     }
 
     function combatCycle(stats) {
+        if (!game.monster || game.monster.hp <= 0) return;
         game.isAttacking = true;
         const pEl = document.getElementById('player');
         const arm = document.getElementById('main-arm');
@@ -494,8 +502,8 @@
         game.attackCounter++;
 
         if(player.range === "melee") {
-            const containerWidth = document.getElementById('game-arena').clientWidth || 320;
-            pEl.style.left = (containerWidth - 120) + "px";
+            const containerWidth = document.getElementById('game-arena').clientWidth;
+            if (pEl) pEl.style.left = (containerWidth - 120) + "px";
             setTimeout(() => { 
                 if(player.class !== 'Guerreiro' && arm) arm.style.transform = "rotate(-90deg)";
                 applyDamage(stats); 
@@ -506,11 +514,12 @@
         }
 
         setTimeout(() => {
-            pEl.style.left = "30px";
+            if (pEl) pEl.style.left = "30px";
             if(player.class !== 'Guerreiro' && arm) arm.style.transform = "rotate(0deg)";
             
             if(game.monster && game.monster.hp > 0) {
                 setTimeout(() => {
+                    if (!game.monster || game.monster.hp <= 0) { game.isAttacking = false; return; }
                     let monsterAccuracyBonus = game.monster.isBoss ? 60 : 35;
                     let hitChance = Math.max(25, (100 - stats.eva) + monsterAccuracyBonus);
 
@@ -524,10 +533,13 @@
 
                         player.hp -= mDmg;
                         showDmg(Math.floor(mDmg), 'player');
-                        document.getElementById('game-main').classList.add('shake');
-                        setTimeout(()=>document.getElementById('game-main').classList.remove('shake'), 150);
+                        const mainContainer = document.getElementById('game-main');
+                        if (mainContainer) {
+                            mainContainer.classList.add('shake');
+                            setTimeout(()=>mainContainer.classList.remove('shake'), 150);
+                        }
 
-                        if(stats.bonusReflect > 0 && game.monster.hp > 0) {
+                        if(stats.bonusReflect > 0 && game.monster && game.monster.hp > 0) {
                             let reflectedDmg = Math.floor(mDmg * (stats.bonusReflect / 100));
                             if(reflectedDmg > 0) {
                                 game.monster.hp = Math.max(0, game.monster.hp - reflectedDmg);
@@ -548,15 +560,17 @@
     }
 
     function createProjectile(type, stats) {
+        const arena = document.getElementById('game-arena');
+        if (!arena) return;
         const proj = document.createElement('div');
         proj.className = 'projectile';
         proj.style.left = "90px";
         proj.style.bottom = "20%";
         if(type === 'magic') proj.style.background = "linear-gradient(90deg, #fff, #b388ff)";
-        document.getElementById('game-arena').appendChild(proj);
+        arena.appendChild(proj);
 
         let pos = 90;
-        const containerWidth = document.getElementById('game-arena').clientWidth || 320;
+        const containerWidth = arena.clientWidth;
         let id = setInterval(() => {
             pos += 16;
             proj.style.left = pos + "px";
@@ -728,6 +742,8 @@
     }
 
     function showStatGainPopup(text) {
+        const arena = document.getElementById('game-arena');
+        if (!arena) return;
         const d = document.createElement('div');
         d.className = 'dmg-popup';
         d.innerText = text;
@@ -735,7 +751,7 @@
         d.style.fontSize = '20px';
         d.style.left = '40px';
         d.style.bottom = '40%';
-        document.getElementById('game-arena').appendChild(d);
+        arena.appendChild(d);
         setTimeout(() => d.remove(), 800);
     }
 
@@ -801,6 +817,8 @@
     }
 
     function showHealPopup(text) {
+        const arena = document.getElementById('game-arena');
+        if (!arena) return;
         const d = document.createElement('div');
         d.className = 'dmg-popup';
         d.innerText = text;
@@ -808,7 +826,7 @@
         d.style.fontSize = '22px';
         d.style.left = '80px';
         d.style.bottom = '30%';
-        document.getElementById('game-arena').appendChild(d);
+        arena.appendChild(d);
         setTimeout(() => d.remove(), 650);
     }
 
@@ -841,15 +859,17 @@
     }
 
     function showDmg(val, target, special) {
+        const arena = document.getElementById('game-arena');
+        if (!arena) return;
         const d = document.createElement('div');
         d.className = 'dmg-popup';
         d.innerText = val;
         d.style.color = special ? 'var(--diamante)' : (target === 'player' ? '#ff4757' : '#ffffff');
         
-        const containerWidth = document.getElementById('game-arena').clientWidth || 320;
+        const containerWidth = arena.clientWidth;
         d.style.left = (target === 'player' ? '70px' : (containerWidth - 110) + 'px');
         d.style.bottom = '25%';
-        document.getElementById('game-arena').appendChild(d);
+        arena.appendChild(d);
         setTimeout(() => d.remove(), 600);
     }
 
@@ -868,7 +888,7 @@
         
         const slotsOrder = ['head', 'weapon', 'torso', 'shield', 'feet', 'ring', 'wings'];
         slotsOrder.forEach(slotKey => {
-            const currentItem = player.equipped ? player.equipped[slotKey] : null;
+            const currentItem = player.equipped[slotKey];
             const meta = slotMapping[slotKey];
             
             let boxClass = 'eq-slot-box';
@@ -907,7 +927,7 @@
             const backpackBox = document.createElement('div');
             backpackBox.className = 'grid-item-slot';
             
-            if(player.inventory && player.inventory[idx]) {
+            if(player.inventory[idx]) {
                 const item = player.inventory[idx];
                 backpackBox.classList.add(item.rarity);
                 backpackBox.innerHTML = item.icon;
@@ -931,11 +951,9 @@
         const statsEl = document.getElementById('pop-item-stats');
         const actionBtn = document.getElementById('pop-action-btn');
 
-        nameEl.innerText = item.name;
-        nameEl.style.color = `var(--${item.rarity})`;
-        rarityEl.innerText = `${item.rarity} | Slot: ${slotMapping[item.slot].label}`;
-        rarityEl.style.color = `var(--${item.rarity})`;
-        iconEl.innerText = item.icon;
+        if(nameEl) { nameEl.innerText = item.name; nameEl.style.color = `var(--${item.rarity})`; }
+        if(rarityEl) { rarityEl.innerText = `${item.rarity} | Slot: ${slotMapping[item.slot].label}`; rarityEl.style.color = `var(--${item.rarity})`; }
+        if(iconEl) iconEl.innerText = item.icon;
 
         let statStr = '';
         if(item.stats) {
@@ -947,18 +965,20 @@
         if(item.bonusCritDmg)   statStr += `<div style="color:#ffcc00; font-weight:bold;">+${item.bonusCritDmg}% DANO CRÍTICO</div>`;
         if(item.bonusReflect)   statStr += `<div style="color:#a55eea; font-weight:bold;">+${item.bonusReflect}% REFLETIR GOLPE</div>`;
 
-        statsEl.innerHTML = statStr;
+        if(statsEl) statsEl.innerHTML = statStr;
 
-        if(isEquippedContext) {
-            actionBtn.innerText = 'DESEQUIPAR';
-            actionBtn.style.borderColor = '#ff4757';
-            actionBtn.style.color = '#ff4757';
-        } else {
-            actionBtn.innerText = 'EQUIPAR';
-            actionBtn.style.borderColor = '#ffcc00';
-            actionBtn.style.color = '#ffcc00';
+        if(actionBtn) {
+            if(isEquippedContext) {
+                actionBtn.innerText = 'DESEQUIPAR';
+                actionBtn.style.borderColor = '#ff4757';
+                actionBtn.style.color = '#ff4757';
+            } else {
+                actionBtn.innerText = 'EQUIPAR';
+                actionBtn.style.borderColor = '#ffcc00';
+                actionBtn.style.color = '#ffcc00';
+            }
         }
-        detailsPop.style.display = 'flex';
+        if(detailsPop) detailsPop.style.display = 'flex';
     }
 
     function executeItemAction() {
@@ -1001,27 +1021,35 @@
     }
 
     function closeDetailsPop() {
-        document.getElementById('item-details').style.display = 'none';
+        const detailsPop = document.getElementById('item-details');
+        if(detailsPop) detailsPop.style.display = 'none';
         selectedItemContext = null;
     }
 
     function updateUI() {
-        const stats = calcStats();
         if (!game.monster) return;
-
-        document.getElementById('p-lvl').innerText = player.lvl;
-        document.getElementById('stage-info').innerText = `FASE ${Math.floor(game.stage/5) + 1}-${(game.stage%5) || 5}`;
-        document.getElementById('kills-info').innerText = game.monster.isBoss ? "CHEFE!" : `MONSTROS: ${game.kills}/10`;
+        const stats = calcStats();
         
-        document.getElementById('p-hp-bar').style.width = Math.min(100, Math.max(0, (player.hp / stats.maxHp * 100))) + "%";
-        document.getElementById('m-hp-bar').style.width = Math.min(100, Math.max(0, (game.monster.hp / game.monster.maxHp * 100))) + "%";
+        const pLvlEl = document.getElementById('p-lvl');
+        const stageInfoEl = document.getElementById('stage-info');
+        const killsInfoEl = document.getElementById('kills-info');
+        const pHpBarEl = document.getElementById('p-hp-bar');
+        const mHpBarEl = document.getElementById('m-hp-bar');
+        
+        if(pLvlEl) pLvlEl.innerText = player.lvl;
+        if(stageInfoEl) stageInfoEl.innerText = `FASE ${Math.floor(game.stage/5) + 1}-${(game.stage%5) || 5}`;
+        if(killsInfoEl) killsInfoEl.innerText = game.monster.isBoss ? "CHEFE!" : `MONSTROS: ${game.kills}/10`;
+        
+        if(pHpBarEl) pHpBarEl.style.width = Math.min(100, Math.max(0, (player.hp / stats.maxHp * 100))) + "%";
+        if(mHpBarEl) mHpBarEl.style.width = Math.min(100, Math.max(0, (game.monster.hp / game.monster.maxHp * 100))) + "%";
 
         ['str','def','luk','agi','eva','int','dex','vit'].forEach(st => {
             const el = document.getElementById('st-'+st);
             if(el) el.innerText = stats[st];
         });
 
-        if(document.getElementById('bag-modal').style.display === 'flex') {
+        const bagModal = document.getElementById('bag-modal');
+        if(bagModal && bagModal.style.display === 'flex') {
             renderBagUI();
         }
     }
