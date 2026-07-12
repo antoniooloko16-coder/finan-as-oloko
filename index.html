@@ -62,17 +62,9 @@
         .p-weapon { position: absolute; bottom: -12px; width: 6px; height: 32px; background: #f1f2f6; border: 2px solid #000; transform-origin: top center; border-radius: 3px; }
 
         #monster { 
-            position: absolute; 
-            bottom: 6%; 
-            right: 30px; 
-            width: 75px; 
-            height: 75px; 
-            z-index: 5; 
-            transition: transform 0.1s, width 0.2s, height 0.2s; 
-            filter: drop-shadow(0 6px 4px rgba(0,0,0,0.5)); 
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: bottom center;
+            position: absolute; bottom: 6%; right: 30px; width: 75px; height: 75px; z-index: 5; 
+            transition: transform 0.1s, width 0.2s, height 0.2s; filter: drop-shadow(0 6px 4px rgba(0,0,0,0.5)); 
+            background-size: contain; background-repeat: no-repeat; background-position: bottom center;
         }
 
         .ui-header { padding: 12px 16px; background: #0d1117; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-ui); }
@@ -109,36 +101,20 @@
         .class-btn.active { border-color: #ffcc00; background: rgba(255, 204, 0, 0.12); color: #ffcc00; }
         .start-btn { background: linear-gradient(135deg, #ff4757 0%, #ff6b6b 100%); color: white; border: none; padding: 14px 40px; border-radius: 25px; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 6px 15px rgba(255,71,87,0.3); }
 
-        .projectile {
-            position: absolute; width: 25px; height: 6px; background: linear-gradient(90deg, #fff, #00c6ff); border-radius: 10px; z-index: 100;
-        }
+        .projectile { position: absolute; width: 25px; height: 6px; background: linear-gradient(90deg, #fff, #00c6ff); border-radius: 10px; z-index: 100; }
 
         .bag-trigger-btn {
-            background: linear-gradient(135deg, #2c3e50 0%, #0f171e 100%);
-            border: 1px solid #ffcc00; color: #fff; font-weight: bold; font-size: 12px;
-            padding: 10px; border-radius: 10px; cursor: pointer; text-transform: uppercase;
-            letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: linear-gradient(135deg, #2c3e50 0%, #0f171e 100%); border: 1px solid #ffcc00; color: #fff; font-weight: bold; font-size: 12px;
+            padding: 10px; border-radius: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        .bag-container {
-            display: grid; grid-template-columns: 1fr 1.2fr; gap: 10px; width: 100%; height: 75vh; margin-top: 10px;
-        }
-        .bag-column {
-            background: rgba(15, 23, 36, 0.6); border: 1px solid var(--border-ui);
-            border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
-        }
-        .bag-col-header {
-            background: rgba(255,255,255,0.04); padding: 8px; text-align: center;
-            font-size: 12px; font-weight: bold; letter-spacing: 1px; color: #fff;
-            border-bottom: 1px solid var(--border-ui); text-transform: uppercase;
-        }
-        .eq-slots-list {
-            padding: 10px; display: flex; flex-direction: column; gap: 8px; justify-content: center; height: 100%; overflow-y: auto;
-        }
+        .bag-container { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 8px; width: 100%; height: 75vh; margin-top: 10px; }
+        .bag-column { background: rgba(15, 23, 36, 0.6); border: 1px solid var(--border-ui); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        .bag-col-header { background: rgba(255,255,255,0.04); padding: 8px; text-align: center; font-size: 12px; font-weight: bold; letter-spacing: 1px; color: #fff; border-bottom: 1px solid var(--border-ui); text-transform: uppercase; }
+        .eq-slots-list { padding: 8px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; height: 100%; }
         .eq-slot-box {
-            background: rgba(0,0,0,0.3); border: 1px dashed rgba(255,255,255,0.2);
-            border-radius: 10px; padding: 6px; display: flex; align-items: center; gap: 8px;
-            cursor: pointer; min-height: 48px; transition: all 0.2s;
+            background: rgba(0,0,0,0.3); border: 1px dashed rgba(255,255,255,0.2); border-radius: 10px; padding: 6px; display: flex; align-items: center; gap: 6px;
+            cursor: pointer; min-height: 44px; transition: all 0.2s;
         }
         .eq-slot-box.filled-comum { border: 1px solid var(--comum); background: rgba(164,176,190,0.08); }
         .eq-slot-box.filled-uncommon { border: 1px solid var(--uncommon); background: rgba(46,213,115,0.08); }
@@ -146,18 +122,14 @@
         .eq-slot-box.filled-super-rare { border: 1px solid var(--super-rare); background: rgba(165,94,234,0.08); }
         .eq-slot-box.filled-diamante { border: 1px solid var(--diamante); background: rgba(0,236,236,0.12); box-shadow: inset 0 0 8px rgba(0,236,236,0.2); }
         
-        .eq-slot-icon { font-size: 22px; width: 32px; text-align: center; }
+        .eq-slot-icon { font-size: 20px; width: 28px; text-align: center; }
         .eq-slot-info { display: flex; flex-direction: column; }
-        .eq-slot-name { font-size: 10px; font-weight: bold; }
+        .eq-slot-name { font-size: 9px; font-weight: bold; }
         .eq-slot-type { font-size: 8px; color: #a4b0be; text-transform: uppercase; }
 
-        .grid-backpack {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px;
-            overflow-y: auto; align-content: start; height: 100%;
-        }
+        .grid-backpack { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px; overflow-y: auto; align-content: start; height: 100%; }
         .grid-item-slot {
-            aspect-ratio: 1; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            aspect-ratio: 1; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; display: flex; align-items: center; justify-content: center;
             font-size: 24px; cursor: pointer; position: relative; transition: all 0.15s;
         }
         .grid-item-slot.comum { border: 1px solid var(--comum); background: rgba(164,176,190,0.12); }
@@ -168,17 +140,11 @@
         .grid-item-slot:active { transform: scale(0.95); }
 
         .item-details-pop {
-            position: absolute; bottom: 0; left: 0; right: 0; background: #0f131c;
-            border-top: 3px solid #ffcc00; padding: 14px; border-top-left-radius: 16px;
-            border-top-right-radius: 16px; display: none; flex-direction: column; gap: 8px;
-            box-shadow: 0 -10px 25px rgba(0,0,0,0.8); z-index: 2100;
+            position: absolute; bottom: 0; left: 0; right: 0; background: #0f131c; border-top: 3px solid #ffcc00; padding: 14px; border-top-left-radius: 16px;
+            border-top-right-radius: 16px; display: none; flex-direction: column; gap: 8px; box-shadow: 0 -10px 25px rgba(0,0,0,0.8); z-index: 2100;
         }
         
-        .reset-save-btn {
-            background: transparent; border: 1px solid #ff4757; color: #ff4757;
-            font-size: 9px; padding: 4px 8px; border-radius: 6px; cursor: pointer;
-            margin-top: 15px; text-transform: uppercase; font-weight: bold;
-        }
+        .reset-save-btn { background: transparent; border: 1px solid #ff4757; color: #ff4757; font-size: 9px; padding: 4px 8px; border-radius: 6px; cursor: pointer; margin-top: 15px; text-transform: uppercase; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -313,7 +279,7 @@
         hp: 100, maxHp: 100, range: "melee",
         str: 5, def: 5, luk: 5, agi: 5, eva: 5, int: 5,
         skinColor: "#ffdbac", hairColor: "#4b3621",
-        equipped: { weapon: null, head: null, torso: null, feet: null, ring: null },
+        equipped: { weapon: null, head: null, torso: null, feet: null, ring: null, shield: null, wings: null },
         inventory: []
     };
 
@@ -322,12 +288,15 @@
         lastAttackTime: 0, attackCounter: 0 
     };
 
+    // --- SLOTS ATUALIZADOS CONFORME O PEDIDO ---
     const slotMapping = {
-        weapon: { label: 'Arma', icon: '⚔️' },
         head: { label: 'Elmo', icon: '🪖' },
+        weapon: { label: 'Arma', icon: '⚔️' },
         torso: { label: 'Armadura', icon: '🛡️' },
+        shield: { label: 'Escudo', icon: '🎚️' },
         feet: { label: 'Botas', icon: '🥾' },
-        ring: { label: 'Anel', icon: '💍' }
+        ring: { label: 'Anel', icon: '💍' },
+        wings: { label: 'Asa', icon: '🕊️' }
     };
 
     let selectedItemContext = null; 
@@ -348,15 +317,6 @@
         bossMonster: "https://i.ibb.co/3y8WY1B9/image.png"
     };
 
-    // --- CONFIGURAÇÃO DE BÔNUS POR RARIDADE ---
-    const rarityBonusConfig = {
-        'comum':      { min: 2,  max: 5,   label: 'Comum' },
-        'uncommon':   { min: 6,  max: 9,   label: 'Incomum' },
-        'rare':       { min: 10, max: 13,  label: 'Raro' },
-        'super-rare': { min: 14, max: 17,  label: 'Super Raro' },
-        'diamante':   { min: 18, max: 20,  label: 'Diamante' }
-    };
-
     // --- FUNÇÕES DE SALVAMENTO ---
     function saveGame() {
         const saveData = {
@@ -373,6 +333,11 @@
         try {
             const saved = JSON.parse(rawData);
             player = Object.assign(player, saved.player);
+            
+            // Garantir que novos slots existam se carregar um save antigo
+            if(!player.equipped.shield) player.equipped.shield = null;
+            if(!player.equipped.wings) player.equipped.wings = null;
+
             game.stage = saved.game.stage;
             game.kills = saved.game.kills;
 
@@ -535,7 +500,6 @@
                     if(Math.random() * 100 > stats.eva) {
                         let mDmg = Math.max(2, game.monster.atk - (stats.def * 0.4));
                         
-                        // Aplicando o modificador passivo de Escudo obtido via Itens
                         if(stats.bonusShield > 0) {
                             let reduction = mDmg * (stats.bonusShield / 100);
                             mDmg = Math.max(1, mDmg - reduction);
@@ -546,7 +510,6 @@
                         document.getElementById('game-main').classList.add('shake');
                         setTimeout(()=>document.getElementById('game-main').classList.remove('shake'), 150);
 
-                        // Mecânica de Reflexo de Dano (Reflect)
                         if(stats.bonusReflect > 0 && game.monster.hp > 0) {
                             let reflectedDmg = Math.floor(mDmg * (stats.bonusReflect / 100));
                             if(reflectedDmg > 0) {
@@ -597,11 +560,13 @@
             diamante: ['Eterno', 'Cosmo', 'Supernova', 'Divino', 'Infinito']
         },
         slots: {
-            weapon: ['Gume', 'Lâmina', 'Machado', 'Montante', 'Cetro'],
-            head: ['Visor', 'Yoroi', 'Coroa', 'Diadema', 'Casco'],
+            weapon: ['Gume', 'Lâmina', 'Arco', 'Cajado', 'Montante'],
+            head: ['Visor', 'Yoroi', 'Coroa', 'Diadema', 'Capacete'],
             torso: ['Manto', 'Peitoral', 'Placa Pesada', 'Cota Runada', 'Couraça'],
             feet: ['Grevas', 'Botas', 'Passos Rápidos', 'Sapatilhas', 'Coturnos'],
-            ring: ['Anel', 'Selo Mágico', 'Aliança', 'Signo', 'Eternidade']
+            ring: ['Anel', 'Selo Mágico', 'Aliança', 'Signo', 'Eternidade'],
+            shield: ['Brocquel', 'Escudo Real', 'Égide', 'Baluarte', 'Grande Muralha'],
+            wings: ['Asas Celestiais', 'Plumas Flamejantes', 'Planador Corrompido', 'Asas Arcânicas', 'Mantofólio']
         }
     };
 
@@ -614,23 +579,23 @@
     }
 
     function createLoot() {
-        const slotKeys = ['weapon', 'head', 'torso', 'feet', 'ring'];
+        const slotKeys = ['weapon', 'head', 'torso', 'feet', 'ring', 'shield', 'wings'];
         const allStats = ['str', 'def', 'luk', 'agi', 'eva', 'int'];
         
         const roll = Math.random() * 100; 
         let rarity = 'comum';
         let attributesCount = 3; 
 
-        if (roll <= 1.0) {       
+        if (roll <= 2.0) {       
             rarity = 'diamante';
             attributesCount = 8; 
-        } else if (roll <= 5.0) {  
+        } else if (roll <= 8.0) {  
             rarity = 'super-rare';
             attributesCount = 6; 
-        } else if (roll <= 15.0) {   
+        } else if (roll <= 22.0) {   
             rarity = 'rare';
             attributesCount = 5; 
-        } else if (roll <= 45.0) {
+        } else if (roll <= 55.0) {
             rarity = 'uncommon';
             attributesCount = 4; 
         }
@@ -638,10 +603,8 @@
         let selectedStats = [];
         let statsPool = [...allStats];
         
-        // Atributos principais escalonados de acordo com a raridade E o nível da fase atual!
         for(let n = 0; n < attributesCount; n++) {
             if(statsPool.length === 0) statsPool = [...allStats];
-            
             let index = Math.floor(Math.random() * statsPool.length);
             
             let statValBase = game.stage * (rarity === 'diamante' ? 3.5 : rarity === 'super-rare' ? 2.5 : rarity === 'rare' ? 1.6 : rarity === 'uncommon' ? 1.0 : 0.6);
@@ -651,31 +614,56 @@
             if (existingStat) {
                 existingStat.val += finalVal;
             } else {
-                selectedStats.push({
-                    name: statsPool[index],
-                    val: finalVal
-                });
+                selectedStats.push({ name: statsPool[index], val: finalVal });
             }
             statsPool.splice(index, 1);
         }
 
-        // Geração dos novos bônus em porcentagem baseados estritamente na Raridade
-        const bounds = rarityBonusConfig[rarity];
-        let pctShield = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
-        let pctLifesteal = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
-        let pctCritDmg = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
-        let pctReflect = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
+        // Inicializa bônus zerados
+        let pctShield = 0, pctLifesteal = 0, pctCritDmg = 0, pctReflect = 0;
+        const possibleBonusTypes = ['shield', 'lifesteal', 'critDmg', 'reflect'];
 
-        const pickedSlot = slotKeys[Math.floor(Math.random() * slotKeys.length)];
+        if (rarity === 'diamante') {
+            // REGRA DIAMANTE: Exatamente 2 bônus. Um de 2~10% e outro de 15~20%
+            let selectedBonusTypes = [];
+            while (selectedBonusTypes.length < 2) {
+                let randomType = possibleBonusTypes[Math.floor(Math.random() * possibleBonusTypes.length)];
+                if (!selectedBonusTypes.includes(randomType)) {
+                    selectedBonusTypes.push(randomType);
+                }
+            }
 
-        // Tratamento especial para Equipamentos Comuns (Apenas 1 bônus aleatório correspondente)
-        if (rarity === 'comum') {
-            if (pickedSlot !== 'torso') pctShield = 0;
-            if (pickedSlot !== 'weapon') pctLifesteal = 0;
-            if (pickedSlot !== 'head') pctCritDmg = 0;
-            if (pickedSlot !== 'feet' && pickedSlot !== 'ring') pctReflect = 0;
+            // Atribui os valores baseados nas faixas estritas
+            let valLow = Math.floor(Math.random() * (10 - 2 + 1)) + 2;   // 2% a 10%
+            let valHigh = Math.floor(Math.random() * (20 - 15 + 1)) + 15; // 15% a 20%
+
+            selectedBonusTypes.forEach((type, idx) => {
+                let finalVal = (idx === 0) ? valLow : valHigh;
+                if (type === 'shield') pctShield = finalVal;
+                if (type === 'lifesteal') pctLifesteal = finalVal;
+                if (type === 'critDmg') pctCritDmg = finalVal;
+                if (type === 'reflect') pctReflect = finalVal;
+            });
+
+        } else {
+            // OUTRAS RARIDADES: Sempre ganham EXATAMENTE 1 bônus independente da raridade
+            let chosenBonus = possibleBonusTypes[Math.floor(Math.random() * possibleBonusTypes.length)];
+            
+            // Valores escalonados de forma fixa para bônus único de raridades inferiores
+            let bMin = 2, bMax = 5;
+            if (rarity === 'uncommon') { bMin = 5; bMax = 8; }
+            else if (rarity === 'rare') { bMin = 8; bMax = 12; }
+            else if (rarity === 'super-rare') { bMin = 12; bMax = 15; }
+
+            let generatedVal = Math.floor(Math.random() * (bMax - bMin + 1)) + bMin;
+
+            if (chosenBonus === 'shield') pctShield = generatedVal;
+            if (chosenBonus === 'lifesteal') pctLifesteal = generatedVal;
+            if (chosenBonus === 'critDmg') pctCritDmg = generatedVal;
+            if (chosenBonus === 'reflect') pctReflect = generatedVal;
         }
 
+        const pickedSlot = slotKeys[Math.floor(Math.random() * slotKeys.length)];
         const customName = generateCoolItemName(pickedSlot, rarity);
 
         const item = {
@@ -698,6 +686,7 @@
             player.inventory.unshift(item);
         }
 
+        // Autoequipar inteligente se for superior
         const currentEquipped = player.equipped[item.slot];
         let totalNewVal = item.stats.reduce((acc, s) => acc + s.val, 0);
         let totalCurrentVal = currentEquipped ? currentEquipped.stats.reduce((acc, s) => acc + s.val, 0) : -1;
@@ -729,10 +718,7 @@
         for (let i = 0; i < 2; i++) {
             const randomStat = pool[Math.floor(Math.random() * pool.length)];
             player[randomStat] += 1;
-            
-            setTimeout(() => {
-                showStatGainPopup(`+1 ${randomStat.toUpperCase()}`);
-            }, i * 250);
+            setTimeout(() => { showStatGainPopup(`+1 ${randomStat.toUpperCase()}`); }, i * 250);
         }
     }
 
@@ -742,8 +728,6 @@
         d.innerText = text;
         d.style.color = '#2ed573';
         d.style.fontSize = '20px';
-        
-        const containerWidth = document.getElementById('game-arena').clientWidth;
         d.style.left = '40px';
         d.style.bottom = '40%';
         document.getElementById('game-arena').appendChild(d);
@@ -757,7 +741,6 @@
         let baseDmg = Math.max(1, (stats.str + stats.int) - (game.monster.def * 0.5));
         
         if(crit) {
-            // Modificador de Dano Crítico acrescido pelos novos bônus
             let multiplier = 1.5 + (stats.bonusCritDmg / 100);
             baseDmg *= multiplier;
         }
@@ -766,7 +749,6 @@
         game.monster.hp -= baseDmg;
         showDmg(baseDmg, 'monster', crit);
 
-        // Mecânica de Roubo de Vida (Lifesteal) baseado no Dano Aplicado
         if(stats.bonusLifesteal > 0) {
             let healLoot = Math.floor(baseDmg * (stats.bonusLifesteal / 100));
             if(healLoot > 0) {
@@ -804,7 +786,6 @@
                 let healAmount = Math.floor(stats.maxHp * 0.05);
                 player.hp = Math.min(stats.maxHp, player.hp + healAmount);
                 showHealPopup(`+${healAmount} HP`);
-
                 game.kills++;
             }
             saveGame();
@@ -819,7 +800,6 @@
         d.innerText = text;
         d.style.color = '#1dd1a1';
         d.style.fontSize = '22px';
-        
         d.style.left = '80px';
         d.style.bottom = '30%';
         document.getElementById('game-arena').appendChild(d);
@@ -837,12 +817,9 @@
             if(item) {
                 if(item.stats) {
                     item.stats.forEach(stat => {
-                        if(s[stat.name] !== undefined) {
-                            s[stat.name] += stat.val;
-                        }
+                        if(s[stat.name] !== undefined) s[stat.name] += stat.val;
                     });
                 }
-                // Somando os novos bônus percentuais cumulativos
                 if(item.bonusShield) s.bonusShield += item.bonusShield;
                 if(item.bonusLifesteal) s.bonusLifesteal += item.bonusLifesteal;
                 if(item.bonusCritDmg) s.bonusCritDmg += item.bonusCritDmg;
@@ -873,15 +850,14 @@
         renderBagUI();
     }
 
-    function closeBagModal() {
-        document.getElementById('bag-modal').style.display = 'none';
-    }
+    function closeBagModal() { document.getElementById('bag-modal').style.display = 'none'; }
 
     function renderBagUI() {
         const eqContainer = document.getElementById('eq-slots-ui');
         eqContainer.innerHTML = '';
         
-        const slotsOrder = ['head', 'weapon', 'torso', 'feet', 'ring'];
+        // ORDEM EXIBIÇÃO DE TODOS OS SLOTS ATUALIZADOS DO INVENTÁRIO DO HERÓI
+        const slotsOrder = ['head', 'weapon', 'torso', 'shield', 'feet', 'ring', 'wings'];
         slotsOrder.forEach(slotKey => {
             const currentItem = player.equipped[slotKey];
             const meta = slotMapping[slotKey];
@@ -910,9 +886,7 @@
             const slotBox = document.createElement('div');
             slotBox.className = boxClass;
             slotBox.innerHTML = contentHtml;
-            slotBox.onclick = () => {
-                if(currentItem) showItemDetails(currentItem, true);
-            };
+            slotBox.onclick = () => { if(currentItem) showItemDetails(currentItem, true); };
             eqContainer.appendChild(slotBox);
         });
 
@@ -931,7 +905,6 @@
                 if(player.equipped[item.slot] && player.equipped[item.slot].id === item.id) {
                     backpackBox.style.boxShadow = 'inset 0 0 0 2px #1dd1a1';
                 }
-                
                 backpackBox.onclick = () => showItemDetails(item, false);
             } else {
                 backpackBox.innerHTML = '';
@@ -960,12 +933,9 @@
 
         let statStr = '';
         if(item.stats) {
-            item.stats.forEach(st => {
-                statStr += `<div>+${st.val} ${st.name.toUpperCase()}</div>`;
-            });
+            item.stats.forEach(st => { statStr += `<div>+${st.val} ${st.name.toUpperCase()}</div>`; });
         }
         
-        // Exibição amigável dos bônus percentuais mapeados
         if(item.bonusShield)    statStr += `<div style="color:#00ecec; font-weight:bold;">+${item.bonusShield}% PROTEÇÃO</div>`;
         if(item.bonusLifesteal) statStr += `<div style="color:#ff4757; font-weight:bold;">+${item.bonusLifesteal}% ROUBO DE VIDA</div>`;
         if(item.bonusCritDmg)   statStr += `<div style="color:#ffcc00; font-weight:bold;">+${item.bonusCritDmg}% DANO CRÍTICO</div>`;
@@ -989,7 +959,6 @@
                 actionBtn.style.color = '#ffcc00';
             }
         }
-        
         detailsPop.style.display = 'flex';
     }
 
