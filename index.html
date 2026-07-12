@@ -348,6 +348,15 @@
         bossMonster: "https://i.ibb.co/3y8WY1B9/image.png"
     };
 
+    // --- CONFIGURAÇÃO DE BÔNUS POR RARIDADE ---
+    const rarityBonusConfig = {
+        'comum':      { min: 2,  max: 5,   label: 'Comum' },
+        'uncommon':   { min: 6,  max: 9,   label: 'Incomum' },
+        'rare':       { min: 10, max: 13,  label: 'Raro' },
+        'super-rare': { min: 14, max: 17,  label: 'Super Raro' },
+        'diamante':   { min: 18, max: 20,  label: 'Diamante' }
+    };
+
     // --- FUNÇÕES DE SALVAMENTO ---
     function saveGame() {
         const saveData = {
@@ -367,7 +376,6 @@
             game.stage = saved.game.stage;
             game.kills = saved.game.kills;
 
-            // Restaura as cores nos inputs visuais da tela setup caso queira editar depois
             if(document.getElementById('p-skin')) document.getElementById('p-skin').value = player.skinColor || "#ffdbac";
             if(document.getElementById('p-hair')) document.getElementById('p-hair').value = player.hairColor || "#4b3621";
 
@@ -384,7 +392,6 @@
             window.location.reload();
         }
     }
-    // -----------------------------
 
     function selClass(c) {
         player.class = c;
@@ -406,7 +413,6 @@
             pEl.style.backgroundImage = 'none';
             vSprite.style.display = 'flex';
             
-            // Salva as configurações de cores escolhidas
             if(document.getElementById('p-skin')) player.skinColor = document.getElementById('p-skin').value;
             if(document.getElementById('p-hair')) player.hairColor = document.getElementById('p-hair').value;
 
@@ -528,6 +534,13 @@
                 setTimeout(() => {
                     if(Math.random() * 100 > stats.eva) {
                         let mDmg = Math.max(2, game.monster.atk - (stats.def * 0.4));
+                        
+                        // Aplicando o modificador passivo de Escudo obtido via Itens
+                        if(stats.bonusShield > 0) {
+                            let reduction = mDmg * (stats.bonusShield / 100);
+                            mDmg = Math.max(1, mDmg - reduction);
+                        }
+
                         player.hp -= mDmg;
                         showDmg(Math.floor(mDmg), 'player');
                         document.getElementById('game-main').classList.add('shake');
@@ -599,16 +612,16 @@
         let rarity = 'comum';
         let attributesCount = 3; 
 
-        if (roll <= 0.0008) {       
+        if (roll <= 1.0) {       
             rarity = 'diamante';
             attributesCount = 8; 
-        } else if (roll <= 0.008) {  
+        } else if (roll <= 5.0) {  
             rarity = 'super-rare';
             attributesCount = 6; 
-        } else if (roll <= 0.01) {   
+        } else if (roll <= 15.0) {   
             rarity = 'rare';
             attributesCount = 5; 
-        } else if (roll <= 25.0) {
+        } else if (roll <= 45.0) {
             rarity = 'uncommon';
             attributesCount = 4; 
         }
@@ -616,12 +629,13 @@
         let selectedStats = [];
         let statsPool = [...allStats];
         
+        // Atributos principais escalonados de acordo com a raridade E o nível da fase atual!
         for(let n = 0; n < attributesCount; n++) {
             if(statsPool.length === 0) statsPool = [...allStats];
             
             let index = Math.floor(Math.random() * statsPool.length);
             
-            let statValBase = game.stage * (rarity === 'diamante' ? 3.0 : rarity === 'super-rare' ? 2.0 : rarity === 'rare' ? 1.4 : rarity === 'uncommon' ? 0.8 : 0.4);
+            let statValBase = game.stage * (rarity === 'diamante' ? 3.5 : rarity === 'super-rare' ? 2.5 : rarity === 'rare' ? 1.6 : rarity === 'uncommon' ? 1.0 : 0.6);
             let finalVal = Math.max(1, Math.floor(statValBase + Math.random() * 2));
 
             let existingStat = selectedStats.find(s => s.name === statsPool[index]);
@@ -636,6 +650,12 @@
             statsPool.splice(index, 1);
         }
 
+        // Geração dos novos bônus em porcentagem baseados estritamente na Raridade
+        const bounds = rarityBonusConfig[rarity];
+        const pctShield = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
+        const pctLifesteal = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
+        const pctCritDmg = Math.floor(Math.random() * (bounds.max - bounds.min + 1)) + bounds.min;
+
         const pickedSlot = slotKeys[Math.floor(Math.random() * slotKeys.length)];
         const customName = generateCoolItemName(pickedSlot, rarity);
 
@@ -645,6 +665,9 @@
             name: customName,
             rarity: rarity,
             stats: selectedStats,
+            bonusShield: pctShield,
+            bonusLifesteal: pctLifesteal,
+            bonusCritDmg: pctCritDmg,
             icon: slotMapping[pickedSlot].icon
         };
 
@@ -712,10 +735,26 @@
         
         let crit = Math.random() * 100 < stats.luk;
         let baseDmg = Math.max(1, (stats.str + stats.int) - (game.monster.def * 0.5));
-        if(crit) baseDmg *= 1.5;
+        
+        if(crit) {
+            // Modificador de Dano Crítico acrescido pelos novos bônus
+            let multiplier = 1.5 + (stats.bonusCritDmg / 100);
+            baseDmg *= multiplier;
+        }
 
+        baseDmg = Math.floor(baseDmg);
         game.monster.hp -= baseDmg;
-        showDmg(Math.floor(baseDmg), 'monster', crit);
+        showDmg(baseDmg, 'monster', crit);
+
+        // Mecânica de Roubo de Vida (Lifesteal) baseado no Dano Aplicado
+        if(stats.bonusLifesteal > 0) {
+            let healLoot = Math.floor(baseDmg * (stats.bonusLifesteal / 100));
+            if(healLoot > 0) {
+                player.hp = Math.min(stats.maxHp, player.hp + healLoot);
+                showHealPopup(`+${healLoot} ❤️`);
+            }
+        }
+
         updateUI();
     }
 
@@ -768,15 +807,25 @@
     }
 
     function calcStats() {
-        let s = { str: player.str, def: player.def, luk: player.luk, agi: player.agi, eva: player.eva, int: player.int };
+        let s = { 
+            str: player.str, def: player.def, luk: player.luk, 
+            agi: player.agi, eva: player.eva, int: player.int,
+            bonusShield: 0, bonusLifesteal: 0, bonusCritDmg: 0 
+        };
         
         Object.values(player.equipped).forEach(item => {
-            if(item && item.stats) {
-                item.stats.forEach(stat => {
-                    if(s[stat.name] !== undefined) {
-                        s[stat.name] += stat.val;
-                    }
-                });
+            if(item) {
+                if(item.stats) {
+                    item.stats.forEach(stat => {
+                        if(s[stat.name] !== undefined) {
+                            s[stat.name] += stat.val;
+                        }
+                    });
+                }
+                // Somando os novos bônus percentuais cumulativos
+                if(item.bonusShield) s.bonusShield += item.bonusShield;
+                if(item.bonusLifesteal) s.bonusLifesteal += item.bonusLifesteal;
+                if(item.bonusCritDmg) s.bonusCritDmg += item.bonusCritDmg;
             }
         });
         
@@ -889,9 +938,17 @@
         iconEl.innerText = item.icon;
 
         let statStr = '';
-        item.stats.forEach(st => {
-            statStr += `<div>+${st.val} ${st.name.toUpperCase()}</div>`;
-        });
+        if(item.stats) {
+            item.stats.forEach(st => {
+                statStr += `<div>+${st.val} ${st.name.toUpperCase()}</div>`;
+            });
+        }
+        
+        // Exibição amigável dos bônus percentuais mapeados
+        if(item.bonusShield)    statStr += `<div style="color:#00ecec; font-weight:bold;">+${item.bonusShield}% ESCUDO</div>`;
+        if(item.bonusLifesteal) statStr += `<div style="color:#ff4757; font-weight:bold;">+${item.bonusLifesteal}% ROUBO DE VIDA</div>`;
+        if(item.bonusCritDmg)   statStr += `<div style="color:#ffcc00; font-weight:bold;">+${item.bonusCritDmg}% DANO CRÍTICO</div>`;
+
         statsEl.innerHTML = statStr;
 
         if(isEquippedContext) {
@@ -964,7 +1021,6 @@
         }
     }
 
-    // --- CARREGAMENTO INICIAL ---
     window.onload = function() {
         const hasSave = loadGame();
         if (hasSave) {
