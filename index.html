@@ -445,14 +445,14 @@
         let baseHp, baseAtk, baseDef;
 
         if (game.stage === 1) {
-            // Nível 1 reajustado para ficar 30% MAIS DIFÍCIL que o padrão anterior
-            baseHp = isBoss ? 58.5 : 15.6;  
-            baseAtk = isBoss ? 2.6 : 1.3;   
+            // Nível 1 reajustado para ficar exatamente 60% MAIS DIFÍCIL que o padrão anterior
+            baseHp = isBoss ? 72.0 : 19.2;  
+            baseAtk = isBoss ? 3.2 : 1.6;   
             baseDef = 0;                
         } else {
-            // Outros níveis reajustados para ficarem 10% MAIS FÁCEIS na progressão de atributos
-            const levelScale = 1.0 + (player.lvl * 0.315); // Reduzido em 10% (0.35 -> 0.315)
-            const stageScale = 1.0 + (game.stage * 0.36);  // Reduzido em 10% (0.40 -> 0.36)
+            // Outros níveis reajustados para ficarem 20% MAIS FÁCEIS na progressão geral de atributos
+            const levelScale = 1.0 + (player.lvl * 0.28); // Reduzido de 0.35 para 0.28 (20% mais fácil)
+            const stageScale = 1.0 + (game.stage * 0.32);  // Reduzido de 0.40 para 0.32 (20% mais fácil)
             const totalMultiplier = levelScale * stageScale;
             
             baseHp = (70 + (game.stage * 55)) * (isBoss ? 5.5 : 1) * totalMultiplier;
@@ -627,15 +627,14 @@
         let rarity = 'comum';
         let attributesCount = 3;
 
-        // Novas chances de drop configuradas com base na solicitação
         if (roll <= 0.009) {       
-            rarity = 'diamante';       // 0.009% de chance
+            rarity = 'diamante';       
             attributesCount = 8;
         } else if (roll <= 0.099) {  
-            rarity = 'super-rare';     // 0.09% de chance (0.009 + 0.09)
+            rarity = 'super-rare';     
             attributesCount = 6;
         } else if (roll <= 0.999) {   
-            rarity = 'rare';           // 0.9% de chance (0.099 + 0.9)
+            rarity = 'rare';           
             attributesCount = 5;
         } else if (roll <= 35.0) {
             rarity = 'uncommon';
