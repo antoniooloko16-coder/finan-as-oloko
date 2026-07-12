@@ -446,16 +446,23 @@
         const stageScale = 1.0 + (game.stage * 0.40);
         const totalMultiplier = levelScale * stageScale;
         
-        const baseHp = (70 + (game.stage * 55)) * (isBoss ? 5.5 : 1) * totalMultiplier;
-        const baseAtk = (8 + (game.stage * 5) + (player.lvl * 3)) * (isBoss ? 1.5 : 1) * stageScale;
-        const baseDef = (3 + (game.stage * 3) + (player.lvl * 2)) * stageScale;
+        let baseHp = (70 + (game.stage * 55)) * (isBoss ? 5.5 : 1) * totalMultiplier;
+        let baseAtk = (8 + (game.stage * 5) + (player.lvl * 3)) * (isBoss ? 1.5 : 1) * stageScale;
+        let baseDef = (3 + (game.stage * 3) + (player.lvl * 2)) * stageScale;
+
+        // SE FOR A PRIMEIRA FASE, REDUZ INDA MAIS OS STATUS PARA DEIXAR SUPER FÁCIL
+        if (game.stage === 1) {
+            baseHp = isBoss ? 45 : 12;  // Monstro morre com 1 ou 2 hits e Boss morre rápido
+            baseAtk = isBoss ? 2 : 1;   // Quase não dão dano em você
+            baseDef = 0;                // Sem defesa para tomar dano total
+        }
 
         game.monster = {
             isBoss: isBoss,
-            maxHp: Math.max(20, Math.floor(baseHp)),
-            hp: Math.max(20, Math.floor(baseHp)),
-            atk: Math.max(5, Math.floor(baseAtk)),
-            def: Math.max(2, Math.floor(baseDef))
+            maxHp: Math.max(5, Math.floor(baseHp)),
+            hp: Math.max(5, Math.floor(baseHp)),
+            atk: Math.max(1, Math.floor(baseAtk)),
+            def: Math.max(0, Math.floor(baseDef))
         };
         
         const mEl = document.getElementById('monster');
@@ -524,11 +531,11 @@
                     let hitChance = Math.max(25, (100 - stats.eva) + monsterAccuracyBonus);
 
                     if(Math.random() * 100 <= hitChance) {
-                        let mDmg = Math.max(5, game.monster.atk - (stats.def * 0.35));
+                        let mDmg = Math.max(1, game.monster.atk - (stats.def * 0.35));
                         
                         if(stats.bonusShield > 0) {
                             let reduction = mDmg * (stats.bonusShield / 100);
-                            mDmg = Math.max(2, mDmg - reduction);
+                            mDmg = Math.max(1, mDmg - reduction);
                         }
 
                         player.hp -= mDmg;
@@ -1065,4 +1072,3 @@
 </script>
 </body>
 </html>
-
