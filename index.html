@@ -77,10 +77,10 @@
         .hp-fill { height: 100%; border-radius: 10px; transition: width 0.2s ease; }
 
         .dashboard { flex: 1; background: var(--panel); padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
-        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
         .stat-box { background: rgba(255,255,255,0.02); padding: 6px; border-radius: 10px; text-align: center; border: 1px solid var(--border-ui); }
-        .stat-val { display: block; font-size: 14px; font-weight: bold; color: #fff; }
-        .stat-label { font-size: 9px; color: #a4b0be; text-transform: uppercase; }
+        .stat-val { display: block; font-size: 13px; font-weight: bold; color: #fff; }
+        .stat-label { font-size: 8px; color: #a4b0be; text-transform: uppercase; }
 
         .dmg-popup { 
             position: absolute; font-size: 26px; font-weight: 900; pointer-events: none;
@@ -231,6 +231,8 @@
                 <div class="stat-box"><span class="stat-val" id="st-agi">0</span><span class="stat-label">AGI</span></div>
                 <div class="stat-box"><span class="stat-val" id="st-eva">0</span><span class="stat-label">ESQ</span></div>
                 <div class="stat-box"><span class="stat-val" id="st-int">0</span><span class="stat-label">INT</span></div>
+                <div class="stat-box"><span class="stat-val" id="st-dex">0</span><span class="stat-label">DES</span></div>
+                <div class="stat-box"><span class="stat-val" id="st-vit">0</span><span class="stat-label">VIT</span></div>
             </div>
 
             <div class="inventory-list" id="inv-ui" style="display: none;"></div>
@@ -277,7 +279,7 @@
     let player = {
         name: "", class: "Guerreiro", lvl: 1, 
         hp: 100, maxHp: 100, range: "melee",
-        str: 5, def: 5, luk: 5, agi: 5, eva: 5, int: 5,
+        str: 5, def: 5, luk: 5, agi: 5, eva: 5, int: 5, dex: 5, vit: 5,
         skinColor: "#ffdbac", hairColor: "#4b3621",
         equipped: { weapon: null, head: null, torso: null, feet: null, ring: null, shield: null, wings: null },
         inventory: []
@@ -288,7 +290,6 @@
         lastAttackTime: 0, attackCounter: 0 
     };
 
-    // --- SLOTS ATUALIZADOS CONFORME O PEDIDO ---
     const slotMapping = {
         head: { label: 'Elmo', icon: '🪖' },
         weapon: { label: 'Arma', icon: '⚔️' },
@@ -317,7 +318,6 @@
         bossMonster: "https://i.ibb.co/3y8WY1B9/image.png"
     };
 
-    // --- FUNÇÕES DE SALVAMENTO ---
     function saveGame() {
         const saveData = {
             player: player,
@@ -334,9 +334,10 @@
             const saved = JSON.parse(rawData);
             player = Object.assign(player, saved.player);
             
-            // Garantir que novos slots existam se carregar um save antigo
             if(!player.equipped.shield) player.equipped.shield = null;
             if(!player.equipped.wings) player.equipped.wings = null;
+            if(player.dex === undefined) player.dex = 5;
+            if(player.vit === undefined) player.vit = 5;
 
             game.stage = saved.game.stage;
             game.kills = saved.game.kills;
@@ -396,12 +397,12 @@
     function startGame() {
         player.name = document.getElementById('p-name').value || "HERÓI";
         const c = player.class;
-        if(c === "Guerreiro") { player.str += 10; player.def += 5; player.range = "melee"; }
-        if(c === "Arqueiro") { player.agi += 10; player.luk += 5; player.range = "ranged"; }
-        if(c === "Mago") { player.int += 10; player.luk += 5; player.range = "magic"; }
-        if(c === "Assassino") { player.agi += 10; player.eva += 10; player.range = "melee"; }
-        if(c === "Paladino") { player.def += 12; player.str += 3; player.range = "melee"; }
-        if(c === "Druida") { player.int += 5; player.def += 5; player.range = "magic"; }
+        if(c === "Guerreiro") { player.str += 10; player.def += 5; player.vit += 5; player.range = "melee"; }
+        if(c === "Arqueiro") { player.agi += 10; player.luk += 5; player.dex += 5; player.range = "ranged"; }
+        if(c === "Mago") { player.int += 10; player.luk += 5; player.dex += 3; player.range = "magic"; }
+        if(c === "Assassino") { player.agi += 10; player.eva += 10; player.dex += 5; player.range = "melee"; }
+        if(c === "Paladino") { player.def += 12; player.str += 3; player.vit += 5; player.range = "melee"; }
+        if(c === "Druida") { player.int += 5; player.def += 5; player.vit += 5; player.range = "magic"; }
 
         const initialStats = calcStats();
         player.hp = initialStats.maxHp;
@@ -461,7 +462,7 @@
     function engine() {
         const currentTime = performance.now();
         const stats = calcStats();
-        let attackCooldown = 1500 - (stats.agi * 8);
+        let attackCooldown = 1500 - (stats.agi * 8) - (stats.dex * 2);
 
         if (attackCooldown < 200) attackCooldown = 200; 
 
@@ -497,7 +498,11 @@
             
             if(game.monster.hp > 0) {
                 setTimeout(() => {
-                    if(Math.random() * 100 > stats.eva) {
+                    // CÁLCULO DE PRECISÃO ATUALIZADO: monstros comuns +25% e boss +50% chance de acerto
+                    let monsterAccuracyBonus = game.monster.isBoss ? 50 : 25;
+                    let hitChance = (100 - stats.eva) + monsterAccuracyBonus;
+
+                    if(Math.random() * 100 <= hitChance) {
                         let mDmg = Math.max(2, game.monster.atk - (stats.def * 0.4));
                         
                         if(stats.bonusShield > 0) {
@@ -580,7 +585,7 @@
 
     function createLoot() {
         const slotKeys = ['weapon', 'head', 'torso', 'feet', 'ring', 'shield', 'wings'];
-        const allStats = ['str', 'def', 'luk', 'agi', 'eva', 'int'];
+        const allStats = ['str', 'def', 'luk', 'agi', 'eva', 'int', 'dex', 'vit'];
         
         const roll = Math.random() * 100; 
         let rarity = 'comum';
@@ -619,12 +624,10 @@
             statsPool.splice(index, 1);
         }
 
-        // Inicializa bônus zerados
         let pctShield = 0, pctLifesteal = 0, pctCritDmg = 0, pctReflect = 0;
         const possibleBonusTypes = ['shield', 'lifesteal', 'critDmg', 'reflect'];
 
         if (rarity === 'diamante') {
-            // REGRA DIAMANTE: Exatamente 2 bônus. Um de 2~10% e outro de 15~20%
             let selectedBonusTypes = [];
             while (selectedBonusTypes.length < 2) {
                 let randomType = possibleBonusTypes[Math.floor(Math.random() * possibleBonusTypes.length)];
@@ -633,9 +636,8 @@
                 }
             }
 
-            // Atribui os valores baseados nas faixas estritas
-            let valLow = Math.floor(Math.random() * (10 - 2 + 1)) + 2;   // 2% a 10%
-            let valHigh = Math.floor(Math.random() * (20 - 15 + 1)) + 15; // 15% a 20%
+            let valLow = Math.floor(Math.random() * (10 - 2 + 1)) + 2;   
+            let valHigh = Math.floor(Math.random() * (20 - 15 + 1)) + 15; 
 
             selectedBonusTypes.forEach((type, idx) => {
                 let finalVal = (idx === 0) ? valLow : valHigh;
@@ -646,10 +648,8 @@
             });
 
         } else {
-            // OUTRAS RARIDADES: Sempre ganham EXATAMENTE 1 bônus independente da raridade
             let chosenBonus = possibleBonusTypes[Math.floor(Math.random() * possibleBonusTypes.length)];
             
-            // Valores escalonados de forma fixa para bônus único de raridades inferiores
             let bMin = 2, bMax = 5;
             if (rarity === 'uncommon') { bMin = 5; bMax = 8; }
             else if (rarity === 'rare') { bMin = 8; bMax = 12; }
@@ -686,7 +686,6 @@
             player.inventory.unshift(item);
         }
 
-        // Autoequipar inteligente se for superior
         const currentEquipped = player.equipped[item.slot];
         let totalNewVal = item.stats.reduce((acc, s) => acc + s.val, 0);
         let totalCurrentVal = currentEquipped ? currentEquipped.stats.reduce((acc, s) => acc + s.val, 0) : -1;
@@ -705,15 +704,15 @@
 
     function gainRandomStatsByClass() {
         const classPools = {
-            'Guerreiro': ['str', 'str', 'def', 'agi'],
-            'Arqueiro': ['agi', 'agi', 'luk', 'eva'],
-            'Mago': ['int', 'int', 'luk', 'def'],
-            'Assassino': ['agi', 'eva', 'str', 'luk'],
-            'Paladino': ['def', 'def', 'str', 'int'],
-            'Druida': ['int', 'def', 'eva', 'str']
+            'Guerreiro': ['str', 'str', 'def', 'vit'],
+            'Arqueiro': ['agi', 'agi', 'luk', 'dex'],
+            'Mago': ['int', 'int', 'dex', 'def'],
+            'Assassino': ['agi', 'eva', 'dex', 'luk'],
+            'Paladino': ['def', 'def', 'vit', 'str'],
+            'Druida': ['int', 'def', 'vit', 'str']
         };
 
-        const pool = classPools[player.class] || ['str', 'def', 'luk', 'agi', 'eva', 'int'];
+        const pool = classPools[player.class] || ['str', 'def', 'luk', 'agi', 'eva', 'int', 'dex', 'vit'];
         
         for (let i = 0; i < 2; i++) {
             const randomStat = pool[Math.floor(Math.random() * pool.length)];
@@ -737,7 +736,7 @@
     function applyDamage(stats) {
         if (game.monster.hp <= 0) return;
         
-        let crit = Math.random() * 100 < stats.luk;
+        let crit = Math.random() * 100 < (stats.luk + (stats.dex * 0.5));
         let baseDmg = Math.max(1, (stats.str + stats.int) - (game.monster.def * 0.5));
         
         if(crit) {
@@ -810,6 +809,7 @@
         let s = { 
             str: player.str, def: player.def, luk: player.luk, 
             agi: player.agi, eva: player.eva, int: player.int,
+            dex: player.dex, vit: player.vit,
             bonusShield: 0, bonusLifesteal: 0, bonusCritDmg: 0, bonusReflect: 0 
         };
         
@@ -827,7 +827,8 @@
             }
         });
         
-        s.maxHp = Math.floor(100 + (player.lvl * 15) + (s.def * 4));
+        // Vitalidade adiciona diretamente vida máxima extra (+8 HP por ponto)
+        s.maxHp = Math.floor(100 + (player.lvl * 15) + (s.def * 4) + (s.vit * 8));
         return s;
     }
 
@@ -856,7 +857,6 @@
         const eqContainer = document.getElementById('eq-slots-ui');
         eqContainer.innerHTML = '';
         
-        // ORDEM EXIBIÇÃO DE TODOS OS SLOTS ATUALIZADOS DO INVENTÁRIO DO HERÓI
         const slotsOrder = ['head', 'weapon', 'torso', 'shield', 'feet', 'ring', 'wings'];
         slotsOrder.forEach(slotKey => {
             const currentItem = player.equipped[slotKey];
@@ -1003,7 +1003,7 @@
         document.getElementById('p-hp-bar').style.width = Math.min(100, Math.max(0, (player.hp / stats.maxHp * 100))) + "%";
         document.getElementById('m-hp-bar').style.width = Math.min(100, Math.max(0, (game.monster.hp / game.monster.maxHp * 100))) + "%";
 
-        ['str','def','luk','agi','eva','int'].forEach(st => {
+        ['str','def','luk','agi','eva','int','dex','vit'].forEach(st => {
             document.getElementById('st-'+st).innerText = stats[st];
         });
 
