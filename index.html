@@ -175,35 +175,28 @@
             return { name: "Mercado Livre", style: "bg-blue-100 text-blue-800" };
         }
 
-        // Tenta buscar usando proxies alternativos de forma sequencial caso ocorram erros de conexão
+        // Tenta buscar usando proxies estáveis sem controladores de interrupção (evita aborts precoces)
         async function fetchWithFallback(targetUrl) {
-            // Lista de proxies CORS gratuitos mais confiáveis e atualizados
             const proxies = [
-                // Proxy 1: Allorigins alternativo (com timestamp para forçar dados novos e evitar cache estragado)
-                (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&_=${Date.now()}`,
-                // Proxy 2: Codetabs CORS Proxy
+                // Rota 1: Allorigins padrão (com limpeza de cache agressiva)
+                (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&nocache=${Date.now()}`,
+                // Rota 2: Codetabs Proxy alternativo
                 (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-                // Proxy 3: Thingproxy (Bypass limpo)
-                (url) => `https://thingproxy.freeboard.io/fetch/${url}`
+                // Rota 3: Allorigins secundário sem parâmetros de cache adicionais
+                (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
             ];
 
             for (let i = 0; i < proxies.length; i++) {
                 const proxyUrl = proxies[i](targetUrl);
-                logDebug(`Tentando canal de conexão #${i + 1}...`);
+                logDebug(`Conectando ao canal #${i + 1}...`);
                 
                 try {
-                    // Timeout de 6 segundos para não prender o usuário se o proxy estiver muito lento
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-                    const response = await fetch(proxyUrl, { signal: controller.signal });
-                    clearTimeout(timeoutId);
+                    const response = await fetch(proxyUrl);
 
                     if (response.ok) {
                         const rawData = await response.text();
                         let jsonResult;
 
-                        // Se for o Allorigins, ele envelopa o conteúdo em um objeto "contents"
                         if (proxyUrl.includes('allorigins')) {
                             const parsedWrapper = JSON.parse(rawData);
                             jsonResult = JSON.parse(parsedWrapper.contents);
@@ -212,22 +205,22 @@
                         }
 
                         if (jsonResult && (jsonResult.results || jsonResult.id)) {
-                            logDebug(`Conexão bem sucedida pelo canal #${i + 1}!`);
+                            logDebug(`Canal #${i + 1} estabelecido com sucesso!`);
                             return jsonResult;
                         }
                     } else {
-                        logDebug(`Canal #${i + 1} respondeu com código de erro: ${response.status}`);
+                        logDebug(`Canal #${i + 1} indisponível (Status: ${response.status})`);
                     }
                 } catch (e) {
                     logDebug(`Canal #${i + 1} falhou: ${e.message}`);
                 }
             }
-            throw new Error("Todos os canais de desvio de CORS falharam temporariamente.");
+            throw new Error("Todos os canais de comunicação estão temporariamente congestionados.");
         }
 
         async function fetchProducts(query) {
             showState('loading');
-            debugLog.innerText = "Iniciando motor de busca híbrido...";
+            debugLog.innerText = "Estabelecendo túnel de dados alternativo...";
             activeProducts = [];
 
             const targetUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=50`;
@@ -269,14 +262,14 @@
                         };
                     });
 
-                    logDebug(`Processamento finalizado. ${activeProducts.length} ofertas estruturadas.`);
+                    logDebug(`Túnel de dados concluído. ${activeProducts.length} itens recebidos.`);
                     applySortingAndRender(query);
                 } else {
-                    logDebug("Aviso: A busca não retornou produtos compatíveis no banco de dados.");
+                    logDebug("Aviso: A busca não obteve produtos válidos nesta tentativa.");
                     showState('empty');
                 }
             } catch (e) {
-                logDebug(`Erro Geral: ${e.message}`);
+                logDebug(`Falha crítica de comunicação: ${e.message}`);
                 showState('empty');
             }
         }
@@ -428,3 +421,4 @@
     </script>
 </body>
 </html>
+
