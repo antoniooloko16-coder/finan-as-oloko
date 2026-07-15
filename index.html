@@ -175,12 +175,13 @@
             return { name: "Mercado Livre", style: "bg-blue-100 text-blue-800" };
         }
 
-        // Faz chamadas assíncronas simultâneas sem travar em caso de erro individual
+        // Faz chamadas assíncronas simultâneas diretamente para a API pública do Mercado Livre
         async function fetchProducts(query) {
             showState('loading');
-            debugLog.innerText = "Iniciando motor de busca comparativo...";
+            debugLog.innerText = "Iniciando motor de busca direto...";
             activeProducts = [];
 
+            // Consultas direcionadas para pescar ofertas das grandes marcas dentro da plataforma
             const searchQueries = [
                 query,                             
                 `${query} magazine luiza`,         
@@ -188,28 +189,26 @@
                 `${query} amazon`                  
             ];
 
-            // Gera as Promises para buscar em paralelo usando o Allorigins
+            // Busca direta sem necessidade de proxy CORS intermediário externo!
             const fetchPromises = searchQueries.map(async (currentQuery) => {
                 const encodedQuery = encodeURIComponent(currentQuery);
                 const targetUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodedQuery}&limit=15`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
                 try {
-                    const response = await fetch(proxyUrl);
+                    const response = await fetch(targetUrl);
                     if (response.ok) {
-                        const wrapper = await response.json();
-                        if (wrapper && wrapper.contents) {
-                            const data = JSON.parse(wrapper.contents);
-                            return data.results || [];
-                        }
+                        const data = await response.json();
+                        return data.results || [];
+                    } else {
+                        logDebug(`Aviso: Erro HTTP ${response.status} na busca de "${currentQuery}"`);
                     }
                 } catch (e) {
-                    logDebug(`Aviso: Falha parcial na busca de "${currentQuery}": ${e.message}`);
+                    logDebug(`Aviso: Falha de rede para "${currentQuery}": ${e.message}`);
                 }
                 return [];
             });
 
-            // Executa tudo em paralelo. Se uma falhar, as outras ainda resolvem!
+            // Executa todas em paralelo de forma ultra-rápida
             const results = await Promise.allSettled(fetchPromises);
             let rawCombinedResults = [];
 
@@ -219,7 +218,7 @@
                 }
             });
 
-            // Remove duplicatas de produtos
+            // Remove duplicatas de produtos usando o ID único
             const uniqueResults = [];
             const seenIds = new Set();
             for (const item of rawCombinedResults) {
@@ -262,10 +261,10 @@
                     };
                 });
 
-                logDebug(`Sucesso: ${activeProducts.length} ofertas consolidadas!`);
+                logDebug(`Sucesso: ${activeProducts.length} ofertas consolidadas diretamente!`);
                 applySortingAndRender(query);
             } else {
-                logDebug("Erro fatal: Nenhuma resposta válida obtida de nenhuma loja parceira.");
+                logDebug("Erro fatal: Nenhuma resposta válida obtida da API.");
                 showState('empty');
             }
         }
