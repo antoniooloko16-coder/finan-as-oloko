@@ -175,98 +175,71 @@
             return { name: "Mercado Livre", style: "bg-blue-100 text-blue-800" };
         }
 
-        // Faz chamadas assíncronas utilizando um gateway JSONP para desviar totalmente do bloqueio de CORS e do Erro 403
+        // Faz chamadas assíncronas utilizando o proxy de "Allorigins" que mascara a origem e desvia do erro 403
         async function fetchProducts(query) {
             showState('loading');
-            debugLog.innerText = "Iniciando motor de busca por desvio de protocolo...";
+            debugLog.innerText = "Iniciando motor de busca por mascaramento de proxy...";
             activeProducts = [];
 
-            const searchQueries = [
-                query,                             
-                `${query} magazine luiza`,         
-                `${query} casas bahia`,            
-                `${query} amazon`                  
-            ];
+            // Faz apenas uma busca robusta e unificada para evitar gargalos ou rate limit no proxy
+            const targetUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=50`;
+            
+            // Allorigins é um proxy open-source estável que não repassa o cabeçalho Origin restrito
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
-            // Criamos chamadas usando um proxy de escape CORS alternativo confiável (cors-anywhere público sem fricção de cabeçalhos)
-            const fetchPromises = searchQueries.map(async (currentQuery) => {
-                const encodedQuery = encodeURIComponent(currentQuery);
-                const targetUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodedQuery}&limit=15`;
-                
-                // Usando uma bridge CORS pública otimizada para requisições de APIs abertas
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+            try {
+                const response = await fetch(proxyUrl);
+                if (response.ok) {
+                    const wrapperData = await response.json();
+                    // O Allorigins envelopa a resposta real dentro do campo "contents" como string JSON
+                    const data = JSON.parse(wrapperData.contents);
+                    const rawResults = data.results || [];
 
-                try {
-                    const response = await fetch(proxyUrl);
-                    if (response.ok) {
-                        const data = await response.json();
-                        return data.results || [];
+                    if (rawResults.length > 0) {
+                        activeProducts = rawResults.map(item => {
+                            const originalPrice = item.original_price || item.price;
+                            const currentPrice = item.price;
+                            
+                            let discountPercent = 0;
+                            if (originalPrice > currentPrice) {
+                                discountPercent = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+                            }
+
+                            let imageUrl = item.thumbnail;
+                            if (imageUrl) {
+                                imageUrl = imageUrl.replace("http://", "https://");
+                                imageUrl = imageUrl.replace("-I.jpg", "-O.jpg"); // Melhora qualidade da imagem
+                            }
+
+                            const storeMeta = identifyStore(item);
+
+                            return {
+                                id: item.id,
+                                title: item.title,
+                                price: currentPrice,
+                                originalPrice: originalPrice,
+                                discountPercent: discountPercent,
+                                thumbnail: imageUrl || "https://placeholder.co/300x300?text=Sem+Imagem",
+                                fallbackThumbnail: item.thumbnail ? item.thumbnail.replace("http://", "https://") : "",
+                                permalink: item.permalink,
+                                freeShipping: item.shipping && item.shipping.free_shipping,
+                                storeName: storeMeta.name,
+                                storeStyle: storeMeta.style
+                            };
+                        });
+
+                        logDebug(`Sucesso: ${activeProducts.length} ofertas consolidadas!`);
+                        applySortingAndRender(query);
                     } else {
-                        logDebug(`Aviso: Falha temporária no nó (${response.status}) para "${currentQuery}"`);
+                        logDebug("Aviso: A busca retornou 0 resultados válidos.");
+                        showState('empty');
                     }
-                } catch (e) {
-                    logDebug(`Aviso: Erro de conexão para "${currentQuery}": ${e.message}`);
+                } else {
+                    logDebug(`Erro de rede no proxy: status ${response.status}`);
+                    showState('empty');
                 }
-                return [];
-            });
-
-            // Executa todas em paralelo de forma ultra-rápida
-            const results = await Promise.allSettled(fetchPromises);
-            let rawCombinedResults = [];
-
-            results.forEach(result => {
-                if (result.status === 'fulfilled' && result.value) {
-                    rawCombinedResults = rawCombinedResults.concat(result.value);
-                }
-            });
-
-            // Remove duplicatas de produtos usando o ID único
-            const uniqueResults = [];
-            const seenIds = new Set();
-            for (const item of rawCombinedResults) {
-                if (item && item.id && !seenIds.has(item.id)) {
-                    seenIds.add(item.id);
-                    uniqueResults.push(item);
-                }
-            }
-
-            if (uniqueResults.length > 0) {
-                activeProducts = uniqueResults.map(item => {
-                    const originalPrice = item.original_price || item.price;
-                    const currentPrice = item.price;
-                    
-                    let discountPercent = 0;
-                    if (originalPrice > currentPrice) {
-                        discountPercent = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
-                    }
-
-                    let imageUrl = item.thumbnail;
-                    if (imageUrl) {
-                        imageUrl = imageUrl.replace("http://", "https://");
-                        imageUrl = imageUrl.replace("-I.jpg", "-O.jpg"); // Melhora a qualidade da imagem
-                    }
-
-                    const storeMeta = identifyStore(item);
-
-                    return {
-                        id: item.id,
-                        title: item.title,
-                        price: currentPrice,
-                        originalPrice: originalPrice,
-                        discountPercent: discountPercent,
-                        thumbnail: imageUrl || "https://placeholder.co/300x300?text=Sem+Imagem",
-                        fallbackThumbnail: item.thumbnail ? item.thumbnail.replace("http://", "https://") : "",
-                        permalink: item.permalink,
-                        freeShipping: item.shipping && item.shipping.free_shipping,
-                        storeName: storeMeta.name,
-                        storeStyle: storeMeta.style
-                    };
-                });
-
-                logDebug(`Sucesso: ${activeProducts.length} ofertas consolidadas!`);
-                applySortingAndRender(query);
-            } else {
-                logDebug("Erro fatal: A API retornou bloqueio permanente (CORS/403).");
+            } catch (e) {
+                logDebug(`Erro de conexão/parse: ${e.message}`);
                 showState('empty');
             }
         }
@@ -375,7 +348,7 @@
             });
 
             resultTitle.innerText = query ? `Melhores preços para "${query}"` : "Super Ofertas do Dia";
-            resultCount.innerText = `${activeProducts.length} ofertas analisadas em múltiplos portais.`;
+            resultCount.innerText = `${activeProducts.length} ofertas analisadas.`;
             
             lucide.createIcons();
             showState('results');
@@ -411,9 +384,9 @@
             }
         });
 
-        // Carga inicial automatizada
+        // Carga inicial automatizada com termo geral estável
         window.addEventListener('DOMContentLoaded', () => {
-            fetchProducts('Monitor');
+            fetchProducts('Monitor Gamer');
         });
     </script>
 </body>
