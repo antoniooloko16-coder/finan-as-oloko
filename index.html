@@ -175,59 +175,54 @@
             return { name: "Mercado Livre", style: "bg-blue-100 text-blue-800" };
         }
 
-        // Força a resolução de dados contornando bloqueios de User-Agent e CORS de servidores compartilhados
-        async function fetchWithFallback(targetUrl) {
-            const connectionModes = [
-                // Rota 1: Bypass direto via CORSProxy.io (Excelente reputação de tráfego limpo para APIs)
-                { name: "Canal Premium #1 (CORSProxy)", url: (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`, isRaw: true },
-                // Rota 2: AllOrigins utilizando wrapper JSONP em cache isolado
-                { name: "Canal Premium #2 (AllOrigins JSONP)", url: (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`, isAllOrigins: true },
-                // Rota 3: Conexão Direta (Mantida apenas como fallback extremo)
-                { name: "Conexão Direta (Legada)", url: (url) => url, isRaw: true }
-            ];
-
-            for (let i = 0; i < connectionModes.length; i++) {
-                const mode = connectionModes[i];
-                const finalUrl = mode.url(targetUrl);
-                logDebug(`Iniciando conexão: ${mode.name}...`);
+        // Motor de injeção dinâmica via JSONP (Bypass absoluto de CORS e barreiras 403)
+        function fetchJSONP(url) {
+            return new Promise((resolve, reject) => {
+                // Cria um nome de função global único para o callback
+                const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
                 
-                try {
-                    const response = await fetch(finalUrl);
-
-                    if (response.ok) {
-                        const rawData = await response.text();
-                        let jsonResult;
-
-                        if (mode.isAllOrigins) {
-                            const parsedWrapper = JSON.parse(rawData);
-                            jsonResult = JSON.parse(parsedWrapper.contents);
-                        } else {
-                            jsonResult = JSON.parse(rawData);
-                        }
-
-                        if (jsonResult && (jsonResult.results || jsonResult.id)) {
-                            logDebug(`Conectado com sucesso através de: ${mode.name}`);
-                            return jsonResult;
-                        }
-                    } else {
-                        logDebug(`Canal ${mode.name} retornou status: ${response.status}`);
+                // Configura a URL de destino embrulhada no AllOrigins com suporte a callback
+                const jsonpUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&callback=${callbackName}`;
+                
+                // Define a função que o script externo irá executar ao carregar
+                window[callbackName] = function(data) {
+                    try {
+                        // Deleta a tag e a função global para limpar a memória
+                        delete window[callbackName];
+                        document.head.removeChild(script);
+                        
+                        // AllOrigins encapsula o JSON como string dentro do campo 'contents'
+                        const jsonResult = JSON.parse(data.contents);
+                        resolve(jsonResult);
+                    } catch (e) {
+                        reject(new Error("Falha ao processar os dados do servidor parceiro."));
                     }
-                } catch (e) {
-                    logDebug(`Erro de barreira no ${mode.name}: ${e.message}`);
-                }
-            }
-            throw new Error("O servidor do Mercado Livre bloqueou a requisição temporariamente devido a excesso de acessos locais.");
+                };
+
+                // Trata erros de carregamento do script (ex: timeout ou queda do proxy)
+                const script = document.createElement('script');
+                script.src = jsonpUrl;
+                script.onerror = () => {
+                    delete window[callbackName];
+                    if (script.parentNode) document.head.removeChild(script);
+                    reject(new Error("Canal de comunicação instável."));
+                };
+
+                document.head.appendChild(script);
+            });
         }
 
         async function fetchProducts(query) {
             showState('loading');
-            debugLog.innerText = "Iniciando motor de busca híbrido...";
+            debugLog.innerText = "Ativando tunelamento de dados...";
             activeProducts = [];
 
-            const targetUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=50`;
+            // Reduzido o limite para 30 para otimizar a performance do carregamento via túnel
+            const targetUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=30`;
 
             try {
-                const data = await fetchWithFallback(targetUrl);
+                logDebug("Abrindo conexão via script assíncrono (JSONP)...");
+                const data = await fetchJSONP(targetUrl);
                 const rawResults = data.results || [];
 
                 if (rawResults.length > 0) {
@@ -422,4 +417,3 @@
     </script>
 </body>
 </html>
-
