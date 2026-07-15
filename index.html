@@ -97,7 +97,13 @@
                 <i data-lucide="search-code" class="w-12 h-12"></i>
             </div>
             <h3 class="text-lg font-bold text-gray-800">Nenhum produto vantajoso encontrado</h3>
-            <p class="text-sm text-gray-500 mt-1 max-w-sm">Tente buscar por termos mais simples ou verifique sua conexão.</p>
+            <p class="text-sm text-gray-500 mt-1 max-w-sm">Tente buscar por termos mais simples ou verifique sua conexão de rede.</p>
+            
+            <!-- Console de Diagnóstico Técnico para o Usuário -->
+            <div class="mt-6 p-4 bg-red-50 text-red-700 text-xs font-mono rounded-lg max-w-lg mx-auto text-left border border-red-100">
+                <p class="font-bold mb-1">Painel de Diagnóstico do Desenvolvedor:</p>
+                <div id="debug-log" class="whitespace-pre-wrap">Sem erros registrados ainda.</div>
+            </div>
         </div>
 
         <!-- 3. Grid de Resultados de Produtos -->
@@ -129,44 +135,89 @@
         const emptyState = document.getElementById('empty-state');
         const resultTitle = document.getElementById('result-title');
         const resultCount = document.getElementById('result-count');
+        const debugLog = document.getElementById('debug-log');
 
         // Estado do App
         let activeProducts = [];
 
+        // Utilitário para adicionar mensagens ao console visual de depuração
+        function logDebug(message) {
+            console.log(message);
+            debugLog.innerText += "\n" + message;
+        }
+
+        // Função utilitária para fazer requisições via JSONP (Bypass absoluto de CORS/Bloqueios)
+        function fetchJSONP(url) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'jsonp_callback_' + Math.round(Math.random() * 1000000);
+                
+                // Cria o script dinâmico
+                const script = document.createElement('script');
+                script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${callbackName}`;
+                script.id = callbackName;
+
+                // Declara o callback global que a API do Mercado Livre vai invocar
+                window[callbackName] = function(data) {
+                    cleanup();
+                    resolve(data);
+                };
+
+                // Tratamento de erro caso o script seja bloqueado pelo navegador
+                script.onerror = function(err) {
+                    cleanup();
+                    reject(new Error("A requisição do Script foi bloqueada pelo navegador (pode ser seu AdBlock ou Firewall)."));
+                };
+
+                function cleanup() {
+                    const el = document.getElementById(callbackName);
+                    if (el) el.remove();
+                    delete window[callbackName];
+                }
+
+                document.body.appendChild(script);
+            });
+        }
+
         // Função de busca principal na API do Mercado Livre
         async function fetchProducts(query) {
             showState('loading');
+            debugLog.innerText = "Iniciando diagnóstico de busca...";
+            
             const encodedQuery = encodeURIComponent(query);
+            // URL simplificada focada em retornar resultados em qualquer cenário
             const directUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodedQuery}&limit=50`;
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(directUrl)}`;
 
             let data = null;
 
-            // Tentativa 1: Busca Direta (Rápida)
+            // Estratégia 1: Tenta obter via JSONP (Bypass de CORS ideal para GitHub Pages e Adblockers leves)
             try {
-                const response = await fetch(directUrl);
-                if (response.ok) {
-                    data = await response.json();
+                logDebug("Estratégia 1: Tentando conexão via JSONP...");
+                const jsonpResponse = await fetchJSONP(directUrl);
+                if (jsonpResponse && jsonpResponse.results) {
+                    data = jsonpResponse;
+                    logDebug("Sucesso via JSONP!");
                 }
-            } catch (directError) {
-                console.warn("Busca direta bloqueada por CORS ou Rede. Iniciando fallback de contingência...", directError);
+            } catch (jsonpError) {
+                logDebug(`Falha na Estratégia 1 (JSONP): ${jsonpError.message}`);
             }
 
-            // Tentativa 2: Fallback usando Proxy CORS (Garante o funcionamento no GitHub Pages)
-            if (!data || !data.results || data.results.length === 0) {
+            // Estratégia 2: Se o JSONP falhar, tenta o Fetch tradicional como redundância
+            if (!data) {
                 try {
-                    const response = await fetch(proxyUrl);
+                    logDebug("Estratégia 2: Tentando conexão direta via Fetch...");
+                    const response = await fetch(directUrl);
                     if (response.ok) {
-                        const proxyData = await response.json();
-                        // AllOrigins envelopa a resposta real dentro do campo 'contents' como string
-                        data = JSON.parse(proxyData.contents);
+                        data = await response.json();
+                        logDebug("Sucesso via Fetch direto!");
+                    } else {
+                        logDebug(`Estratégia 2 falhou com status HTTP: ${response.status}`);
                     }
-                } catch (proxyError) {
-                    console.error("Falha fatal em ambas as estratégias de conexão:", proxyError);
+                } catch (fetchError) {
+                    logDebug(`Falha na Estratégia 2 (Fetch direto): ${fetchError.message}`);
                 }
             }
 
-            // Processamento dos resultados obtidos
+            // Processamento final dos dados recebidos
             if (data && data.results && data.results.length > 0) {
                 activeProducts = data.results.map(item => {
                     const originalPrice = item.original_price || item.price;
@@ -199,6 +250,7 @@
 
                 applySortingAndRender(query);
             } else {
+                logDebug("Erro: Ambas as estratégias falharam ou a API retornou 0 resultados.");
                 showState('empty');
             }
         }
@@ -212,7 +264,6 @@
             } else if (sortBy === 'price_asc') {
                 activeProducts.sort((a, b) => a.price - b.price);
             } else {
-                // Mantém ordenação por relevância padrão
                 activeProducts.sort((a, b) => 0); 
             }
 
@@ -357,9 +408,9 @@
             }
         });
 
-        // Carga Inicial Automática
+        // Carga Inicial Automática (Busca padrão ao iniciar a página)
         window.addEventListener('DOMContentLoaded', () => {
-            fetchProducts('Smart TV');
+            fetchProducts('TV');
         });
     </script>
 </body>
