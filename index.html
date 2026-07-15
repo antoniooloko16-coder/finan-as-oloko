@@ -136,36 +136,51 @@
         // Função de busca principal na API do Mercado Livre
         async function fetchProducts(query) {
             showState('loading');
-            try {
-                // Removemos restrições pesadas de query e filtros para garantir que retorne dados sempre
-                const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=50`;
-                const response = await fetch(url);
-                
-                if (!response.ok) throw new Error('Erro na requisição');
-                
-                const data = await response.json();
-                
-                if (!data.results || data.results.length === 0) {
-                    showState('empty');
-                    return;
-                }
+            const encodedQuery = encodeURIComponent(query);
+            const directUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodedQuery}&limit=50`;
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(directUrl)}`;
 
-                // Filtragem estrutural para calcular e focar em descontos reais
+            let data = null;
+
+            // Tentativa 1: Busca Direta (Rápida)
+            try {
+                const response = await fetch(directUrl);
+                if (response.ok) {
+                    data = await response.json();
+                }
+            } catch (directError) {
+                console.warn("Busca direta bloqueada por CORS ou Rede. Iniciando fallback de contingência...", directError);
+            }
+
+            // Tentativa 2: Fallback usando Proxy CORS (Garante o funcionamento no GitHub Pages)
+            if (!data || !data.results || data.results.length === 0) {
+                try {
+                    const response = await fetch(proxyUrl);
+                    if (response.ok) {
+                        const proxyData = await response.json();
+                        // AllOrigins envelopa a resposta real dentro do campo 'contents' como string
+                        data = JSON.parse(proxyData.contents);
+                    }
+                } catch (proxyError) {
+                    console.error("Falha fatal em ambas as estratégias de conexão:", proxyError);
+                }
+            }
+
+            // Processamento dos resultados obtidos
+            if (data && data.results && data.results.length > 0) {
                 activeProducts = data.results.map(item => {
                     const originalPrice = item.original_price || item.price;
                     const currentPrice = item.price;
                     
-                    // Cálculo da porcentagem de desconto real
                     let discountPercent = 0;
                     if (originalPrice > currentPrice) {
                         discountPercent = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
                     }
 
-                    // Força HTTPS na imagem e tenta buscar uma versão de melhor qualidade
                     let imageUrl = item.thumbnail;
                     if (imageUrl) {
                         imageUrl = imageUrl.replace("http://", "https://");
-                        imageUrl = imageUrl.replace("-I.jpg", "-O.jpg"); // Tenta pegar imagem em tamanho original
+                        imageUrl = imageUrl.replace("-I.jpg", "-O.jpg");
                     }
 
                     return {
@@ -183,9 +198,7 @@
                 });
 
                 applySortingAndRender(query);
-
-            } catch (error) {
-                console.error("Erro na busca:", error);
+            } else {
                 showState('empty');
             }
         }
@@ -195,20 +208,18 @@
             const sortBy = sortSelect.value;
 
             if (sortBy === 'discount_desc') {
-                // Ordena do maior desconto ao menor
                 activeProducts.sort((a, b) => b.discountPercent - a.discountPercent);
             } else if (sortBy === 'price_asc') {
-                // Ordena do menor preço ao maior
                 activeProducts.sort((a, b) => a.price - b.price);
             } else {
-                // Mantém a ordem de relevância nativa da API
+                // Mantém ordenação por relevância padrão
                 activeProducts.sort((a, b) => 0); 
             }
 
             renderProducts(query);
         }
 
-        // Função para tratar erros de carregamento da imagem de alta qualidade
+        // Tratamento de erros de imagens
         function handleImageError(imgElement, fallbackUrl) {
             if (fallbackUrl && imgElement.src !== fallbackUrl) {
                 imgElement.src = fallbackUrl;
@@ -217,7 +228,7 @@
             }
         }
 
-        // Função para renderizar os cards no HTML
+        // Renderização dos cards de produto
         function renderProducts(query) {
             productsGrid.innerHTML = '';
 
@@ -234,7 +245,6 @@
                 
                 card.innerHTML = `
                     <div class="p-4 relative">
-                        <!-- Badges de desconto e frete -->
                         <div class="absolute top-4 left-4 z-10 flex flex-col gap-1.5 items-start">
                             ${hasDiscount ? `
                                 <span class="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
@@ -248,7 +258,6 @@
                             ` : ''}
                         </div>
 
-                        <!-- Imagem do Produto -->
                         <div class="w-full h-48 flex items-center justify-center overflow-hidden rounded-xl bg-gray-50 mb-4 p-2 relative">
                             <img 
                                 src="${product.thumbnail}" 
@@ -259,7 +268,6 @@
                             >
                         </div>
 
-                        <!-- Selo de Loja Confiavel / Oficial -->
                         <div class="flex items-center gap-1.5 mb-2 min-h-[1.25rem]">
                             ${product.officialStore ? `
                                 <div class="flex items-center gap-1 text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
@@ -274,12 +282,10 @@
                             `}
                         </div>
 
-                        <!-- Título -->
                         <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 h-10 group-hover:text-amber-600 transition-colors duration-200" title="${product.title}">
                             ${product.title}
                         </h3>
 
-                        <!-- Preços -->
                         <div class="mt-4 flex flex-col justify-end">
                             ${hasDiscount ? `
                                 <span class="text-xs text-gray-400 line-through">
@@ -298,7 +304,6 @@
                         </div>
                     </div>
 
-                    <!-- Botão de Ação -->
                     <div class="px-4 pb-4 pt-1">
                         <a 
                             href="${product.permalink}" 
@@ -314,16 +319,14 @@
                 productsGrid.appendChild(card);
             });
 
-            // Atualiza os contadores
             resultTitle.innerText = query ? `Resultados para "${query}"` : "Super Ofertas do Dia";
             resultCount.innerText = `${activeProducts.length} itens encontrados com excelente custo-benefício.`;
             
-            // Re-renderiza os ícones gerados dinamicamente nos cards
             lucide.createIcons();
             showState('results');
         }
 
-        // Gerenciamento de Visibilidade dos Estados da UI
+        // Gerenciamento de Estados da UI
         function showState(state) {
             loadingState.classList.add('hidden');
             emptyState.classList.add('hidden');
@@ -339,7 +342,7 @@
             }
         }
 
-        // Listeners de Evento
+        // Listeners
         searchForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const query = searchInput.value.trim();
@@ -350,13 +353,13 @@
 
         sortSelect.addEventListener('change', () => {
             if (activeProducts.length > 0) {
-                applySortingAndRender(searchInput.value || "celular");
+                applySortingAndRender(searchInput.value || "ofertas");
             }
         });
 
-        // Carga Inicial: Busca automática padrão para não iniciar vazia
+        // Carga Inicial Automática
         window.addEventListener('DOMContentLoaded', () => {
-            fetchProducts('ofertas');
+            fetchProducts('Smart TV');
         });
     </script>
 </body>
