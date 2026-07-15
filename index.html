@@ -140,42 +140,10 @@
         // Estado do App
         let activeProducts = [];
 
-        // Utilitário para adicionar mensagens ao console visual de depuração
+        // Utilitário para depuração em tela
         function logDebug(message) {
             console.log(message);
             debugLog.innerText += "\n" + message;
-        }
-
-        // Função utilitária para fazer requisições via JSONP (Bypass absoluto de CORS/Bloqueios)
-        function fetchJSONP(url) {
-            return new Promise((resolve, reject) => {
-                const callbackName = 'jsonp_callback_' + Math.round(Math.random() * 1000000);
-                
-                // Cria o script dinâmico
-                const script = document.createElement('script');
-                script.src = `${url}${url.includes('?') ? '&' : '?'}callback=${callbackName}`;
-                script.id = callbackName;
-
-                // Declara o callback global que a API do Mercado Livre vai invocar
-                window[callbackName] = function(data) {
-                    cleanup();
-                    resolve(data);
-                };
-
-                // Tratamento de erro caso o script seja bloqueado pelo navegador
-                script.onerror = function(err) {
-                    cleanup();
-                    reject(new Error("A requisição do Script foi bloqueada pelo navegador (pode ser seu AdBlock ou Firewall)."));
-                };
-
-                function cleanup() {
-                    const el = document.getElementById(callbackName);
-                    if (el) el.remove();
-                    delete window[callbackName];
-                }
-
-                document.body.appendChild(script);
-            });
         }
 
         // Função de busca principal na API do Mercado Livre
@@ -184,36 +152,40 @@
             debugLog.innerText = "Iniciando diagnóstico de busca...";
             
             const encodedQuery = encodeURIComponent(query);
-            // URL simplificada focada em retornar resultados em qualquer cenário
-            const directUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodedQuery}&limit=50`;
+            const rawUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodedQuery}&limit=50`;
+            
+            // Usando um serviço de CORS Proxy confiável que mascara o User-Agent e evita o HTTP 403
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`;
 
             let data = null;
 
-            // Estratégia 1: Tenta obter via JSONP (Bypass de CORS ideal para GitHub Pages e Adblockers leves)
+            // Estratégia 1: Fetch usando o Proxy Robusto (Corrige o erro 403 e CORS)
             try {
-                logDebug("Estratégia 1: Tentando conexão via JSONP...");
-                const jsonpResponse = await fetchJSONP(directUrl);
-                if (jsonpResponse && jsonpResponse.results) {
-                    data = jsonpResponse;
-                    logDebug("Sucesso via JSONP!");
+                logDebug("Estratégia 1: Tentando conexão via CORS-Proxy...");
+                const response = await fetch(proxyUrl);
+                if (response.ok) {
+                    data = await response.json();
+                    logDebug("Sucesso via CORS-Proxy!");
+                } else {
+                    logDebug(`Estratégia 1 falhou com status HTTP: ${response.status}`);
                 }
-            } catch (jsonpError) {
-                logDebug(`Falha na Estratégia 1 (JSONP): ${jsonpError.message}`);
+            } catch (error) {
+                logDebug(`Falha na Estratégia 1 (CORS-Proxy): ${error.message}`);
             }
 
-            // Estratégia 2: Se o JSONP falhar, tenta o Fetch tradicional como redundância
+            // Estratégia 2: Se o Proxy falhar por limite de requisições, tenta o Fetch Direto
             if (!data) {
                 try {
-                    logDebug("Estratégia 2: Tentando conexão direta via Fetch...");
-                    const response = await fetch(directUrl);
+                    logDebug("Estratégia 2: Tentando conexão direta de segurança...");
+                    const response = await fetch(rawUrl);
                     if (response.ok) {
                         data = await response.json();
-                        logDebug("Sucesso via Fetch direto!");
+                        logDebug("Sucesso via Conexão Direta!");
                     } else {
                         logDebug(`Estratégia 2 falhou com status HTTP: ${response.status}`);
                     }
-                } catch (fetchError) {
-                    logDebug(`Falha na Estratégia 2 (Fetch direto): ${fetchError.message}`);
+                } catch (error) {
+                    logDebug(`Falha na Estratégia 2 (Conexão Direta): ${error.message}`);
                 }
             }
 
@@ -250,7 +222,7 @@
 
                 applySortingAndRender(query);
             } else {
-                logDebug("Erro: Ambas as estratégias falharam ou a API retornou 0 resultados.");
+                logDebug("Erro fatal: Não foi possível obter dados da API.");
                 showState('empty');
             }
         }
