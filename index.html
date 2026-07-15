@@ -175,29 +175,30 @@
             return { name: "Mercado Livre", style: "bg-blue-100 text-blue-800" };
         }
 
-        // Tenta buscar usando proxies estáveis sem controladores de interrupção (evita aborts precoces)
+        // Motor de requisição inteligente: tenta conexão direta antes de recorrer a proxies instáveis
         async function fetchWithFallback(targetUrl) {
-            const proxies = [
-                // Rota 1: Allorigins padrão (com limpeza de cache agressiva)
-                (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&nocache=${Date.now()}`,
-                // Rota 2: Codetabs Proxy alternativo
-                (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-                // Rota 3: Allorigins secundário sem parâmetros de cache adicionais
-                (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`
+            const connectionModes = [
+                // Rota 1: Direta (A API do Mercado Livre permite requisições Cross-Origin de qualquer lugar!)
+                { name: "Conexão Direta (Recomendado)", url: (url) => url, isProxy: false },
+                // Rota 2: Backup via AllOrigins (caso haja restrição local de rede)
+                { name: "Canal de Segurança #1 (AllOrigins)", url: (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&_=${Date.now()}`, isProxy: true },
+                // Rota 3: Backup via Codetabs
+                { name: "Canal de Segurança #2 (Codetabs)", url: (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`, isProxy: false }
             ];
 
-            for (let i = 0; i < proxies.length; i++) {
-                const proxyUrl = proxies[i](targetUrl);
-                logDebug(`Conectando ao canal #${i + 1}...`);
+            for (let i = 0; i < connectionModes.length; i++) {
+                const mode = connectionModes[i];
+                const finalUrl = mode.url(targetUrl);
+                logDebug(`Tentando: ${mode.name}...`);
                 
                 try {
-                    const response = await fetch(proxyUrl);
+                    const response = await fetch(finalUrl);
 
                     if (response.ok) {
                         const rawData = await response.text();
                         let jsonResult;
 
-                        if (proxyUrl.includes('allorigins')) {
+                        if (mode.isProxy) {
                             const parsedWrapper = JSON.parse(rawData);
                             jsonResult = JSON.parse(parsedWrapper.contents);
                         } else {
@@ -205,22 +206,22 @@
                         }
 
                         if (jsonResult && (jsonResult.results || jsonResult.id)) {
-                            logDebug(`Canal #${i + 1} estabelecido com sucesso!`);
+                            logDebug(`Sucesso absoluto via ${mode.name}!`);
                             return jsonResult;
                         }
                     } else {
-                        logDebug(`Canal #${i + 1} indisponível (Status: ${response.status})`);
+                        logDebug(`Falhou: ${mode.name} retornou status ${response.status}`);
                     }
                 } catch (e) {
-                    logDebug(`Canal #${i + 1} falhou: ${e.message}`);
+                    logDebug(`Erro em ${mode.name}: ${e.message}`);
                 }
             }
-            throw new Error("Todos os canais de comunicação estão temporariamente congestionados.");
+            throw new Error("Não foi possível conectar aos servidores de dados.");
         }
 
         async function fetchProducts(query) {
             showState('loading');
-            debugLog.innerText = "Estabelecendo túnel de dados alternativo...";
+            debugLog.innerText = "Iniciando motor de busca híbrido...";
             activeProducts = [];
 
             const targetUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=50`;
@@ -262,14 +263,14 @@
                         };
                     });
 
-                    logDebug(`Túnel de dados concluído. ${activeProducts.length} itens recebidos.`);
+                    logDebug(`Processamento concluído. ${activeProducts.length} ofertas estruturadas.`);
                     applySortingAndRender(query);
                 } else {
-                    logDebug("Aviso: A busca não obteve produtos válidos nesta tentativa.");
+                    logDebug("Aviso: Nenhuma oferta encontrada para essa busca.");
                     showState('empty');
                 }
             } catch (e) {
-                logDebug(`Falha crítica de comunicação: ${e.message}`);
+                logDebug(`Falha Crítica: ${e.message}`);
                 showState('empty');
             }
         }
