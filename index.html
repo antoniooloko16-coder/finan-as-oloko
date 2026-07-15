@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -101,15 +102,27 @@
             </div>
         </div>
 
-        <!-- 2. Estado Sem Resultados -->
-        <div id="empty-state" class="hidden py-16 flex flex-col items-center justify-center text-center">
+        <!-- 2. Estado Sem Resultados + Opções de busca alternativa imediata -->
+        <div id="empty-state" class="hidden py-12 flex flex-col items-center justify-center text-center">
             <div class="bg-amber-50 text-amber-500 p-4 rounded-full mb-4">
                 <i data-lucide="search-code" class="w-12 h-12"></i>
             </div>
-            <h3 class="text-lg font-bold text-gray-800">Nenhum produto vantajoso encontrado</h3>
-            <p class="text-sm text-gray-500 mt-1 max-w-sm">Tente buscar por marcas ou termos mais simples.</p>
+            <h3 class="text-lg font-bold text-gray-800">A pesquisa automática falhou ou bloqueou temporariamente</h3>
+            <p class="text-sm text-gray-500 mt-1 max-w-md">Para sua comodidade, você pode pesquisar este termo diretamente nos canais oficiais abaixo:</p>
             
-            <div class="mt-6 p-4 bg-red-50 text-red-700 text-xs font-mono rounded-lg max-w-lg mx-auto text-left border border-red-100">
+            <!-- Botões de redirecionamento dinâmicos -->
+            <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center w-full max-w-md">
+                <a id="search-google-shopping" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 bg-white hover:bg-gray-50 text-gray-800 font-bold py-3 px-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-center gap-2 text-sm transition-all">
+                    <i data-lucide="search" class="w-4 h-4 text-blue-500"></i>
+                    Ir p/ Google Shopping
+                </a>
+                <a id="search-direct-ml" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold py-3 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm transition-all">
+                    <i data-lucide="shopping-bag" class="w-4 h-4 text-blue-900"></i>
+                    Mercado Livre Direto
+                </a>
+            </div>
+
+            <div class="mt-8 p-4 bg-red-50 text-red-700 text-xs font-mono rounded-lg max-w-lg mx-auto text-left border border-red-100 w-full">
                 <p class="font-bold mb-1">Painel de Diagnóstico do Desenvolvedor:</p>
                 <div id="debug-log" class="whitespace-pre-wrap">Sem erros registrados ainda.</div>
             </div>
@@ -143,6 +156,10 @@
         const resultTitle = document.getElementById('result-title');
         const resultCount = document.getElementById('result-count');
         const debugLog = document.getElementById('debug-log');
+        
+        // Elementos dos botões alternativos
+        const btnGoogleShopping = document.getElementById('search-google-shopping');
+        const btnDirectML = document.getElementById('search-direct-ml');
 
         let activeProducts = [];
 
@@ -175,54 +192,65 @@
             return { name: "Mercado Livre", style: "bg-blue-100 text-blue-800" };
         }
 
-        // Motor de injeção dinâmica via JSONP (Bypass absoluto de CORS e barreiras 403)
+        // Motor de injeção dinâmica via JSONP com redundância de API
         function fetchJSONP(url) {
             return new Promise((resolve, reject) => {
-                // Cria um nome de função global único para o callback
                 const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
-                
-                // Configura a URL de destino embrulhada no AllOrigins com suporte a callback
+                // Força o uso do AllOrigins de forma assíncrona pura para evitar CORS
                 const jsonpUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&callback=${callbackName}`;
                 
-                // Define a função que o script externo irá executar ao carregar
                 window[callbackName] = function(data) {
                     try {
-                        // Deleta a tag e a função global para limpar a memória
                         delete window[callbackName];
                         document.head.removeChild(script);
-                        
-                        // AllOrigins encapsula o JSON como string dentro do campo 'contents'
                         const jsonResult = JSON.parse(data.contents);
                         resolve(jsonResult);
                     } catch (e) {
-                        reject(new Error("Falha ao processar os dados do servidor parceiro."));
+                        reject(new Error("Erro ao interpretar dados do proxy."));
                     }
                 };
 
-                // Trata erros de carregamento do script (ex: timeout ou queda do proxy)
                 const script = document.createElement('script');
                 script.src = jsonpUrl;
                 script.onerror = () => {
                     delete window[callbackName];
                     if (script.parentNode) document.head.removeChild(script);
-                    reject(new Error("Canal de comunicação instável."));
+                    reject(new Error("Conexão interrompida pelo servidor parceiro."));
                 };
 
                 document.head.appendChild(script);
             });
         }
 
+        // Função alternativa via CORS Proxy de segurança caso o AllOrigins falhe
+        async function fetchBackupProxy(targetUrl) {
+            const alternativeUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
+            const response = await fetch(alternativeUrl);
+            if (!response.ok) throw new Error("Fallback bloqueado.");
+            return await response.json();
+        }
+
         async function fetchProducts(query) {
             showState('loading');
-            debugLog.innerText = "Ativando tunelamento de dados...";
+            debugLog.innerText = "Iniciando buscas integradas...";
             activeProducts = [];
 
-            // Reduzido o limite para 30 para otimizar a performance do carregamento via túnel
+            // Atualiza os links alternativos preventivamente caso haja falha total
+            btnGoogleShopping.href = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query + ' "mercado livre"')}`;
+            btnDirectML.href = `https://lista.mercadolivre.com.br/${encodeURIComponent(query)}`;
+
             const targetUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=30`;
 
             try {
-                logDebug("Abrindo conexão via script assíncrono (JSONP)...");
-                const data = await fetchJSONP(targetUrl);
+                logDebug("Tentando Canal Primário (Túnel JSONP)...");
+                let data;
+                try {
+                    data = await fetchJSONP(targetUrl);
+                } catch (e) {
+                    logDebug("Canal Primário bloqueado. Usando Canal Secundário...");
+                    data = await fetchBackupProxy(targetUrl);
+                }
+
                 const rawResults = data.results || [];
 
                 if (rawResults.length > 0) {
@@ -238,7 +266,7 @@
                         let imageUrl = item.thumbnail;
                         if (imageUrl) {
                             imageUrl = imageUrl.replace("http://", "https://");
-                            imageUrl = imageUrl.replace("-I.jpg", "-O.jpg"); // Melhora a qualidade da imagem
+                            imageUrl = imageUrl.replace("-I.jpg", "-O.jpg");
                         }
 
                         const storeMeta = identifyStore(item);
@@ -258,14 +286,14 @@
                         };
                     });
 
-                    logDebug(`Processamento concluído. ${activeProducts.length} ofertas estruturadas.`);
+                    logDebug(`Sucesso! ${activeProducts.length} ofertas estruturadas.`);
                     applySortingAndRender(query);
                 } else {
                     logDebug("Aviso: Nenhuma oferta encontrada para essa busca.");
                     showState('empty');
                 }
             } catch (e) {
-                logDebug(`Falha Crítica: ${e.message}`);
+                logDebug(`Falha Crítica nos Canais: ${e.message}`);
                 showState('empty');
             }
         }
@@ -389,7 +417,7 @@
                 loadingState.classList.remove('hidden');
             } else if (state === 'empty') {
                 emptyState.classList.remove('hidden');
-                resultCount.innerText = "Nenhum resultado obtido.";
+                resultCount.innerText = "Nenhum resultado obtido automaticamente.";
             } else if (state === 'results') {
                 productsGrid.classList.remove('hidden');
             }
