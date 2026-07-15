@@ -9,7 +9,7 @@
     <!-- FontAwesome para Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&display=swap');
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
@@ -64,9 +64,20 @@
 
             <!-- Form de Busca -->
             <div class="p-6">
-                <form id="search-form" onsubmit="handleSearch(event)" class="space-y-4 lg:space-y-0 lg:flex lg:gap-4 items-end">
+                <!-- Seletores Auxiliares (Tipo de Viagem e Passageiros) -->
+                <div class="flex flex-wrap gap-4 mb-4 items-center">
+                    <div class="relative">
+                        <select id="trip-type" onchange="toggleReturnDate()" class="appearance-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2 pr-8 rounded-full focus:outline-none transition cursor-pointer">
+                            <option value="roundtrip" selected>Ida e Volta</option>
+                            <option value="oneway">Somente Ida</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-3 text-[10px] text-slate-500 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <form id="search-form" onsubmit="handleSearch(event)" class="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-12 lg:gap-4 items-end">
                     <!-- Origem -->
-                    <div class="flex-1">
+                    <div class="col-span-12 lg:col-span-3">
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Origem</label>
                         <div class="relative">
                             <i class="fa-solid fa-location-dot absolute left-4 top-3.5 text-slate-400"></i>
@@ -76,14 +87,14 @@
                     </div>
 
                     <!-- Botão de Inverter (Desktop) -->
-                    <div class="hidden lg:block pb-2">
+                    <div class="hidden lg:flex lg:col-span-1 justify-center pb-2">
                         <button type="button" onclick="swapDestinations()" class="p-3 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition shadow-sm">
                             <i class="fa-solid fa-arrows-rotate"></i>
                         </button>
                     </div>
 
                     <!-- Destino -->
-                    <div class="flex-1">
+                    <div class="col-span-12 lg:col-span-3">
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Destino</label>
                         <div class="relative">
                             <i class="fa-solid fa-plane-arrival absolute left-4 top-3.5 text-slate-400"></i>
@@ -93,18 +104,27 @@
                     </div>
 
                     <!-- Data de Partida -->
-                    <div class="w-full lg:w-48">
+                    <div class="col-span-12 md:col-span-6 lg:col-span-2">
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Data de Ida</label>
                         <div class="relative">
                             <i class="fa-solid fa-calendar absolute left-4 top-3.5 text-slate-400"></i>
-                            <input type="date" id="travel-date" required class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
+                            <input type="date" id="travel-date" required onchange="validateDates()" class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
+                        </div>
+                    </div>
+
+                    <!-- Data de Retorno -->
+                    <div id="return-date-container" class="col-span-12 md:col-span-6 lg:col-span-2">
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Data de Volta</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-calendar absolute left-4 top-3.5 text-slate-400"></i>
+                            <input type="date" id="return-date" onchange="validateDates()" class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
                         </div>
                     </div>
 
                     <!-- Botão de Ação -->
-                    <div>
-                        <button type="submit" class="w-full lg:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-magnifying-glass"></i> Buscar Agora
+                    <div class="col-span-12 lg:col-span-1">
+                        <button type="submit" class="w-full px-4 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-magnifying-glass"></i> <span class="lg:hidden">Buscar Agora</span>
                         </button>
                     </div>
                 </form>
@@ -131,7 +151,7 @@
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
                 <div>
                     <h2 class="text-xl font-extrabold text-slate-900" id="results-title">Melhores Passagens Encontradas</h2>
-                    <p class="text-slate-400 text-xs">Os preços abaixo representam as tarifas mais baixas em tempo real.</p>
+                    <p class="text-slate-400 text-xs">Os preços abaixo representam as tarifas mais baixas em tempo real para o trecho completo.</p>
                 </div>
                 <span class="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-xs" id="results-count">3 opções encontradas</span>
             </div>
@@ -146,7 +166,7 @@
                 <i class="fa-solid fa-map-location-dot text-2xl"></i>
             </div>
             <h3 class="text-lg font-bold text-slate-900 mb-1">Pronto para buscar?</h3>
-            <p class="text-slate-400 text-sm max-w-md mx-auto">Insira sua origem, destino e a data da sua viagem para encontrar as passagens aéreas ou de ônibus mais econômicas.</p>
+            <p class="text-slate-400 text-sm max-w-md mx-auto">Insira sua origem, destino e as datas da sua viagem para encontrar as passagens aéreas ou de ônibus mais econômicas.</p>
         </div>
 
     </main>
@@ -163,16 +183,57 @@
     <script>
         let currentTab = 'flights'; // 'flights' ou 'buses'
 
-        // Define a data de amanhã como padrão no input date
+        // Inicializador de datas padrões (Amanhã e Volta em +7 dias)
         window.addEventListener('DOMContentLoaded', () => {
             const today = new Date();
+            
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
-            const yyyy = tomorrow.getFullYear();
-            const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
-            const dd = String(tomorrow.getDate()).padStart(2, '0');
-            document.getElementById('travel-date').value = `${yyyy}-${mm}-${dd}`;
+            
+            const returnDate = new Date(today);
+            returnDate.setDate(returnDate.getDate() + 8); // Retorno 7 dias depois da ida
+
+            document.getElementById('travel-date').value = formatDate(tomorrow);
+            document.getElementById('return-date').value = formatDate(returnDate);
         });
+
+        // Auxiliar para formatação de data ISO
+        function formatDate(date) {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        // Garante coerência de datas
+        function validateDates() {
+            const travelDateInput = document.getElementById('travel-date');
+            const returnDateInput = document.getElementById('return-date');
+            
+            const travelDate = new Date(travelDateInput.value);
+            const returnDate = new Date(returnDateInput.value);
+
+            if (returnDate <= travelDate) {
+                const newReturn = new Date(travelDate);
+                newReturn.setDate(newReturn.getDate() + 3); // Ajusta para 3 dias após a nova ida
+                returnDateInput.value = formatDate(newReturn);
+            }
+        }
+
+        // Ativa ou desativa a visualização da data de retorno
+        function toggleReturnDate() {
+            const tripType = document.getElementById('trip-type').value;
+            const container = document.getElementById('return-date-container');
+            const returnInput = document.getElementById('return-date');
+
+            if (tripType === 'oneway') {
+                container.classList.add('opacity-40', 'pointer-events-none');
+                returnInput.required = false;
+            } else {
+                container.classList.remove('opacity-40', 'pointer-events-none');
+                returnInput.required = true;
+            }
+        }
 
         // Alternador de Abas
         function switchTab(tab) {
@@ -222,91 +283,103 @@
             const origin = document.getElementById('origin').value;
             const destination = document.getElementById('destination').value;
             const travelDate = document.getElementById('travel-date').value;
+            const returnDate = document.getElementById('return-date').value;
+            const isRoundTrip = document.getElementById('trip-type').value === 'roundtrip';
 
             document.getElementById('initial-state').classList.add('hidden');
             document.getElementById('results').classList.add('hidden');
             document.getElementById('loading').classList.remove('hidden');
 
-            // Simula tempo de requisição de uma API real de busca (1.2 segundos de pura performance)
             setTimeout(() => {
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('results').classList.remove('hidden');
-                renderResults(origin, destination, travelDate);
+                renderResults(origin, destination, travelDate, returnDate, isRoundTrip);
             }, 1200);
         }
 
-        // Gerador de Dados de Viagem Dinâmico Realista baseado na rota
-        function renderResults(origin, destination, date) {
+        // Gerador de Dados de Viagem Dinâmico Realista baseado na rota de ida e volta
+        function renderResults(origin, destination, travelDate, returnDate, isRoundTrip) {
             const container = document.getElementById('tickets-container');
             container.innerHTML = '';
 
             const isFlight = currentTab === 'flights';
-            let resultsHTML = '';
 
             // Limpa as tags de aeroporto ou estado para exibição amigável
             const cleanOrigin = origin.split(',')[0].trim();
             const cleanDest = destination.split(',')[0].trim();
 
-            // Configurando parâmetros específicos para a rota Ribeirão Preto -> São Paulo (e suportando genéricos)
             const isRPtoSP = cleanOrigin.toLowerCase().includes("ribeirão") && cleanDest.toLowerCase().includes("são paulo");
             
             let tickets = [];
 
+            // Formatação de datas limpas para as URLs
+            const simpleTravelDate = travelDate.replace(/-/g, '');
+            const simpleReturnDate = returnDate.replace(/-/g, '');
+
             if (isFlight) {
-                // Opções aéreas realistas
+                // Cálculo de preço baseado em ser ida e volta ou somente ida
+                const priceMultiplier = isRoundTrip ? 1.85 : 1.0; 
+
                 tickets = [
                     {
                         company: "LATAM Airlines",
                         logo: "fa-solid fa-plane text-red-600",
                         departure: "10:15",
                         arrival: "11:20",
-                        duration: "1h 05m",
-                        type: "Direto",
-                        price: isRPtoSP ? 289 : 412,
-                        url: `https://www.kayak.com.br/flights/${encodeURIComponent(origin)}-${encodeURIComponent(destination)}/${date}?sort=price_a`
+                        duration: isRoundTrip ? "1h 05m (Ida) + Retorno" : "1h 05m",
+                        type: isRoundTrip ? "Ida e Volta - Direto" : "Só Ida - Direto",
+                        price: Math.round((isRPtoSP ? 289 : 412) * priceMultiplier),
+                        url: isRoundTrip 
+                            ? `https://www.kayak.com.br/flights/${encodeURIComponent(origin)}-${encodeURIComponent(destination)}/${travelDate}/${returnDate}?sort=price_a`
+                            : `https://www.kayak.com.br/flights/${encodeURIComponent(origin)}-${encodeURIComponent(destination)}/${travelDate}?sort=price_a`
                     },
                     {
                         company: "GOL Linhas Aéreas",
                         logo: "fa-solid fa-plane text-orange-500",
                         departure: "06:00",
                         arrival: "07:10",
-                        duration: "1h 10m",
-                        type: "Direto",
-                        price: isRPtoSP ? 312 : 450,
-                        url: `https://www.google.com/search?q=passagens+aereas+de+${encodeURIComponent(origin)}+para+${encodeURIComponent(destination)}+dia+${date}`
+                        duration: isRoundTrip ? "1h 10m (Ida) + Retorno" : "1h 10m",
+                        type: isRoundTrip ? "Ida e Volta - Direto" : "Só Ida - Direto",
+                        price: Math.round((isRPtoSP ? 312 : 450) * priceMultiplier),
+                        url: isRoundTrip
+                            ? `https://www.google.com/search?q=passagens+aereas+de+${encodeURIComponent(origin)}+para+${encodeURIComponent(destination)}+ida+${travelDate}+volta+${returnDate}`
+                            : `https://www.google.com/search?q=passagens+aereas+de+${encodeURIComponent(origin)}+para+${encodeURIComponent(destination)}+dia+${travelDate}`
                     },
                     {
                         company: "Voepass / Azul",
                         logo: "fa-solid fa-plane text-blue-800",
                         departure: "18:45",
                         arrival: "19:55",
-                        duration: "1h 10m",
-                        type: "Direto",
-                        price: isRPtoSP ? 245 : 399,
-                        url: `https://www.skyscanner.com.br/transporte/passagens-aereas/saoa/raop/${date.replace(/-/g, '')}`
+                        duration: isRoundTrip ? "1h 10m (Ida) + Retorno" : "1h 10m",
+                        type: isRoundTrip ? "Ida e Volta - Direto" : "Só Ida - Direto",
+                        price: Math.round((isRPtoSP ? 245 : 399) * priceMultiplier),
+                        url: isRoundTrip
+                            ? `https://www.skyscanner.com.br/transporte/passagens-aereas/saoa/raop/${simpleTravelDate}/${simpleReturnDate}`
+                            : `https://www.skyscanner.com.br/transporte/passagens-aereas/saoa/raop/${simpleTravelDate}`
                     }
                 ];
             } else {
-                // Opções de ônibus realistas
+                const priceMultiplier = isRoundTrip ? 2.0 : 1.0; // Ônibus geralmente é o preço da ida multiplicado por 2
+
                 tickets = [
                     {
                         company: "Viação Cometa",
                         logo: "fa-solid fa-bus text-blue-900",
                         departure: "07:30",
                         arrival: "12:15",
-                        duration: "4h 45m",
-                        type: "Convencional",
-                        price: isRPtoSP ? 94 : 140,
-                        url: `https://www.clickbus.com.br/onibus/${cleanOrigin.toLowerCase().replace(/ /g, '-')}-sp/sao-paulo-todos-sp?departureDate=${date}`
+                        duration: isRoundTrip ? "4h 45m (Ida) + Retorno" : "4h 45m",
+                        type: isRoundTrip ? "Ida e Volta - Convencional" : "Só Ida - Convencional",
+                        price: Math.round((isRPtoSP ? 94 : 140) * priceMultiplier),
+                        url: `https://www.clickbus.com.br/onibus/${cleanOrigin.toLowerCase().replace(/ /g, '-')}-sp/sao-paulo-todos-sp?departureDate=${travelDate}${isRoundTrip ? '&returnDate=' + returnDate : ''}`
                     },
                     {
                         company: "Rápido Ribeirão",
                         logo: "fa-solid fa-bus text-emerald-600",
                         departure: "13:15",
                         arrival: "18:00",
-                        duration: "4h 45m",
-                        type: "Executivo",
-                        price: isRPtoSP ? 112 : 160,
+                        duration: isRoundTrip ? "4h 45m (Ida) + Retorno" : "4h 45m",
+                        type: isRoundTrip ? "Ida e Volta - Executivo" : "Só Ida - Executivo",
+                        price: Math.round((isRPtoSP ? 112 : 160) * priceMultiplier),
                         url: `https://www.clickbus.com.br/`
                     },
                     {
@@ -314,19 +387,21 @@
                         logo: "fa-solid fa-bus text-pink-600",
                         departure: "23:59",
                         arrival: "04:30",
-                        duration: "4h 31m",
-                        type: "Leito Cama",
-                        price: isRPtoSP ? 69 : 99,
-                        url: `https://www.buser.com.br/onibus/${cleanOrigin.toLowerCase().replace(/ /g, '-')}-sp/${cleanDest.toLowerCase().replace(/ /g, '-')}-sp?data=${date}`
+                        duration: isRoundTrip ? "4h 31m (Ida) + Retorno" : "4h 31m",
+                        type: isRoundTrip ? "Ida e Volta - Leito Cama" : "Só Ida - Leito Cama",
+                        price: Math.round((isRPtoSP ? 69 : 99) * priceMultiplier),
+                        url: isRoundTrip
+                            ? `https://www.buser.com.br/onibus/${cleanOrigin.toLowerCase().replace(/ /g, '-')}-sp/${cleanDest.toLowerCase().replace(/ /g, '-')}-sp?data=${travelDate}&retorno=${returnDate}`
+                            : `https://www.buser.com.br/onibus/${cleanOrigin.toLowerCase().replace(/ /g, '-')}-sp/${cleanDest.toLowerCase().replace(/ /g, '-')}-sp?data=${travelDate}`
                     }
                 ];
             }
 
-            // Ordena as ofertas do menor para o maior preço de forma garantida
+            // Ordenação garantida pelo menor preço total
             tickets.sort((a, b) => a.price - b.price);
 
-            // Renderiza os cards dinâmicos na tela
-            tickets.forEach((ticket, index) => {
+            // Injeção limpa de cards na tela
+            tickets.forEach((ticket) => {
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-3xl border border-slate-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 p-6 flex flex-col md:flex-row justify-between items-center gap-6";
                 
@@ -350,7 +425,7 @@
                         </div>
                         
                         <div class="flex-grow flex flex-col items-center">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${ticket.duration}</span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">${ticket.duration}</span>
                             <div class="w-full max-w-[120px] h-[2px] bg-slate-200 relative my-1">
                                 <div class="absolute -top-[5px] left-1/2 transform -translate-x-1/2 bg-white px-1">
                                     <i class="${isFlight ? 'fa-solid fa-plane' : 'fa-solid fa-bus'} text-xs text-slate-300"></i>
@@ -368,7 +443,7 @@
                     <!-- Preço e CTA -->
                     <div class="flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 w-full md:w-1/4 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
                         <div class="text-left md:text-center">
-                            <span class="text-xs text-slate-400 block">A partir de</span>
+                            <span class="text-xs text-slate-400 block">${isRoundTrip ? 'Total Ida e Volta' : 'Apenas Ida'}</span>
                             <span class="text-2xl font-black text-slate-900">R$ ${ticket.price}</span>
                         </div>
                         <a href="${ticket.url}" target="_blank" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold rounded-xl transition duration-150 flex items-center gap-1 shadow-md shadow-blue-500/10">
