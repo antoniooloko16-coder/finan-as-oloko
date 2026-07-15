@@ -101,7 +101,7 @@
             </div>
         </div>
 
-        <!-- 2. Estado Sem Resultados -->
+        <!-- 2. Estado Sem Resultados / Erro -->
         <div id="empty-state" class="hidden py-12 flex flex-col items-center justify-center text-center">
             <div class="bg-amber-50 text-amber-500 p-4 rounded-full mb-4">
                 <i data-lucide="search-code" class="w-12 h-12"></i>
@@ -139,7 +139,12 @@
     </footer>
 
     <script>
-        lucide.createIcons();
+        // Inicializa ícones Lucide de forma segura
+        try {
+            lucide.createIcons();
+        } catch(err) {
+            console.error("Erro ao carregar ícones:", err);
+        }
 
         // ==========================================
         // INSIRA SUA CHAVE DA VALUE SERP AQUI:
@@ -163,10 +168,27 @@
 
         function logDebug(message) {
             console.log(message);
-            debugLog.innerText += "\n" + message;
+            if(debugLog) {
+                debugLog.innerText += "\n" + message;
+            }
         }
 
-        // Função de identificação de marcas parceiras baseado nos dados de retorno
+        // Tratamento limpo de strings de preços recebidos pela API
+        function parsePrice(priceValue) {
+            if (typeof priceValue === 'number') return priceValue;
+            if (!priceValue) return 0;
+            
+            // Remove símbolos monetários e formatações de milhar brasileiras
+            let cleanString = priceValue.toString()
+                .replace(/R\$\s?/i, '')
+                .replace(/\./g, '')
+                .replace(',', '.')
+                .trim();
+                
+            const parsed = parseFloat(cleanString);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
         function identifyStore(merchantName) {
             const merchant = (merchantName || "").toLowerCase();
             if (merchant.includes("magazine") || merchant.includes("magalu")) {
@@ -187,45 +209,41 @@
             if (merchant.includes("mercado livre") || merchant.includes("mercadolivre")) {
                 return { name: "Mercado Livre", style: "bg-blue-100 text-blue-800" };
             }
-            // Retorna o nome da loja que a API do Google Shopping identificou se não for nenhuma das acima
             return { name: merchantName || "Loja Online", style: "bg-gray-100 text-gray-800" };
         }
 
         async function fetchProducts(query) {
             showState('loading');
-            debugLog.innerText = "Iniciando buscas integradas comerciais...";
+            if(debugLog) debugLog.innerText = "Iniciando buscas integradas comerciais...";
             activeProducts = [];
 
-            // Prepara fallbacks de emergência
+            // Prepara URLs seguras de contingência para o usuário
             btnGoogleShopping.href = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`;
             btnDirectML.href = `https://lista.mercadolivre.com.br/${encodeURIComponent(query)}`;
 
-            if (!VALUE_SERP_API_KEY || VALUE_SERP_API_KEY === "SUA_CHAVE_AQUI") {
+            if (!VALUE_SERP_API_KEY || VALUE_SERP_API_KEY === "" || VALUE_SERP_API_KEY === "SUA_CHAVE_AQUI") {
                 logDebug("Erro: Chave de API da Value SERP não configurada no código.");
                 showState('empty');
                 return;
             }
 
-            // Endpoint oficial da Value SERP estruturado para o Google Shopping no Brasil (gl=br, hl=pt)
             const apiUrl = `https://api.valueserp.com/search?api_key=${VALUE_SERP_API_KEY}&search_type=shopping&q=${encodeURIComponent(query)}&gl=br&hl=pt`;
 
             try {
-                logDebug("Efetuando requisição segura à API comercial...");
+                logDebug("Efetuando requisição à API comercial...");
                 const response = await fetch(apiUrl);
                 
                 if (!response.ok) {
-                    throw new Error(`Erro de resposta do servidor: ${response.status}`);
+                    throw new Error(`Erro de resposta da API: Código ${response.status}`);
                 }
 
                 const data = await response.json();
-                
-                // Mapeia os resultados retornados pela Value SERP do Google Shopping
                 const rawResults = data.shopping_results || [];
 
                 if (rawResults.length > 0) {
                     activeProducts = rawResults.map((item, index) => {
-                        const currentPrice = item.price;
-                        const originalPrice = item.extracted_original_price || currentPrice;
+                        const currentPrice = parsePrice(item.price);
+                        const originalPrice = item.extracted_original_price ? parsePrice(item.extracted_original_price) : currentPrice;
                         
                         let discountPercent = 0;
                         if (originalPrice > currentPrice) {
@@ -242,20 +260,20 @@
                             discountPercent: discountPercent,
                             thumbnail: item.image || "https://placeholder.co/300x300?text=Sem+Imagem",
                             permalink: item.link,
-                            freeShipping: item.shipping && item.shipping.toLowerCase().includes("grátis"),
+                            freeShipping: item.shipping ? item.shipping.toLowerCase().includes("grátis") : false,
                             storeName: storeMeta.name,
                             storeStyle: storeMeta.style
                         };
                     });
 
-                    logDebug(`Sucesso! ${activeProducts.length} ofertas estruturadas.`);
+                    logDebug(`Sucesso! ${activeProducts.length} ofertas processadas.`);
                     applySortingAndRender(query);
                 } else {
-                    logDebug("Aviso: Nenhuma oferta direta encontrada pela API para esta busca.");
+                    logDebug("Aviso: Nenhuma oferta direta encontrada pela API para esta pesquisa.");
                     showState('empty');
                 }
             } catch (e) {
-                logDebug(`Falha Crítica na API: ${e.message}`);
+                logDebug(`Falha de Conexão na API: ${e.message}`);
                 showState('empty');
             }
         }
@@ -287,40 +305,42 @@
                 card.className = "bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-300 flex flex-col justify-between overflow-hidden group";
                 
                 card.innerHTML = `
-                    <div class="p-4 relative">
-                        <div class="absolute top-4 left-4 z-10 flex flex-col gap-1.5 items-start">
-                            ${hasDiscount ? `
-                                <span class="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
-                                    -${product.discountPercent}% OFF
-                                </span>
-                            ` : ''}
-                            ${product.freeShipping ? `
-                                <span class="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm tracking-wide">
-                                    FRETE GRÁTIS
-                                </span>
-                            ` : ''}
-                        </div>
-
-                        <div class="w-full h-48 flex items-center justify-center overflow-hidden rounded-xl bg-gray-50 mb-4 p-2 relative">
-                            <img 
-                                src="${product.thumbnail}" 
-                                alt="${product.title}" 
-                                class="object-contain h-full w-full group-hover:scale-105 transition-transform duration-300"
-                                onerror="this.src='https://placehold.co/300x300?text=Imagem+Indispon%C3%ADvel'"
-                                loading="lazy"
-                            >
-                        </div>
-
-                        <div class="flex items-center gap-1.5 mb-2 min-h-[1.25rem]">
-                            <div class="flex items-center gap-1 text-[11px] font-semibold ${product.storeStyle} px-2 py-0.5 rounded shadow-sm max-w-full truncate">
-                                <i data-lucide="store" class="w-3 h-3 flex-shrink-0"></i>
-                                <span class="truncate">${product.storeName}</span>
+                    <div class="p-4 relative flex-grow flex flex-col justify-between">
+                        <div>
+                            <div class="absolute top-4 left-4 z-10 flex flex-col gap-1.5 items-start">
+                                ${hasDiscount ? `
+                                    <span class="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+                                        -${product.discountPercent}% OFF
+                                    </span>
+                                ` : ''}
+                                ${product.freeShipping ? `
+                                    <span class="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm tracking-wide">
+                                        FRETE GRÁTIS
+                                    </span>
+                                ` : ''}
                             </div>
-                        </div>
 
-                        <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 h-10 group-hover:text-amber-600 transition-colors duration-200" title="${product.title}">
-                            ${product.title}
-                        </h3>
+                            <div class="w-full h-48 flex items-center justify-center overflow-hidden rounded-xl bg-gray-50 mb-4 p-2 relative">
+                                <img 
+                                    src="${product.thumbnail}" 
+                                    alt="${product.title}" 
+                                    class="object-contain h-full w-full group-hover:scale-105 transition-transform duration-300"
+                                    onerror="this.src='https://placehold.co/300x300?text=Imagem+Indispon%C3%ADvel'"
+                                    loading="lazy"
+                                >
+                            </div>
+
+                            <div class="flex items-center gap-1.5 mb-2 min-h-[1.25rem]">
+                                <div class="flex items-center gap-1 text-[11px] font-semibold ${product.storeStyle} px-2 py-0.5 rounded shadow-sm max-w-full truncate">
+                                    <i data-lucide="store" class="w-3 h-3 flex-shrink-0"></i>
+                                    <span class="truncate">${product.storeName}</span>
+                                </div>
+                            </div>
+
+                            <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 h-10 group-hover:text-amber-600 transition-colors duration-200" title="${product.title}">
+                                ${product.title}
+                            </h3>
+                        </div>
 
                         <div class="mt-4 flex flex-col justify-end">
                             ${hasDiscount ? `
@@ -358,7 +378,9 @@
             resultTitle.innerText = query ? `Melhores preços para "${query}"` : "Super Ofertas do Dia";
             resultCount.innerText = `${activeProducts.length} ofertas analisadas.`;
             
-            lucide.createIcons();
+            try {
+                lucide.createIcons();
+            } catch(e) {}
             showState('results');
         }
 
@@ -392,7 +414,7 @@
             }
         });
 
-        // Carga inicial automatizada
+        // Execução ao iniciar a página
         window.addEventListener('DOMContentLoaded', () => {
             fetchProducts('Tv 65');
         });
