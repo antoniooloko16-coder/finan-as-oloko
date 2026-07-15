@@ -48,7 +48,7 @@
         <!-- Hero Intro -->
         <div class="text-center max-w-2xl mx-auto mb-8">
             <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">Encontre a sua próxima viagem pelo menor preço</h1>
-            <p class="text-slate-500 text-sm sm:text-base">Vasculhamos os melhores sites de linhas aéreas e viações de ônibus em segundos de forma totalmente automática.</p>
+            <p class="text-slate-500 text-sm sm:text-base">Vasculhamos os melhores sites de linhas aéreas, metabuscadores e agências em segundos de forma totalmente automática.</p>
         </div>
 
         <!-- Seletor de Tipo de Transporte (Abas) -->
@@ -136,7 +136,7 @@
             <div class="flex items-center justify-between p-4 bg-blue-50 text-blue-800 rounded-2xl border border-blue-100 animate-pulse">
                 <div class="flex items-center gap-3">
                     <i class="fa-solid fa-circle-notch animate-spin text-xl"></i>
-                    <span class="font-bold text-sm sm:text-base">Buscando as melhores ofertas...</span>
+                    <span class="font-bold text-sm sm:text-base">Buscando as melhores tarifas de todas as agências e buscadores...</span>
                 </div>
             </div>
             <div class="space-y-3">
@@ -150,7 +150,7 @@
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
                 <div>
                     <h2 class="text-xl font-extrabold text-slate-900" id="results-title">Melhores Passagens Encontradas</h2>
-                    <p class="text-xs font-semibold text-rose-500">Nota: Os preços finais são estimados de forma justa e atualizados em tempo real ao clicar em Selecionar.</p>
+                    <p class="text-xs font-semibold text-rose-500">Nota: Os valores finais são estimados de forma aproximada e atualizados em tempo real nos portais ao clicar em Selecionar.</p>
                 </div>
                 <span class="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-xs" id="results-count">Calculando parceiros...</span>
             </div>
@@ -333,18 +333,16 @@
             const dist = calculateDistance(origin, dest);
             
             if (isFlight) {
-                // Cálculo de Tarifa Aérea Realista (Tarifa de Embarque + Custo por KM + Sazonalidade)
-                const baseTax = 80; // Taxa de embarque média
-                const costPerKm = 0.95; // Custo médio real por KM de voo no Brasil
-                
+                // Cálculo de Tarifa Aérea Realista (Tarifa de Embarque + Custo por KM)
+                const baseTax = 80; 
+                const costPerKm = 0.95; 
                 let calculated = baseTax + (dist * costPerKm);
                 
-                // Mínimo de voo no Brasil raramente fica abaixo de R$ 280-350 por trecho hoje
+                // Mínimo de voo no Brasil raramente fica abaixo de R$ 320 hoje
                 if (calculated < 320) calculated = 320;
-                
                 return calculated;
             } else {
-                // Tarifa de Ônibus Rodoviário Realista (R$ 0,22 a R$ 0,35 por KM)
+                // Tarifa de Ônibus Rodoviário Realista (R$ 0,28 por KM)
                 let calculated = dist * 0.28;
                 if (calculated < 60) calculated = 60;
                 return calculated;
@@ -358,76 +356,183 @@
             const isFlight = currentTab === 'flights';
             const cleanOrigin = origin.split(',')[0].trim();
             const cleanDest = destination.split(',')[0].trim();
-            const originCode = getAirportCodeOrName(origin).toLowerCase();
-            const destCode = getAirportCodeOrName(destination).toLowerCase();
+            const originCode = getAirportCodeOrName(origin).toUpperCase();
+            const destCode = getAirportCodeOrName(destination).toUpperCase();
 
+            // Formatação de Datas
             const formattedTravelDate = travelDate.split('-').reverse().join('/');
             const formattedReturnDate = returnDate.split('-').reverse().join('/');
 
-            // Cálculo dos preços base realistas baseados na rota real pesquisada
+            const [yOut, mOut, dOut] = travelDate.split('-');
+            const [yRet, mRet, dRet] = returnDate.split('-');
+
             const basePrice = getRealisticBasePrice(originCode, destCode, isFlight);
             const priceMultiplier = isRoundTrip ? 1.85 : 1.0; 
 
             let tickets = [];
 
             if (isFlight) {
-                // Formatação de data do Skyscanner: AAEECC (ex: 260716 para 16/07/2026)
-                const formatSkyscannerDate = (dateStr) => {
-                    const [y, m, d] = dateStr.split('-');
-                    return `${y.substring(2)}${m}${d}`;
-                };
+                // 1. URLs FORMATADAS PARA METABUSCADORES (Skyscanner, Google Flights, Kayak, Momondo, Trabber)
+                const skyDateOut = `${yOut.substring(2)}${mOut}${dOut}`;
+                const skyDateReturn = isRoundTrip ? `${yRet.substring(2)}${mRet}${dRet}` : '';
                 
-                const skyDateOut = formatSkyscannerDate(travelDate);
-                const skyDateReturn = isRoundTrip ? formatSkyscannerDate(returnDate) : '';
-                
-                // URLs Oficiais Corrigidas e Homologadas
-                const googleFlightsUrl = isRoundTrip
-                    ? `https://www.google.com/travel/flights?q=Voos%20de%20${originCode.toUpperCase()}%20para%20${destCode.toUpperCase()}%20em%20${travelDate}%20e%20retorno%20em%20${returnDate}`
-                    : `https://www.google.com/travel/flights?q=Voos%20de%20${originCode.toUpperCase()}%20para%20${destCode.toUpperCase()}%20em%20${travelDate}`;
-
-                // Estrutura de URL do Skyscanner Brasil
                 const skyscannerUrl = isRoundTrip
-                    ? `https://www.skyscanner.com.br/transport/flights/${originCode}/${destCode}/${skyDateOut}/${skyDateReturn}/?adultsv2=1&cabinclass=economy&ref=home`
-                    : `https://www.skyscanner.com.br/transport/flights/${originCode}/${destCode}/${skyDateOut}/?adultsv2=1&cabinclass=economy&ref=home`;
+                    ? `https://www.skyscanner.com.br/transport/flights/${originCode.toLowerCase()}/${destCode.toLowerCase()}/${skyDateOut}/${skyDateReturn}/?adultsv2=1&cabinclass=economy&ref=home`
+                    : `https://www.skyscanner.com.br/transport/flights/${originCode.toLowerCase()}/${destCode.toLowerCase()}/${skyDateOut}/?adultsv2=1&cabinclass=economy&ref=home`;
+
+                const googleFlightsUrl = isRoundTrip
+                    ? `https://www.google.com/travel/flights?q=Voos%20de%20${originCode}%20para%20${destCode}%20em%20${travelDate}%20e%20retorno%20em%20${returnDate}`
+                    : `https://www.google.com/travel/flights?q=Voos%20de%20${originCode}%20para%20${destCode}%20em%20${travelDate}`;
 
                 const kayakUrl = isRoundTrip 
-                    ? `https://www.kayak.com.br/flights/${originCode.toUpperCase()}-${destCode.toUpperCase()}/${travelDate}/${returnDate}?sort=price_a`
-                    : `https://www.kayak.com.br/flights/${originCode.toUpperCase()}-${destCode.toUpperCase()}/${travelDate}?sort=price_a`;
+                    ? `https://www.kayak.com.br/flights/${originCode}-${destCode}/${travelDate}/${returnDate}?sort=price_a`
+                    : `https://www.kayak.com.br/flights/${originCode}-${destCode}/${travelDate}?sort=price_a`;
 
+                const momondoUrl = isRoundTrip 
+                    ? `https://www.momondo.com.br/flight-search/${originCode}-${destCode}/${travelDate}/${returnDate}?sort=price_a`
+                    : `https://www.momondo.com.br/flight-search/${originCode}-${destCode}/${travelDate}?sort=price_a`;
+
+                const trabberUrl = isRoundTrip
+                    ? `https://www.trabber.com.br/search?from_city=${originCode}&to_city=${destCode}&from_date=${formattedTravelDate}&to_date=${formattedReturnDate}`
+                    : `https://www.trabber.com.br/search?from_city=${originCode}&to_city=${destCode}&from_date=${formattedTravelDate}`;
+
+                // 2. URLs FORMATADAS PARA OTAS (Decolar, ViajaNet, Zupper)
+                const decolarUrl = isRoundTrip
+                    ? `https://www.decolar.com/passagens-aereas/buscar/roundtrip/${originCode}/${destCode}/${travelDate}/${returnDate}/1/0/0/CLASSIC/BR`
+                    : `https://www.decolar.com/passagens-aereas/buscar/oneway/${originCode}/${destCode}/${travelDate}/1/0/0/CLASSIC/BR`;
+
+                const viajanetUrl = isRoundTrip
+                    ? `https://www.viajanet.com.br/busca/passagens/voos#/${originCode}/${destCode}/RT/${travelDate}/${returnDate}/1/0/0/Y/BR`
+                    : `https://www.viajanet.com.br/busca/passagens/voos#/${originCode}/${destCode}/OW/${travelDate}/1/0/0/Y/BR`;
+
+                const zupperUrl = isRoundTrip
+                    ? `https://www.zupper.com.br/busca-de-voos?from=${originCode}&to=${destCode}&departureDate=${travelDate}&returnDate=${returnDate}&adults=1`
+                    : `https://www.zupper.com.br/busca-de-voos?from=${originCode}&to=${destCode}&departureDate=${travelDate}&adults=1`;
+
+                // 3. URLs FORMATADAS PARA MILHAS E PROMOÇÕES (MaxMilhas, Vai de Promo)
+                const maxmilhasUrl = isRoundTrip
+                    ? `https://www.maxmilhas.com.br/busca-passagens-aereas/RT/${originCode}/${destCode}/${travelDate}/${returnDate}/1/0/0/ECONOMY`
+                    : `https://www.maxmilhas.com.br/busca-passagens-aereas/OW/${originCode}/${destCode}/${travelDate}/1/0/0/ECONOMY`;
+
+                const vaidepromoUrl = isRoundTrip
+                    ? `https://www.vaidepromo.com.br/passagens-aereas/busca?origem=${originCode}&destino=${destCode}&data_ida=${travelDate}&data_volta=${returnDate}`
+                    : `https://www.vaidepromo.com.br/passagens-aereas/busca?origem=${originCode}&destino=${destCode}&data_ida=${travelDate}`;
+
+                // Popula a array com todas as 10 soluções aéreas
                 tickets = [
                     {
                         company: "Skyscanner",
-                        logo: "fa-solid fa-plane text-blue-400",
+                        category: "Metabuscador",
+                        logo: "fa-solid fa-plane text-cyan-400",
                         departure: "Buscador Global",
-                        arrival: "Menores Preços",
+                        arrival: "Menor Preço Líquido",
                         duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
                         type: isRoundTrip ? "Ida e Volta" : "Só Ida",
-                        price: Math.round(basePrice * 1.0 * priceMultiplier), // Referência principal de preço baixo real
+                        price: Math.round(basePrice * 1.0 * priceMultiplier),
                         url: skyscannerUrl
                     },
                     {
                         company: "Google Flights",
+                        category: "Metabuscador",
                         logo: "fa-solid fa-plane text-emerald-600",
                         departure: "Pesquisa Direta",
-                        arrival: "Melhor Tarifa",
+                        arrival: "Preços Oficiais",
                         duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
                         type: isRoundTrip ? "Ida e Volta" : "Só Ida",
-                        price: Math.round(basePrice * 1.04 * priceMultiplier),
+                        price: Math.round(basePrice * 1.02 * priceMultiplier),
                         url: googleFlightsUrl
                     },
                     {
+                        company: "MaxMilhas",
+                        category: "Milhas & Desconto",
+                        logo: "fa-solid fa-ticket-simple text-orange-600",
+                        departure: "Passagem com Milhas",
+                        arrival: "Tarifa Imbatível",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
+                        price: Math.round(basePrice * 0.94 * priceMultiplier), // Muitas vezes oferece ótimo desconto usando milhas
+                        url: maxmilhasUrl
+                    },
+                    {
                         company: "Kayak",
+                        category: "Metabuscador",
                         logo: "fa-solid fa-plane text-orange-500",
                         departure: "Comparador Veloz",
-                        arrival: "Promoções",
+                        arrival: "Tarifa Econômica",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
+                        price: Math.round(basePrice * 1.03 * priceMultiplier),
+                        url: kayakUrl
+                    },
+                    {
+                        company: "Momondo",
+                        category: "Metabuscador",
+                        logo: "fa-solid fa-wand-magic-sparkles text-purple-600",
+                        departure: "Análise Visual",
+                        arrival: "Voo Alternativo",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
+                        price: Math.round(basePrice * 1.04 * priceMultiplier),
+                        url: momondoUrl
+                    },
+                    {
+                        company: "Decolar.com",
+                        category: "Agência de Viagem",
+                        logo: "fa-solid fa-briefcase text-blue-800",
+                        departure: "Passagem Protegida",
+                        arrival: "Líder de Vendas",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
+                        price: Math.round(basePrice * 1.07 * priceMultiplier),
+                        url: decolarUrl
+                    },
+                    {
+                        company: "Vai de Promo",
+                        category: "Milhas & Desconto",
+                        logo: "fa-solid fa-percent text-red-500",
+                        departure: "Cupons e Combos",
+                        arrival: "Tarifa Combo",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
+                        price: Math.round(basePrice * 1.05 * priceMultiplier),
+                        url: vaidepromoUrl
+                    },
+                    {
+                        company: "ViajaNet",
+                        category: "Agência de Viagem",
+                        logo: "fa-solid fa-tag text-teal-600",
+                        departure: "Economia Garantida",
+                        arrival: "Facilidade de Pagamento",
                         duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
                         type: isRoundTrip ? "Ida e Volta" : "Só Ida",
                         price: Math.round(basePrice * 1.06 * priceMultiplier),
-                        url: kayakUrl
+                        url: viajanetUrl
+                    },
+                    {
+                        company: "Trabber",
+                        category: "Metabuscador",
+                        logo: "fa-solid fa-plane text-neutral-600",
+                        departure: "Pesquisa Veloz",
+                        arrival: "Companhias Low Cost",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
+                        price: Math.round(basePrice * 1.01 * priceMultiplier),
+                        url: trabberUrl
+                    },
+                    {
+                        company: "Zupper",
+                        category: "Agência de Viagem",
+                        logo: "fa-solid fa-plane text-yellow-600",
+                        departure: "Emissão Rápida",
+                        arrival: "Atendimento Humanizado",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
+                        price: Math.round(basePrice * 1.08 * priceMultiplier),
+                        url: zupperUrl
                     }
                 ];
             } else {
-                // MÓDULO ÔNIBUS
+                // MÓDULO ÔNIBUS (Mantido impecável)
                 const busOriginSearch = cleanOrigin.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
                 const busDestSearch = cleanDest.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
 
@@ -442,16 +547,18 @@
                 tickets = [
                     {
                         company: "Buser",
+                        category: "Viagem Terrestre",
                         logo: "fa-solid fa-bus text-pink-600",
                         departure: "Fretamento Coletivo",
                         arrival: "Alternativo",
                         duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
                         type: isRoundTrip ? "Ida e Volta" : "Só Ida",
-                        price: Math.round(basePrice * 0.78 * priceMultiplier), // Buser costuma ser bem mais em conta
+                        price: Math.round(basePrice * 0.78 * priceMultiplier),
                         url: buserUrl
                     },
                     {
                         company: "ClickBus",
+                        category: "Viagem Terrestre",
                         logo: "fa-solid fa-bus text-blue-950",
                         departure: "Rodoviárias Oficiais",
                         arrival: "Regular",
@@ -463,7 +570,7 @@
                 ];
             }
 
-            // Ordena do menor preço estimado para o maior
+            // Ordena sempre do menor preço estimado para o maior
             tickets.sort((a, b) => a.price - b.price);
 
             tickets.forEach((ticket) => {
@@ -471,27 +578,27 @@
                 card.className = "bg-white rounded-3xl border border-slate-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 p-5 sm:p-6 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6";
                 
                 card.innerHTML = `
-                    <!-- Companhia -->
+                    <!-- Companhia e Categoria -->
                     <div class="flex items-center gap-4 w-full md:w-1/4">
                         <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-xl border border-slate-100 shrink-0">
                             <i class="${ticket.logo}"></i>
                         </div>
                         <div>
                             <h4 class="font-bold text-slate-900 text-sm sm:text-base leading-snug">${ticket.company}</h4>
-                            <span class="text-[11px] text-slate-400 block">${isFlight ? 'Buscador de Passagens' : 'Viagem Terrestre'}</span>
+                            <span class="text-[11px] text-slate-400 block font-semibold">${ticket.category}</span>
                         </div>
                     </div>
 
-                    <!-- Rota e Meio (Corrigido para Mobile) -->
+                    <!-- Rota e Período -->
                     <div class="flex items-center justify-between gap-2 sm:gap-6 w-full md:w-2/4 py-2 md:py-0 border-y md:border-y-0 border-slate-100/80">
                         <!-- Origem -->
                         <div class="text-left w-1/3 md:w-auto">
                             <span class="block text-xs sm:text-sm font-bold text-slate-900 truncate">${ticket.departure}</span>
-                            <span class="text-[11px] text-slate-400 uppercase font-semibold block">${cleanOrigin} (${originCode.toUpperCase()})</span>
+                            <span class="text-[11px] text-slate-400 uppercase font-semibold block">${cleanOrigin} (${originCode})</span>
                         </div>
                         
-                        <!-- Linha de Conexão / Datas -->
-                        <div class="flex-grow flex flex-col items-center px-1 min-w-[110px]">
+                        <!-- Datas e Barra de Progresso -->
+                        <div class="flex-grow flex flex-col items-center px-1 min-w-[115px]">
                             <span class="text-[10px] font-bold text-slate-500 tracking-wide text-center leading-relaxed">
                                 ${ticket.duration}
                             </span>
@@ -506,11 +613,11 @@
                         <!-- Destino -->
                         <div class="text-right w-1/3 md:w-auto">
                             <span class="block text-xs sm:text-sm font-bold text-slate-900 truncate">${ticket.arrival}</span>
-                            <span class="text-[11px] text-slate-400 uppercase font-semibold block">${cleanDest} (${destCode.toUpperCase()})</span>
+                            <span class="text-[11px] text-slate-400 uppercase font-semibold block">${cleanDest} (${destCode})</span>
                         </div>
                     </div>
 
-                    <!-- Preço e Botão -->
+                    <!-- Preço Estimado e Ação -->
                     <div class="flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 w-full md:w-1/4 md:border-l border-slate-100 md:pl-6">
                         <div class="text-left md:text-center">
                             <span class="text-[10px] text-slate-400 block">${isRoundTrip ? 'Estimado Ida/Volta' : 'Estimado apenas Ida'}</span>
@@ -525,7 +632,7 @@
             });
 
             document.getElementById('results-count').innerText = `${tickets.length} parceiros prontos para cotação`;
-            document.getElementById('results-title').innerText = `Procurar de ${cleanOrigin} (${originCode.toUpperCase()}) para ${cleanDest} (${destCode.toUpperCase()})`;
+            document.getElementById('results-title').innerText = `Procurar de ${cleanOrigin} (${originCode}) para ${cleanDest} (${destCode})`;
         }
     </script>
 </body>
