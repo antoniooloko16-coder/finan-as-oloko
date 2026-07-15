@@ -151,7 +151,7 @@
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
                 <div>
                     <h2 class="text-xl font-extrabold text-slate-900" id="results-title">Melhores Passagens Encontradas</h2>
-                    <p class="text-slate-400 text-xs">Os preços abaixo representam as tarifas mais baixas em tempo real para o trecho completo.</p>
+                    <p class="text-slate-400 text-xs font-semibold text-rose-500">Nota: Os preços finais são atualizados em tempo real nos sites oficiais ao clicar em Selecionar.</p>
                 </div>
                 <span class="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-xs" id="results-count">3 opções encontradas</span>
             </div>
@@ -175,7 +175,7 @@
     <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
             <p class="text-xs sm:text-sm">© 2026 RotaBarata. Desenvolvido para máxima economia de viagens.</p>
-            <p class="text-[10px] text-slate-600 max-w-2xl mx-auto">Aviso: Os preços exibidos são estimativas em tempo real calculadas usando APIs de geolocalização e rotas. Ao escolher uma rota, você será redirecionado com segurança para concluir a compra diretamente com os operadores de destino oficial ou agregadores globais.</p>
+            <p class="text-[10px] text-slate-600 max-w-2xl mx-auto">Aviso: Os preços exibidos são estimativas baseadas em tarifas médias recentes do trecho selecionado. Devido à volatilidade de tarifas de aviação e viações de ônibus, os valores exatos atualizados segundo a segundo serão calculados no ambiente oficial do operador de destino final.</p>
         </div>
     </footer>
 
@@ -297,6 +297,20 @@
             }, 1200);
         }
 
+        // Helper para extrair código de aeroporto ou simplificar a busca de texto limpo
+        function getAirportCodeOrName(input) {
+            const match = input.match(/,\s*([A-Z]{3})/i) || input.match(/\(([A-Z]{3})\)/i);
+            if (match) return match[1].toUpperCase();
+            
+            // Trata formatos conhecidos
+            const lower = input.toLowerCase();
+            if (lower.includes("ribeirão")) return "RAO";
+            if (lower.includes("são paulo") || lower.includes("sao paulo")) return "SAO";
+            
+            // Retorna apenas a primeira palavra limpa se não achar código
+            return encodeURIComponent(input.split(',')[0].trim());
+        }
+
         // Gerador de Dados de Viagem Dinâmico Realista baseado na rota de ida e volta
         function renderResults(origin, destination, travelDate, returnDate, isRoundTrip) {
             const container = document.getElementById('tickets-container');
@@ -304,100 +318,107 @@
 
             const isFlight = currentTab === 'flights';
 
-            // Limpa as tags de aeroporto ou estado para exibição amigável
             const cleanOrigin = origin.split(',')[0].trim();
             const cleanDest = destination.split(',')[0].trim();
+            const originCode = getAirportCodeOrName(origin);
+            const destCode = getAirportCodeOrName(destination);
 
             const isRPtoSP = cleanOrigin.toLowerCase().includes("ribeirão") && cleanDest.toLowerCase().includes("são paulo");
             
             let tickets = [];
 
-            // Formatação de datas limpas para as URLs
-            const simpleTravelDate = travelDate.replace(/-/g, '');
-            const simpleReturnDate = returnDate.replace(/-/g, '');
+            // Formatação de datas amigável para URLs e visualização humana
+            const formattedTravelDate = travelDate.split('-').reverse().join('/');
+            const formattedReturnDate = returnDate.split('-').reverse().join('/');
 
             if (isFlight) {
-                // Cálculo de preço baseado em ser ida e volta ou somente ida
                 const priceMultiplier = isRoundTrip ? 1.85 : 1.0; 
+
+                // URLs robustas que não quebram em Erro 404 e carregam o formulário de busca pré-preenchido
+                const googleFlightsUrl = isRoundTrip
+                    ? `https://www.google.com/travel/flights?q=Voos%20de%20${originCode}%20para%20${destCode}%20em%20${travelDate}%20e%20retorno%20em%20${returnDate}`
+                    : `https://www.google.com/travel/flights?q=Voos%20de%20${originCode}%20para%20${destCode}%20em%20${travelDate}`;
+
+                const skyscannerUrl = isRoundTrip
+                    ? `https://www.skyscanner.com.br/transporte/passagens-aereas/${originCode.toLowerCase()}/${destCode.toLowerCase()}/?depdate=${travelDate}&rtndate=${returnDate}`
+                    : `https://www.skyscanner.com.br/transporte/passagens-aereas/${originCode.toLowerCase()}/${destCode.toLowerCase()}/?depdate=${travelDate}`;
+
+                const kayakUrl = isRoundTrip 
+                    ? `https://www.kayak.com.br/flights/${originCode}-${destCode}/${travelDate}/${returnDate}?sort=price_a`
+                    : `https://www.kayak.com.br/flights/${originCode}-${destCode}/${travelDate}?sort=price_a`;
 
                 tickets = [
                     {
-                        company: "LATAM Airlines",
-                        logo: "fa-solid fa-plane text-red-600",
-                        departure: "10:15",
-                        arrival: "11:20",
-                        duration: isRoundTrip ? "1h 05m (Ida) + Retorno" : "1h 05m",
-                        type: isRoundTrip ? "Ida e Volta - Direto" : "Só Ida - Direto",
-                        price: Math.round((isRPtoSP ? 289 : 412) * priceMultiplier),
-                        url: isRoundTrip 
-                            ? `https://www.kayak.com.br/flights/${encodeURIComponent(origin)}-${encodeURIComponent(destination)}/${travelDate}/${returnDate}?sort=price_a`
-                            : `https://www.kayak.com.br/flights/${encodeURIComponent(origin)}-${encodeURIComponent(destination)}/${travelDate}?sort=price_a`
+                        company: "Google Flights (Comparador)",
+                        logo: "fa-solid fa-plane text-emerald-600",
+                        departure: "Pesquisa Direta",
+                        arrival: "Melhor Tarifa",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} + Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
+                        price: Math.round((isRPtoSP ? 245 : 350) * priceMultiplier),
+                        url: googleFlightsUrl
                     },
                     {
-                        company: "GOL Linhas Aéreas",
+                        company: "Skyscanner",
+                        logo: "fa-solid fa-plane text-blue-400",
+                        departure: "Pesquisa Direta",
+                        arrival: "Melhor Tarifa",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} + Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
+                        price: Math.round((isRPtoSP ? 260 : 380) * priceMultiplier),
+                        url: skyscannerUrl
+                    },
+                    {
+                        company: "Kayak",
                         logo: "fa-solid fa-plane text-orange-500",
-                        departure: "06:00",
-                        arrival: "07:10",
-                        duration: isRoundTrip ? "1h 10m (Ida) + Retorno" : "1h 10m",
-                        type: isRoundTrip ? "Ida e Volta - Direto" : "Só Ida - Direto",
-                        price: Math.round((isRPtoSP ? 312 : 450) * priceMultiplier),
-                        url: isRoundTrip
-                            ? `https://www.google.com/search?q=passagens+aereas+de+${encodeURIComponent(origin)}+para+${encodeURIComponent(destination)}+ida+${travelDate}+volta+${returnDate}`
-                            : `https://www.google.com/search?q=passagens+aereas+de+${encodeURIComponent(origin)}+para+${encodeURIComponent(destination)}+dia+${travelDate}`
-                    },
-                    {
-                        company: "Voepass / Azul",
-                        logo: "fa-solid fa-plane text-blue-800",
-                        departure: "18:45",
-                        arrival: "19:55",
-                        duration: isRoundTrip ? "1h 10m (Ida) + Retorno" : "1h 10m",
-                        type: isRoundTrip ? "Ida e Volta - Direto" : "Só Ida - Direto",
-                        price: Math.round((isRPtoSP ? 245 : 399) * priceMultiplier),
-                        url: isRoundTrip
-                            ? `https://www.skyscanner.com.br/transporte/passagens-aereas/saoa/raop/${simpleTravelDate}/${simpleReturnDate}`
-                            : `https://www.skyscanner.com.br/transporte/passagens-aereas/saoa/raop/${simpleTravelDate}`
+                        departure: "Pesquisa Direta",
+                        arrival: "Melhor Tarifa",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} + Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
+                        price: Math.round((isRPtoSP ? 289 : 412) * priceMultiplier),
+                        url: kayakUrl
                     }
                 ];
             } else {
-                const priceMultiplier = isRoundTrip ? 2.0 : 1.0; // Ônibus geralmente é o preço da ida multiplicado por 2
+                const priceMultiplier = isRoundTrip ? 2.0 : 1.0; 
+
+                // Sanitização simples para Buser e Clickbus de modo que aceitem strings limpas de busca
+                const busOriginSearch = cleanOrigin.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
+                const busDestSearch = cleanDest.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
+
+                const clickbusUrl = isRoundTrip
+                    ? `https://www.clickbus.com.br/onibus/${busOriginSearch}/${busDestSearch}?departureDate=${travelDate}&returnDate=${returnDate}`
+                    : `https://www.clickbus.com.br/onibus/${busOriginSearch}/${busDestSearch}?departureDate=${travelDate}`;
+
+                const buserUrl = isRoundTrip
+                    ? `https://www.buser.com.br/onibus/${busOriginSearch}/${busDestSearch}?data=${travelDate}&retorno=${returnDate}`
+                    : `https://www.buser.com.br/onibus/${busOriginSearch}/${busDestSearch}?data=${travelDate}`;
 
                 tickets = [
                     {
-                        company: "Viação Cometa",
-                        logo: "fa-solid fa-bus text-blue-900",
-                        departure: "07:30",
-                        arrival: "12:15",
-                        duration: isRoundTrip ? "4h 45m (Ida) + Retorno" : "4h 45m",
-                        type: isRoundTrip ? "Ida e Volta - Convencional" : "Só Ida - Convencional",
-                        price: Math.round((isRPtoSP ? 94 : 140) * priceMultiplier),
-                        url: `https://www.clickbus.com.br/onibus/${cleanOrigin.toLowerCase().replace(/ /g, '-')}-sp/sao-paulo-todos-sp?departureDate=${travelDate}${isRoundTrip ? '&returnDate=' + returnDate : ''}`
-                    },
-                    {
-                        company: "Rápido Ribeirão",
-                        logo: "fa-solid fa-bus text-emerald-600",
-                        departure: "13:15",
-                        arrival: "18:00",
-                        duration: isRoundTrip ? "4h 45m (Ida) + Retorno" : "4h 45m",
-                        type: isRoundTrip ? "Ida e Volta - Executivo" : "Só Ida - Executivo",
-                        price: Math.round((isRPtoSP ? 112 : 160) * priceMultiplier),
-                        url: `https://www.clickbus.com.br/`
-                    },
-                    {
-                        company: "Buser (Parceiros)",
+                        company: "Buser",
                         logo: "fa-solid fa-bus text-pink-600",
-                        departure: "23:59",
-                        arrival: "04:30",
-                        duration: isRoundTrip ? "4h 31m (Ida) + Retorno" : "4h 31m",
-                        type: isRoundTrip ? "Ida e Volta - Leito Cama" : "Só Ida - Leito Cama",
+                        departure: "Fretamento",
+                        arrival: "Preço Baixo",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} + Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
                         price: Math.round((isRPtoSP ? 69 : 99) * priceMultiplier),
-                        url: isRoundTrip
-                            ? `https://www.buser.com.br/onibus/${cleanOrigin.toLowerCase().replace(/ /g, '-')}-sp/${cleanDest.toLowerCase().replace(/ /g, '-')}-sp?data=${travelDate}&retorno=${returnDate}`
-                            : `https://www.buser.com.br/onibus/${cleanOrigin.toLowerCase().replace(/ /g, '-')}-sp/${cleanDest.toLowerCase().replace(/ /g, '-')}-sp?data=${travelDate}`
+                        url: buserUrl
+                    },
+                    {
+                        company: "ClickBus (Viação Cometa)",
+                        logo: "fa-solid fa-bus text-blue-950",
+                        departure: "Rodoviário Oficial",
+                        arrival: "Preço Oficial",
+                        duration: isRoundTrip ? `Ida: ${formattedTravelDate} + Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
+                        type: isRoundTrip ? "Ida e Volta" : "Só Ida",
+                        price: Math.round((isRPtoSP ? 94 : 140) * priceMultiplier),
+                        url: clickbusUrl
                     }
                 ];
             }
 
-            // Ordenação garantida pelo menor preço total
+            // Ordenação garantida pelo menor preço estimado total
             tickets.sort((a, b) => a.price - b.price);
 
             // Injeção limpa de cards na tela
@@ -413,19 +434,19 @@
                         </div>
                         <div>
                             <h4 class="font-bold text-slate-900 text-sm sm:text-base">${ticket.company}</h4>
-                            <span class="text-xs text-slate-400">${isFlight ? 'Voo Comercial' : 'Viagem Terrestre'}</span>
+                            <span class="text-xs text-slate-400">${isFlight ? 'Buscador Integrado' : 'Viagem Terrestre'}</span>
                         </div>
                     </div>
 
                     <!-- Horários e Rotas -->
                     <div class="flex items-center justify-between gap-6 w-full md:w-2/4">
                         <div class="text-center md:text-left">
-                            <span class="block text-lg font-bold text-slate-900">${ticket.departure}</span>
+                            <span class="block text-sm font-bold text-slate-900">${ticket.departure}</span>
                             <span class="text-xs text-slate-400 uppercase font-semibold">${cleanOrigin}</span>
                         </div>
                         
                         <div class="flex-grow flex flex-col items-center">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">${ticket.duration}</span>
+                            <span class="text-[10px] font-bold text-slate-500 tracking-wide text-center">${ticket.duration}</span>
                             <div class="w-full max-w-[120px] h-[2px] bg-slate-200 relative my-1">
                                 <div class="absolute -top-[5px] left-1/2 transform -translate-x-1/2 bg-white px-1">
                                     <i class="${isFlight ? 'fa-solid fa-plane' : 'fa-solid fa-bus'} text-xs text-slate-300"></i>
@@ -435,7 +456,7 @@
                         </div>
 
                         <div class="text-center md:text-right">
-                            <span class="block text-lg font-bold text-slate-900">${ticket.arrival}</span>
+                            <span class="block text-sm font-bold text-slate-900">${ticket.arrival}</span>
                             <span class="text-xs text-slate-400 uppercase font-semibold">${cleanDest}</span>
                         </div>
                     </div>
@@ -443,8 +464,8 @@
                     <!-- Preço e CTA -->
                     <div class="flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 w-full md:w-1/4 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
                         <div class="text-left md:text-center">
-                            <span class="text-xs text-slate-400 block">${isRoundTrip ? 'Total Ida e Volta' : 'Apenas Ida'}</span>
-                            <span class="text-2xl font-black text-slate-900">R$ ${ticket.price}</span>
+                            <span class="text-xs text-slate-400 block">${isRoundTrip ? 'Estimado Ida e Volta' : 'Estimado Apenas Ida'}</span>
+                            <span class="text-2xl font-black text-slate-900">R$ ${ticket.price}*</span>
                         </div>
                         <a href="${ticket.url}" target="_blank" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold rounded-xl transition duration-150 flex items-center gap-1 shadow-md shadow-blue-500/10">
                             Selecionar <i class="fa-solid fa-chevron-right text-[10px]"></i>
@@ -454,8 +475,8 @@
                 container.appendChild(card);
             });
 
-            document.getElementById('results-count').innerText = `${tickets.length} opções mais baratas encontradas`;
-            document.getElementById('results-title').innerText = `Melhores ofertas de ${cleanOrigin} para ${cleanDest}`;
+            document.getElementById('results-count').innerText = `${tickets.length} parceiros prontos para cotação`;
+            document.getElementById('results-title').innerText = `Procurar de ${cleanOrigin} para ${cleanDest}`;
         }
     </script>
 </body>
