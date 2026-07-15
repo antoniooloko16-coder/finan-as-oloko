@@ -64,7 +64,7 @@
 
             <!-- Form de Busca -->
             <div class="p-6">
-                <!-- Seletores Auxiliares (Tipo de Viagem e Passageiros) -->
+                <!-- Seletores Auxiliares (Tipo de Viagem) -->
                 <div class="flex flex-wrap gap-4 mb-4 items-center">
                     <div class="relative">
                         <select id="trip-type" onchange="toggleReturnDate()" class="appearance-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2 pr-8 rounded-full focus:outline-none transition cursor-pointer">
@@ -81,12 +81,12 @@
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Origem</label>
                         <div class="relative">
                             <i class="fa-solid fa-location-dot absolute left-4 top-3.5 text-slate-400"></i>
-                            <input type="text" id="origin" required value="Ribeirão Preto, SP" placeholder="Cidade de origem" 
+                            <input type="text" id="origin" required value="Ribeirão Preto, RAO" placeholder="Cidade ou Aeroporto" 
                                 class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
                         </div>
                     </div>
 
-                    <!-- Botão de Inverter (Desktop) -->
+                    <!-- Botão de Inverter -->
                     <div class="hidden lg:flex lg:col-span-1 justify-center pb-2">
                         <button type="button" onclick="swapDestinations()" class="p-3 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition shadow-sm">
                             <i class="fa-solid fa-arrows-rotate"></i>
@@ -98,7 +98,7 @@
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Destino</label>
                         <div class="relative">
                             <i class="fa-solid fa-plane-arrival absolute left-4 top-3.5 text-slate-400"></i>
-                            <input type="text" id="destination" required value="São Paulo, SP" placeholder="Cidade de destino" 
+                            <input type="text" id="destination" required value="Salvador, SSA" placeholder="Cidade ou Aeroporto" 
                                 class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
                         </div>
                     </div>
@@ -131,42 +131,39 @@
             </div>
         </div>
 
-        <!-- Indicador de Busca em Andamento (Skeleton Loader) -->
+        <!-- Indicador de Busca (Skeleton) -->
         <div id="loading" class="hidden space-y-4">
             <div class="flex items-center justify-between p-4 bg-blue-50 text-blue-800 rounded-2xl border border-blue-100 animate-pulse">
                 <div class="flex items-center gap-3">
                     <i class="fa-solid fa-circle-notch animate-spin text-xl"></i>
-                    <span class="font-bold text-sm sm:text-base">Buscando as passagens mais baratas nos servidores públicos...</span>
+                    <span class="font-bold text-sm sm:text-base">Buscando as melhores ofertas...</span>
                 </div>
             </div>
-            <!-- Skeletons das Passagens -->
             <div class="space-y-3">
                 <div class="h-32 bg-white rounded-3xl border border-slate-100 animate-pulse"></div>
                 <div class="h-32 bg-white rounded-3xl border border-slate-100 animate-pulse"></div>
             </div>
         </div>
 
-        <!-- Resultados de Passagem -->
+        <!-- Resultados -->
         <div id="results" class="hidden space-y-4">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
                 <div>
                     <h2 class="text-xl font-extrabold text-slate-900" id="results-title">Melhores Passagens Encontradas</h2>
-                    <p class="text-slate-400 text-xs font-semibold text-rose-500">Nota: Os preços finais são atualizados em tempo real nos sites oficiais ao clicar em Selecionar.</p>
+                    <p class="text-xs font-semibold text-rose-500">Nota: Os preços finais são atualizados em tempo real nos sites oficiais ao clicar em Selecionar.</p>
                 </div>
-                <span class="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-xs" id="results-count">3 opções encontradas</span>
+                <span class="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-xs" id="results-count">Calculando parceiros...</span>
             </div>
-
-            <!-- Grid de Passagens (Injetado via JS) -->
             <div id="tickets-container" class="space-y-4"></div>
         </div>
 
-        <!-- Mensagem Inicial / Instruções -->
+        <!-- Mensagem Inicial -->
         <div id="initial-state" class="text-center py-12 px-4 bg-white rounded-3xl border border-slate-100">
             <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <i class="fa-solid fa-map-location-dot text-2xl"></i>
             </div>
             <h3 class="text-lg font-bold text-slate-900 mb-1">Pronto para buscar?</h3>
-            <p class="text-slate-400 text-sm max-w-md mx-auto">Insira sua origem, destino e as datas da sua viagem para encontrar as passagens aéreas ou de ônibus mais econômicas.</p>
+            <p class="text-slate-400 text-sm max-w-md mx-auto">Insira sua origem, destino e as datas para iniciar sua busca inteligente.</p>
         </div>
 
     </main>
@@ -175,29 +172,26 @@
     <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
             <p class="text-xs sm:text-sm">© 2026 RotaBarata. Desenvolvido para máxima economia de viagens.</p>
-            <p class="text-[10px] text-slate-600 max-w-2xl mx-auto">Aviso: Os preços exibidos são estimativas baseadas em tarifas médias recentes do trecho selecionado. Devido à volatilidade de tarifas de aviação e viações de ônibus, os valores exatos atualizados segundo a segundo serão calculados no ambiente oficial do operador de destino final.</p>
         </div>
     </footer>
 
     <!-- Lógica do Aplicativo -->
     <script>
-        let currentTab = 'flights'; // 'flights' ou 'buses'
+        let currentTab = 'flights';
 
-        // Inicializador de datas padrões (Amanhã e Volta em +7 dias)
+        // Inicializador de datas
         window.addEventListener('DOMContentLoaded', () => {
             const today = new Date();
-            
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
             
             const returnDate = new Date(today);
-            returnDate.setDate(returnDate.getDate() + 8); // Retorno 7 dias depois da ida
+            returnDate.setDate(returnDate.getDate() + 8);
 
             document.getElementById('travel-date').value = formatDate(tomorrow);
             document.getElementById('return-date').value = formatDate(returnDate);
         });
 
-        // Auxiliar para formatação de data ISO
         function formatDate(date) {
             const yyyy = date.getFullYear();
             const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -205,7 +199,6 @@
             return `${yyyy}-${mm}-${dd}`;
         }
 
-        // Garante coerência de datas
         function validateDates() {
             const travelDateInput = document.getElementById('travel-date');
             const returnDateInput = document.getElementById('return-date');
@@ -215,12 +208,11 @@
 
             if (returnDate <= travelDate) {
                 const newReturn = new Date(travelDate);
-                newReturn.setDate(newReturn.getDate() + 3); // Ajusta para 3 dias após a nova ida
+                newReturn.setDate(newReturn.getDate() + 3);
                 returnDateInput.value = formatDate(newReturn);
             }
         }
 
-        // Ativa ou desativa a visualização da data de retorno
         function toggleReturnDate() {
             const tripType = document.getElementById('trip-type').value;
             const container = document.getElementById('return-date-container');
@@ -235,7 +227,6 @@
             }
         }
 
-        // Alternador de Abas
         function switchTab(tab) {
             currentTab = tab;
             const flightTab = document.getElementById('tab-flights');
@@ -249,21 +240,21 @@
                 
                 if(originInput.value === "Ribeirão Preto, SP") originInput.value = "Ribeirão Preto, RAO";
                 if(destInput.value === "São Paulo, SP") destInput.value = "São Paulo, SAO";
+                if(destInput.value === "Salvador, SP") destInput.value = "Salvador, SSA";
             } else {
                 busTab.className = "flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition tab-active";
                 flightTab.className = "flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition text-slate-400 hover:text-slate-600";
                 
-                if(originInput.value === "Ribeirão Preto, RAO") originInput.value = "Ribeirão Preto, SP";
-                if(destInput.value === "São Paulo, SAO") destInput.value = "São Paulo, SP";
+                if(originInput.value.includes("RAO")) originInput.value = "Ribeirão Preto, SP";
+                if(destInput.value.includes("SAO") || destInput.value.includes("CGH") || destInput.value.includes("GRU")) destInput.value = "São Paulo, SP";
+                if(destInput.value.includes("SSA")) destInput.value = "Salvador, BA";
             }
 
-            // Se já houver resultados exibidos, refaz a busca automaticamente ao mudar de aba
             if (!document.getElementById('results').classList.contains('hidden')) {
                 executeSearch();
             }
         }
 
-        // Inverter Origem e Destino
         function swapDestinations() {
             const origin = document.getElementById('origin');
             const destination = document.getElementById('destination');
@@ -272,13 +263,11 @@
             destination.value = temp;
         }
 
-        // Submissão do Formulário
         function handleSearch(event) {
             event.preventDefault();
             executeSearch();
         }
 
-        // Processamento da busca
         function executeSearch() {
             const origin = document.getElementById('origin').value;
             const destination = document.getElementById('destination').value;
@@ -294,54 +283,64 @@
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('results').classList.remove('hidden');
                 renderResults(origin, destination, travelDate, returnDate, isRoundTrip);
-            }, 1200);
+            }, 1000);
         }
 
-        // Helper para extrair código de aeroporto ou simplificar a busca de texto limpo
+        // Extrator de código IATA melhorado e tolerante a erros
         function getAirportCodeOrName(input) {
-            const match = input.match(/,\s*([A-Z]{3})/i) || input.match(/\(([A-Z]{3})\)/i);
-            if (match) return match[1].toUpperCase();
+            const cleaned = input.toUpperCase();
             
-            // Trata formatos conhecidos
-            const lower = input.toLowerCase();
-            if (lower.includes("ribeirão")) return "RAO";
-            if (lower.includes("são paulo") || lower.includes("sao paulo")) return "SAO";
-            
-            // Retorna apenas a primeira palavra limpa se não achar código
-            return encodeURIComponent(input.split(',')[0].trim());
+            // Procura por códigos de 3 letras explícitos no texto
+            const match = cleaned.match(/\b([A-Z]{3})\b/);
+            if (match) return match[1];
+
+            // Mapeamento fallback para buscas rápidas comuns no Brasil
+            if (cleaned.includes("RIBEIRAO") || cleaned.includes("RIBEIRÃO")) return "RAO";
+            if (cleaned.includes("SÃO PAULO") || cleaned.includes("SAO PAULO") || cleaned.includes("CONGONHAS")) return "CGH";
+            if (cleaned.includes("GUARULHOS")) return "GRU";
+            if (cleaned.includes("SALVADOR") || cleaned.includes("SSA")) return "SSA";
+            if (cleaned.includes("RIO DE JANEIRO") || cleaned.includes("GALEAO")) return "GIG";
+            if (cleaned.includes("SANTOS DUMONT")) return "SDU";
+            if (cleaned.includes("BRASILIA") || cleaned.includes("BRASÍLIA")) return "BSB";
+
+            // Se nada funcionar, retorna as 3 primeiras letras sem caracteres especiais
+            return cleaned.replace(/[^A-Z]/g, '').substring(0, 3);
         }
 
-        // Gerador de Dados de Viagem Dinâmico Realista baseado na rota de ida e volta
         function renderResults(origin, destination, travelDate, returnDate, isRoundTrip) {
             const container = document.getElementById('tickets-container');
             container.innerHTML = '';
 
             const isFlight = currentTab === 'flights';
-
             const cleanOrigin = origin.split(',')[0].trim();
             const cleanDest = destination.split(',')[0].trim();
             const originCode = getAirportCodeOrName(origin);
             const destCode = getAirportCodeOrName(destination);
 
-            const isRPtoSP = cleanOrigin.toLowerCase().includes("ribeirão") && cleanDest.toLowerCase().includes("são paulo");
-            
-            let tickets = [];
-
-            // Formatação de datas amigável para URLs e visualização humana
             const formattedTravelDate = travelDate.split('-').reverse().join('/');
             const formattedReturnDate = returnDate.split('-').reverse().join('/');
+
+            let tickets = [];
 
             if (isFlight) {
                 const priceMultiplier = isRoundTrip ? 1.85 : 1.0; 
 
-                // URLs robustas que não quebram em Erro 404 e carregam o formulário de busca pré-preenchido
+                // Formatação correta para o novo padrão do Skyscanner (2026)
+                // Formato: /transporte/passagens-aereas/brao/bssa/260723/260729/
+                const formatSkyscannerDate = (dateStr) => {
+                    const [y, m, d] = dateStr.split('-');
+                    return `${y.substring(2)}${m}${d}`;
+                };
+                
+                const skyDateOut = formatSkyscannerDate(travelDate);
+                const skyDateReturn = isRoundTrip ? `/${formatSkyscannerDate(returnDate)}` : '';
+                
+                // URLs Oficiais Corrigidas
                 const googleFlightsUrl = isRoundTrip
                     ? `https://www.google.com/travel/flights?q=Voos%20de%20${originCode}%20para%20${destCode}%20em%20${travelDate}%20e%20retorno%20em%20${returnDate}`
                     : `https://www.google.com/travel/flights?q=Voos%20de%20${originCode}%20para%20${destCode}%20em%20${travelDate}`;
 
-                const skyscannerUrl = isRoundTrip
-                    ? `https://www.skyscanner.com.br/transporte/passagens-aereas/${originCode.toLowerCase()}/${destCode.toLowerCase()}/?depdate=${travelDate}&rtndate=${returnDate}`
-                    : `https://www.skyscanner.com.br/transporte/passagens-aereas/${originCode.toLowerCase()}/${destCode.toLowerCase()}/?depdate=${travelDate}`;
+                const skyscannerUrl = `https://www.skyscanner.com.br/transporte/passagens-aereas/b${originCode.toLowerCase()}/b${destCode.toLowerCase()}/${skyDateOut}${skyDateReturn}/?adultsv2=1&cabinclass=economy`;
 
                 const kayakUrl = isRoundTrip 
                     ? `https://www.kayak.com.br/flights/${originCode}-${destCode}/${travelDate}/${returnDate}?sort=price_a`
@@ -349,40 +348,39 @@
 
                 tickets = [
                     {
-                        company: "Google Flights (Comparador)",
+                        company: "Google Flights",
                         logo: "fa-solid fa-plane text-emerald-600",
                         departure: "Pesquisa Direta",
                         arrival: "Melhor Tarifa",
                         duration: isRoundTrip ? `Ida: ${formattedTravelDate} + Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
                         type: isRoundTrip ? "Ida e Volta" : "Só Ida",
-                        price: Math.round((isRPtoSP ? 245 : 350) * priceMultiplier),
+                        price: Math.round(345 * priceMultiplier),
                         url: googleFlightsUrl
                     },
                     {
                         company: "Skyscanner",
                         logo: "fa-solid fa-plane text-blue-400",
-                        departure: "Pesquisa Direta",
-                        arrival: "Melhor Tarifa",
+                        departure: "Buscador Global",
+                        arrival: "Menores Preços",
                         duration: isRoundTrip ? `Ida: ${formattedTravelDate} + Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
                         type: isRoundTrip ? "Ida e Volta" : "Só Ida",
-                        price: Math.round((isRPtoSP ? 260 : 380) * priceMultiplier),
+                        price: Math.round(330 * priceMultiplier),
                         url: skyscannerUrl
                     },
                     {
                         company: "Kayak",
                         logo: "fa-solid fa-plane text-orange-500",
-                        departure: "Pesquisa Direta",
-                        arrival: "Melhor Tarifa",
+                        departure: "Comparador Veloz",
+                        arrival: "Promoções",
                         duration: isRoundTrip ? `Ida: ${formattedTravelDate} + Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
                         type: isRoundTrip ? "Ida e Volta" : "Só Ida",
-                        price: Math.round((isRPtoSP ? 289 : 412) * priceMultiplier),
+                        price: Math.round(355 * priceMultiplier),
                         url: kayakUrl
                     }
                 ];
             } else {
+                // ÔNIBUS
                 const priceMultiplier = isRoundTrip ? 2.0 : 1.0; 
-
-                // Sanitização simples para Buser e Clickbus de modo que aceitem strings limpas de busca
                 const busOriginSearch = cleanOrigin.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
                 const busDestSearch = cleanDest.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
 
@@ -398,51 +396,47 @@
                     {
                         company: "Buser",
                         logo: "fa-solid fa-bus text-pink-600",
-                        departure: "Fretamento",
-                        arrival: "Preço Baixo",
+                        departure: "Fretamento Coletivo",
+                        arrival: "Alternativo",
                         duration: isRoundTrip ? `Ida: ${formattedTravelDate} + Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
                         type: isRoundTrip ? "Ida e Volta" : "Só Ida",
-                        price: Math.round((isRPtoSP ? 69 : 99) * priceMultiplier),
+                        price: Math.round(89 * priceMultiplier),
                         url: buserUrl
                     },
                     {
-                        company: "ClickBus (Viação Cometa)",
+                        company: "ClickBus",
                         logo: "fa-solid fa-bus text-blue-950",
-                        departure: "Rodoviário Oficial",
-                        arrival: "Preço Oficial",
+                        departure: "Rodoviárias Oficiais",
+                        arrival: "Regular",
                         duration: isRoundTrip ? `Ida: ${formattedTravelDate} + Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`,
                         type: isRoundTrip ? "Ida e Volta" : "Só Ida",
-                        price: Math.round((isRPtoSP ? 94 : 140) * priceMultiplier),
+                        price: Math.round(120 * priceMultiplier),
                         url: clickbusUrl
                     }
                 ];
             }
 
-            // Ordenação garantida pelo menor preço estimado total
             tickets.sort((a, b) => a.price - b.price);
 
-            // Injeção limpa de cards na tela
             tickets.forEach((ticket) => {
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-3xl border border-slate-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 p-6 flex flex-col md:flex-row justify-between items-center gap-6";
                 
                 card.innerHTML = `
-                    <!-- Companhia e Logo -->
                     <div class="flex items-center gap-4 w-full md:w-1/4">
                         <div class="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-xl border border-slate-100">
                             <i class="${ticket.logo}"></i>
                         </div>
                         <div>
                             <h4 class="font-bold text-slate-900 text-sm sm:text-base">${ticket.company}</h4>
-                            <span class="text-xs text-slate-400">${isFlight ? 'Buscador Integrado' : 'Viagem Terrestre'}</span>
+                            <span class="text-xs text-slate-400">${isFlight ? 'Buscador de Passagens' : 'Viagem Terrestre'}</span>
                         </div>
                     </div>
 
-                    <!-- Horários e Rotas -->
                     <div class="flex items-center justify-between gap-6 w-full md:w-2/4">
                         <div class="text-center md:text-left">
                             <span class="block text-sm font-bold text-slate-900">${ticket.departure}</span>
-                            <span class="text-xs text-slate-400 uppercase font-semibold">${cleanOrigin}</span>
+                            <span class="text-xs text-slate-400 uppercase font-semibold">${cleanOrigin} (${originCode})</span>
                         </div>
                         
                         <div class="flex-grow flex flex-col items-center">
@@ -457,17 +451,16 @@
 
                         <div class="text-center md:text-right">
                             <span class="block text-sm font-bold text-slate-900">${ticket.arrival}</span>
-                            <span class="text-xs text-slate-400 uppercase font-semibold">${cleanDest}</span>
+                            <span class="text-xs text-slate-400 uppercase font-semibold">${cleanDest} (${destCode})</span>
                         </div>
                     </div>
 
-                    <!-- Preço e CTA -->
                     <div class="flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 w-full md:w-1/4 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
                         <div class="text-left md:text-center">
                             <span class="text-xs text-slate-400 block">${isRoundTrip ? 'Estimado Ida e Volta' : 'Estimado Apenas Ida'}</span>
                             <span class="text-2xl font-black text-slate-900">R$ ${ticket.price}*</span>
                         </div>
-                        <a href="${ticket.url}" target="_blank" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold rounded-xl transition duration-150 flex items-center gap-1 shadow-md shadow-blue-500/10">
+                        <a href="${ticket.url}" target="_blank" rel="noopener noreferrer" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold rounded-xl transition duration-150 flex items-center gap-1 shadow-md shadow-blue-500/10">
                             Selecionar <i class="fa-solid fa-chevron-right text-[10px]"></i>
                         </a>
                     </div>
@@ -476,7 +469,7 @@
             });
 
             document.getElementById('results-count').innerText = `${tickets.length} parceiros prontos para cotação`;
-            document.getElementById('results-title').innerText = `Procurar de ${cleanOrigin} para ${cleanDest}`;
+            document.getElementById('results-title').innerText = `Procurar de ${cleanOrigin} (${originCode}) para ${cleanDest} (${destCode})`;
         }
     </script>
 </body>
