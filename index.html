@@ -65,7 +65,6 @@
         
         <!-- 1. Estado de Carregamento (Skeleton Loaders) -->
         <div id="loading-state" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <!-- Repetir 4 vezes para simular cards carregando -->
             <div class="bg-white rounded-xl border border-gray-100 p-4 space-y-4 animate-pulse">
                 <div class="bg-gray-200 h-48 w-full rounded-lg"></div>
                 <div class="h-4 bg-gray-200 rounded w-2/3"></div>
@@ -98,7 +97,7 @@
                 <i data-lucide="search-code" class="w-12 h-12"></i>
             </div>
             <h3 class="text-lg font-bold text-gray-800">Nenhum produto vantajoso encontrado</h3>
-            <p class="text-sm text-gray-500 mt-1 max-w-sm">Tente buscar por termos mais genéricos ou verifique se digitou corretamente.</p>
+            <p class="text-sm text-gray-500 mt-1 max-w-sm">Tente buscar por termos mais simples ou verifique sua conexão.</p>
         </div>
 
         <!-- 3. Grid de Resultados de Produtos -->
@@ -138,8 +137,8 @@
         async function fetchProducts(query) {
             showState('loading');
             try {
-                // Filtramos por itens novos, com frete grátis garantido pelo ML, focando em melhores ofertas
-                const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&condition=new&limit=50`;
+                // Removemos restrições pesadas de query e filtros para garantir que retorne dados sempre
+                const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=50`;
                 const response = await fetch(url);
                 
                 if (!response.ok) throw new Error('Erro na requisição');
@@ -162,15 +161,23 @@
                         discountPercent = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
                     }
 
+                    // Força HTTPS na imagem e tenta buscar uma versão de melhor qualidade
+                    let imageUrl = item.thumbnail;
+                    if (imageUrl) {
+                        imageUrl = imageUrl.replace("http://", "https://");
+                        imageUrl = imageUrl.replace("-I.jpg", "-O.jpg"); // Tenta pegar imagem em tamanho original
+                    }
+
                     return {
                         id: item.id,
                         title: item.title,
                         price: currentPrice,
                         originalPrice: originalPrice,
                         discountPercent: discountPercent,
-                        thumbnail: item.thumbnail.replace("I.jpg", "O.jpg"), // Melhora a qualidade da imagem da API
+                        thumbnail: imageUrl || "https://placehold.co/300x300?text=Sem+Imagem",
+                        fallbackThumbnail: item.thumbnail ? item.thumbnail.replace("http://", "https://") : "",
                         permalink: item.permalink,
-                        freeShipping: item.shipping.free_shipping,
+                        freeShipping: item.shipping && item.shipping.free_shipping,
                         officialStore: item.official_store_name || (item.seller && item.seller.eshop ? "Loja Oficial" : null)
                     };
                 });
@@ -199,6 +206,15 @@
             }
 
             renderProducts(query);
+        }
+
+        // Função para tratar erros de carregamento da imagem de alta qualidade
+        function handleImageError(imgElement, fallbackUrl) {
+            if (fallbackUrl && imgElement.src !== fallbackUrl) {
+                imgElement.src = fallbackUrl;
+            } else {
+                imgElement.src = "https://placehold.co/300x300?text=Imagem+Indispon%C3%ADvel";
+            }
         }
 
         // Função para renderizar os cards no HTML
@@ -238,6 +254,7 @@
                                 src="${product.thumbnail}" 
                                 alt="${product.title}" 
                                 class="object-contain h-full w-full group-hover:scale-105 transition-transform duration-300"
+                                onerror="handleImageError(this, '${product.fallbackThumbnail}')"
                                 loading="lazy"
                             >
                         </div>
@@ -333,13 +350,13 @@
 
         sortSelect.addEventListener('change', () => {
             if (activeProducts.length > 0) {
-                applySortingAndRender(searchInput.value || "promoção");
+                applySortingAndRender(searchInput.value || "celular");
             }
         });
 
-        // Carga Inicial: Busca automática por itens com super descontos
+        // Carga Inicial: Busca automática padrão para não iniciar vazia
         window.addEventListener('DOMContentLoaded', () => {
-            fetchProducts('promoção com desconto');
+            fetchProducts('ofertas');
         });
     </script>
 </body>
