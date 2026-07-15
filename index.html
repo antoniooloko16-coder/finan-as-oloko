@@ -48,11 +48,8 @@
         <div class="mb-6 flex flex-wrap gap-2 items-center text-xs text-gray-500 bg-amber-50/50 border border-amber-100/50 p-3 rounded-lg">
             <span class="font-bold text-gray-700">Buscando em:</span>
             <span class="bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full font-semibold">Mercado Livre</span>
-            <span class="bg-blue-600 text-white px-2.5 py-1 rounded-full font-semibold">Magazine Luiza</span>
-            <span class="bg-red-600 text-white px-2.5 py-1 rounded-full font-semibold">Casas Bahia</span>
-            <span class="bg-amber-600 text-white px-2.5 py-1 rounded-full font-semibold">Amazon Br</span>
-            <span class="bg-orange-600 text-white px-2.5 py-1 rounded-full font-semibold">Shopee Br</span>
-            <span class="bg-red-500 text-white px-2.5 py-1 rounded-full font-semibold">Ponto Frio</span>
+            <span class="bg-blue-600 text-white px-2.5 py-1 rounded-full font-semibold">Lojas Oficiais ML</span>
+            <span class="bg-gray-200 text-gray-800 px-2.5 py-1 rounded-full font-semibold">Grandes Distribuidores</span>
         </div>
 
         <!-- Controles de Ordenação e Estado -->
@@ -106,8 +103,8 @@
             <div class="bg-amber-50 text-amber-500 p-4 rounded-full mb-4">
                 <i data-lucide="search-code" class="w-12 h-12"></i>
             </div>
-            <h3 class="text-lg font-bold text-gray-800">Busca Automática Indisponível</h3>
-            <p class="text-sm text-gray-500 mt-1 max-w-md">Não conseguimos carregar os dados diretamente. Use as opções abaixo para pesquisar nos canais oficiais:</p>
+            <h3 class="text-lg font-bold text-gray-800">Nenhum resultado encontrado</h3>
+            <p class="text-sm text-gray-500 mt-1 max-w-md">Não conseguimos carregar os dados diretamente da rede do Mercado Livre. Tente realizar a pesquisa manualmente:</p>
             
             <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center w-full max-w-md">
                 <a id="search-google-shopping" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 bg-white hover:bg-gray-50 text-gray-800 font-bold py-3 px-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-center gap-2 text-sm transition-all">
@@ -139,17 +136,12 @@
     </footer>
 
     <script>
-        // Inicializa ícones Lucide de forma segura
+        // Inicializa ícones Lucide
         try {
             lucide.createIcons();
         } catch(err) {
             console.error("Erro ao carregar ícones:", err);
         }
-
-        // ==========================================
-        // INSIRA SUA CHAVE DA VALUE SERP AQUI:
-        // ==========================================
-        const VALUE_SERP_API_KEY = "SUA_CHAVE_AQUI"; 
 
         const searchForm = document.getElementById('search-form');
         const searchInput = document.getElementById('search-input');
@@ -173,32 +165,14 @@
             }
         }
 
-        // Tratamento limpo de strings de preços recebidos pela API
-        function parsePrice(priceValue) {
-            if (typeof priceValue === 'number') return priceValue;
-            if (!priceValue) return 0;
-            
-            // Remove símbolos monetários e formatações de milhar brasileiras
-            let cleanString = priceValue.toString()
-                .replace(/R\$\s?/i, '')
-                .replace(/\./g, '')
-                .replace(',', '.')
-                .trim();
-                
-            const parsed = parseFloat(cleanString);
-            return isNaN(parsed) ? 0 : parsed;
-        }
-
+        // Mapeamento visual para lojas parceiras e oficiais hospedadas no ML
         function identifyStore(merchantName) {
             const merchant = (merchantName || "").toLowerCase();
             if (merchant.includes("magazine") || merchant.includes("magalu")) {
-                return { name: "Magazine Luiza", style: "bg-blue-600 text-white" };
+                return { name: "Magazine Luiza (Parceiro)", style: "bg-blue-600 text-white" };
             }
             if (merchant.includes("bahia") || merchant.includes("casas bahia")) {
-                return { name: "Casas Bahia", style: "bg-red-600 text-white" };
-            }
-            if (merchant.includes("ponto") || merchant.includes("ponto frio")) {
-                return { name: "Ponto Frio", style: "bg-red-500 text-white" };
+                return { name: "Casas Bahia (Parceiro)", style: "bg-red-600 text-white" };
             }
             if (merchant.includes("amazon")) {
                 return { name: "Amazon BR", style: "bg-amber-600 text-white" };
@@ -206,51 +180,55 @@
             if (merchant.includes("shopee")) {
                 return { name: "Shopee BR", style: "bg-orange-600 text-white" };
             }
-            if (merchant.includes("mercado livre") || merchant.includes("mercadolivre")) {
-                return { name: "Mercado Livre", style: "bg-blue-100 text-blue-800" };
+            if (merchant.includes("oficial")) {
+                return { name: merchantName, style: "bg-amber-500 text-white" };
             }
-            return { name: merchantName || "Loja Online", style: "bg-gray-100 text-gray-800" };
+            return { name: "Mercado Livre", style: "bg-blue-100 text-blue-800" };
         }
 
         async function fetchProducts(query) {
             showState('loading');
-            if(debugLog) debugLog.innerText = "Iniciando buscas integradas comerciais...";
+            if(debugLog) debugLog.innerText = "Buscando na API pública de alta velocidade...";
             activeProducts = [];
 
-            // Prepara URLs seguras de contingência para o usuário
+            // Prepara links de redirecionamento manual
             btnGoogleShopping.href = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`;
             btnDirectML.href = `https://lista.mercadolivre.com.br/${encodeURIComponent(query)}`;
 
-            if (!VALUE_SERP_API_KEY || VALUE_SERP_API_KEY === "" || VALUE_SERP_API_KEY === "SUA_CHAVE_AQUI") {
-                logDebug("Erro: Chave de API da Value SERP não configurada no código.");
-                showState('empty');
-                return;
-            }
-
-            const apiUrl = `https://api.valueserp.com/search?api_key=${VALUE_SERP_API_KEY}&search_type=shopping&q=${encodeURIComponent(query)}&gl=br&hl=pt`;
+            // URL da API pública e gratuita do Mercado Livre Brasil (sem necessidade de chaves privadas!)
+            const apiUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=20`;
 
             try {
-                logDebug("Efetuando requisição à API comercial...");
+                logDebug("Efetuando requisição pública assíncrona...");
                 const response = await fetch(apiUrl);
                 
                 if (!response.ok) {
-                    throw new Error(`Erro de resposta da API: Código ${response.status}`);
+                    throw new Error(`Erro de resposta do servidor: ${response.status}`);
                 }
 
                 const data = await response.json();
-                const rawResults = data.shopping_results || [];
+                const rawResults = data.results || [];
 
                 if (rawResults.length > 0) {
                     activeProducts = rawResults.map((item, index) => {
-                        const currentPrice = parsePrice(item.price);
-                        const originalPrice = item.extracted_original_price ? parsePrice(item.extracted_original_price) : currentPrice;
+                        const currentPrice = item.price;
+                        // Caso a API envie o preço original de oferta, calcula o desconto de fábrica
+                        const originalPrice = item.original_price || currentPrice;
                         
                         let discountPercent = 0;
                         if (originalPrice > currentPrice) {
                             discountPercent = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
                         }
 
-                        const storeMeta = identifyStore(item.merchant);
+                        // Busca se o vendedor possui loja oficial configurada
+                        const sellerName = item.official_store_name || (item.seller ? item.seller.nickname : "Mercado Livre");
+                        const storeMeta = identifyStore(sellerName);
+
+                        // Converte thumbnail HTTP comum para HTTPS seguro evitado bloqueios de Mixed Content
+                        let secureThumb = item.thumbnail || "https://placeholder.co/300x300?text=Sem+Imagem";
+                        if (secureThumb.startsWith("http://")) {
+                            secureThumb = secureThumb.replace("http://", "https://");
+                        }
 
                         return {
                             id: `product-${index}`,
@@ -258,22 +236,22 @@
                             price: currentPrice,
                             originalPrice: originalPrice,
                             discountPercent: discountPercent,
-                            thumbnail: item.image || "https://placeholder.co/300x300?text=Sem+Imagem",
-                            permalink: item.link,
-                            freeShipping: item.shipping ? item.shipping.toLowerCase().includes("grátis") : false,
+                            thumbnail: secureThumb,
+                            permalink: item.permalink,
+                            freeShipping: item.shipping && item.shipping.free_shipping === true,
                             storeName: storeMeta.name,
                             storeStyle: storeMeta.style
                         };
                     });
 
-                    logDebug(`Sucesso! ${activeProducts.length} ofertas processadas.`);
+                    logDebug(`Sucesso! ${activeProducts.length} ofertas estruturadas em tempo real.`);
                     applySortingAndRender(query);
                 } else {
-                    logDebug("Aviso: Nenhuma oferta direta encontrada pela API para esta pesquisa.");
+                    logDebug("Aviso: Nenhuma oferta encontrada.");
                     showState('empty');
                 }
             } catch (e) {
-                logDebug(`Falha de Conexão na API: ${e.message}`);
+                logDebug(`Falha Crítica na Busca Gratuita: ${e.message}`);
                 showState('empty');
             }
         }
@@ -414,7 +392,7 @@
             }
         });
 
-        // Execução ao iniciar a página
+        // Execução automática ao iniciar
         window.addEventListener('DOMContentLoaded', () => {
             fetchProducts('Tv 65');
         });
