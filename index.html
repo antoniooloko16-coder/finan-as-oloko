@@ -146,41 +146,46 @@
             debugLog.innerText += "\n" + message;
         }
 
-        // Função de busca principal na API do Mercado Livre
+        // Função de busca principal na API do Mercado Livre usando allorigins (Bypass de CORS & HTTP 403)
         async function fetchProducts(query) {
             showState('loading');
             debugLog.innerText = "Iniciando diagnóstico de busca...";
             
             const encodedQuery = encodeURIComponent(query);
-            const rawUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodedQuery}&limit=50`;
+            const targetUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodedQuery}&limit=50`;
             
-            // Usando um serviço de CORS Proxy confiável que mascara o User-Agent e evita o HTTP 403
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(rawUrl)}`;
+            // O Allorigins funciona como um wrapper limpo e evita o bloqueio de User-Agent por completo
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
             let data = null;
 
-            // Estratégia 1: Fetch usando o Proxy Robusto (Corrige o erro 403 e CORS)
+            // Estratégia 1: Fetch usando o wrapper AllOrigins
             try {
-                logDebug("Estratégia 1: Tentando conexão via CORS-Proxy...");
+                logDebug("Estratégia 1: Tentando conexão via API AllOrigins...");
                 const response = await fetch(proxyUrl);
                 if (response.ok) {
-                    data = await response.json();
-                    logDebug("Sucesso via CORS-Proxy!");
+                    const wrapper = await response.json();
+                    if (wrapper && wrapper.contents) {
+                        data = JSON.parse(wrapper.contents);
+                        logDebug("Sucesso via AllOrigins Wrapper!");
+                    } else {
+                        logDebug("Estratégia 1 falhou: conteúdo vazio retornado pelo wrapper.");
+                    }
                 } else {
                     logDebug(`Estratégia 1 falhou com status HTTP: ${response.status}`);
                 }
             } catch (error) {
-                logDebug(`Falha na Estratégia 1 (CORS-Proxy): ${error.message}`);
+                logDebug(`Falha na Estratégia 1 (AllOrigins): ${error.message}`);
             }
 
-            // Estratégia 2: Se o Proxy falhar por limite de requisições, tenta o Fetch Direto
+            // Estratégia 2: Fallback direto em caso de falha rara do proxy
             if (!data) {
                 try {
-                    logDebug("Estratégia 2: Tentando conexão direta de segurança...");
-                    const response = await fetch(rawUrl);
+                    logDebug("Estratégia 2: Tentando conexão direta de contingência...");
+                    const response = await fetch(targetUrl);
                     if (response.ok) {
                         data = await response.json();
-                        logDebug("Sucesso via Conexão Direta!");
+                        logDebug("Sucesso inesperado via Conexão Direta!");
                     } else {
                         logDebug(`Estratégia 2 falhou com status HTTP: ${response.status}`);
                     }
@@ -222,7 +227,7 @@
 
                 applySortingAndRender(query);
             } else {
-                logDebug("Erro fatal: Não foi possível obter dados da API.");
+                logDebug("Erro fatal: Ambas as estratégias falharam em quebrar o bloqueio 403.");
                 showState('empty');
             }
         }
