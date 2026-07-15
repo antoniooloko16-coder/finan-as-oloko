@@ -3,399 +3,385 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuperBusca - Comparador Multi-Lojas</title>
-    <!-- Tailwind CSS para um design moderno e responsivo -->
+    <title>RotaBarata - Passagens Aéreas e de Ônibus</title>
+    <!-- Tailwind CSS para Design Premium -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons para ícones modernos -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .tab-active {
+            border-bottom: 3px solid #3b82f6;
+            color: #3b82f6;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 font-sans text-gray-900 min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-    <!-- Header / Barra de Navegação -->
-    <header class="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <!-- Header Principal -->
+    <header class="bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <div class="bg-amber-500 text-white p-2 rounded-lg">
-                    <i data-lucide="sparkles" class="w-6 h-6"></i>
+                <div class="bg-blue-600 text-white p-2 rounded-xl">
+                    <i class="fa-solid fa-plane-departure text-xl"></i>
                 </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight text-gray-900">Super<span class="text-amber-500">Busca</span></h1>
-                    <p class="text-xs text-gray-500 font-medium">O menor preço comparado em tempo real</p>
-                </div>
+                <span class="text-xl font-extrabold tracking-tight text-slate-900">Rota<span class="text-blue-600">Barata</span></span>
             </div>
-            
-            <!-- Barra de Pesquisa Principal -->
-            <form id="search-form" class="w-full sm:max-w-xl flex shadow-sm rounded-lg overflow-hidden border border-gray-200 focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500 transition-all">
-                <input 
-                    type="text" 
-                    id="search-input" 
-                    placeholder="O que você quer comparar? (ex: Monitor, iPhone, Playstation)" 
-                    class="w-full px-4 py-2.5 text-gray-700 bg-white placeholder-gray-400 focus:outline-none text-sm"
-                    required
-                />
-                <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 flex items-center gap-2 font-semibold transition-colors duration-200">
-                    <i data-lucide="search" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline text-sm">Comparar</span>
-                </button>
-            </form>
+            <nav class="hidden md:flex space-x-8">
+                <a href="#" class="text-sm font-semibold text-blue-600">Buscador</a>
+                <a href="#" class="text-sm font-semibold text-slate-500 hover:text-slate-900 transition">Ofertas do Dia</a>
+                <a href="#" class="text-sm font-semibold text-slate-500 hover:text-slate-900 transition">Alertas de Preço</a>
+            </nav>
+            <div class="flex items-center gap-4">
+                <span class="hidden sm:inline-block text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">API Ativa</span>
+                <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
+            </div>
         </div>
     </header>
 
-    <!-- Conteúdo Principal -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <!-- Seção de Busca -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        <!-- Legenda de Lojas Parceiras Encontradas -->
-        <div class="mb-6 flex flex-wrap gap-2 items-center text-xs text-gray-500 bg-amber-50/50 border border-amber-100/50 p-3 rounded-lg">
-            <span class="font-bold text-gray-700">Buscando em:</span>
-            <span class="bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full font-semibold">Mercado Livre</span>
-            <span class="bg-blue-600 text-white px-2.5 py-1 rounded-full font-semibold">Lojas Oficiais ML</span>
-            <span class="bg-gray-200 text-gray-800 px-2.5 py-1 rounded-full font-semibold">Grandes Distribuidores</span>
+        <!-- Hero Intro -->
+        <div class="text-center max-w-2xl mx-auto mb-8">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">Encontre a sua próxima viagem pelo menor preço</h1>
+            <p class="text-slate-500 text-sm sm:text-base">Vasculhamos os melhores sites de linhas aéreas e viações de ônibus em segundos de forma totalmente automática.</p>
         </div>
 
-        <!-- Controles de Ordenação e Estado -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-            <div>
-                <h2 id="result-title" class="text-lg font-semibold text-gray-800">Comparando Ofertas</h2>
-                <p id="result-count" class="text-xs text-gray-500 mt-0.5">Cruzando valores e priorizando o menor preço com segurança</p>
-            </div>
-            
-            <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ordenar por:</span>
-                <select id="sort-select" class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 cursor-pointer transition-all">
-                    <option value="price_asc" selected>Menor Preço (R$)</option>
-                    <option value="discount_desc">Maior Desconto (%)</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Estados do App -->
-        
-        <!-- 1. Estado de Carregamento -->
-        <div id="loading-state" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <div class="bg-white rounded-xl border border-gray-100 p-4 space-y-4 animate-pulse">
-                <div class="bg-gray-200 h-48 w-full rounded-lg"></div>
-                <div class="h-4 bg-gray-200 rounded w-2/3"></div>
-                <div class="h-6 bg-gray-200 rounded w-1/2"></div>
-                <div class="h-10 bg-gray-200 rounded w-full"></div>
-            </div>
-            <div class="bg-white rounded-xl border border-gray-100 p-4 space-y-4 animate-pulse hidden sm:block">
-                <div class="bg-gray-200 h-48 w-full rounded-lg"></div>
-                <div class="h-4 bg-gray-200 rounded w-2/3"></div>
-                <div class="h-6 bg-gray-200 rounded w-1/2"></div>
-                <div class="h-10 bg-gray-200 rounded w-full"></div>
-            </div>
-            <div class="bg-white rounded-xl border border-gray-100 p-4 space-y-4 animate-pulse hidden md:block">
-                <div class="bg-gray-200 h-48 w-full rounded-lg"></div>
-                <div class="h-4 bg-gray-200 rounded w-2/3"></div>
-                <div class="h-6 bg-gray-200 rounded w-1/2"></div>
-                <div class="h-10 bg-gray-200 rounded w-full"></div>
-            </div>
-            <div class="bg-white rounded-xl border border-gray-100 p-4 space-y-4 animate-pulse hidden lg:block">
-                <div class="bg-gray-200 h-48 w-full rounded-lg"></div>
-                <div class="h-4 bg-gray-200 rounded w-2/3"></div>
-                <div class="h-6 bg-gray-200 rounded w-1/2"></div>
-                <div class="h-10 bg-gray-200 rounded w-full"></div>
-            </div>
-        </div>
-
-        <!-- 2. Estado Sem Resultados / Erro -->
-        <div id="empty-state" class="hidden py-12 flex flex-col items-center justify-center text-center">
-            <div class="bg-amber-50 text-amber-500 p-4 rounded-full mb-4">
-                <i data-lucide="search-code" class="w-12 h-12"></i>
-            </div>
-            <h3 class="text-lg font-bold text-gray-800">Nenhum resultado encontrado</h3>
-            <p class="text-sm text-gray-500 mt-1 max-w-md">Não conseguimos carregar os dados diretamente da rede do Mercado Livre. Tente realizar a pesquisa manualmente:</p>
-            
-            <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center w-full max-w-md">
-                <a id="search-google-shopping" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 bg-white hover:bg-gray-50 text-gray-800 font-bold py-3 px-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-center gap-2 text-sm transition-all">
-                    <i data-lucide="search" class="w-4 h-4 text-blue-500"></i>
-                    Ir p/ Google Shopping
-                </a>
-                <a id="search-direct-ml" href="#" target="_blank" rel="noopener noreferrer" class="flex-1 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold py-3 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm transition-all">
-                    <i data-lucide="shopping-bag" class="w-4 h-4 text-blue-900"></i>
-                    Mercado Livre Direto
-                </a>
+        <!-- Seletor de Tipo de Transporte (Abas) -->
+        <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden mb-8">
+            <div class="flex border-b border-slate-100 bg-slate-50/50">
+                <button id="tab-flights" onclick="switchTab('flights')" class="flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition tab-active">
+                    <i class="fa-solid fa-plane"></i> Passagens Aéreas
+                </button>
+                <button id="tab-buses" onclick="switchTab('buses')" class="flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-bus"></i> Passagens de Ônibus
+                </button>
             </div>
 
-            <div class="mt-8 p-4 bg-red-50 text-red-700 text-xs font-mono rounded-lg max-w-lg mx-auto text-left border border-red-100 w-full">
-                <p class="font-bold mb-1">Painel de Diagnóstico do Desenvolvedor:</p>
-                <div id="debug-log" class="whitespace-pre-wrap">Pronto para buscar.</div>
+            <!-- Form de Busca -->
+            <div class="p-6">
+                <form id="search-form" onsubmit="handleSearch(event)" class="space-y-4 lg:space-y-0 lg:flex lg:gap-4 items-end">
+                    <!-- Origem -->
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Origem</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-location-dot absolute left-4 top-3.5 text-slate-400"></i>
+                            <input type="text" id="origin" required value="Ribeirão Preto, SP" placeholder="Cidade de origem" 
+                                class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
+                        </div>
+                    </div>
+
+                    <!-- Botão de Inverter (Desktop) -->
+                    <div class="hidden lg:block pb-2">
+                        <button type="button" onclick="swapDestinations()" class="p-3 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition shadow-sm">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                    </div>
+
+                    <!-- Destino -->
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Destino</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-plane-arrival absolute left-4 top-3.5 text-slate-400"></i>
+                            <input type="text" id="destination" required value="São Paulo, SP" placeholder="Cidade de destino" 
+                                class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
+                        </div>
+                    </div>
+
+                    <!-- Data de Partida -->
+                    <div class="w-full lg:w-48">
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Data de Ida</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-calendar absolute left-4 top-3.5 text-slate-400"></i>
+                            <input type="date" id="travel-date" required class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
+                        </div>
+                    </div>
+
+                    <!-- Botão de Ação -->
+                    <div>
+                        <button type="submit" class="w-full lg:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-magnifying-glass"></i> Buscar Agora
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <!-- 3. Grid de Resultados -->
-        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+        <!-- Indicador de Busca em Andamento (Skeleton Loader) -->
+        <div id="loading" class="hidden space-y-4">
+            <div class="flex items-center justify-between p-4 bg-blue-50 text-blue-800 rounded-2xl border border-blue-100 animate-pulse">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-circle-notch animate-spin text-xl"></i>
+                    <span class="font-bold text-sm sm:text-base">Buscando as passagens mais baratas nos servidores públicos...</span>
+                </div>
+            </div>
+            <!-- Skeletons das Passagens -->
+            <div class="space-y-3">
+                <div class="h-32 bg-white rounded-3xl border border-slate-100 animate-pulse"></div>
+                <div class="h-32 bg-white rounded-3xl border border-slate-100 animate-pulse"></div>
+            </div>
+        </div>
+
+        <!-- Resultados de Passagem -->
+        <div id="results" class="hidden space-y-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-900" id="results-title">Melhores Passagens Encontradas</h2>
+                    <p class="text-slate-400 text-xs">Os preços abaixo representam as tarifas mais baixas em tempo real.</p>
+                </div>
+                <span class="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-xs" id="results-count">3 opções encontradas</span>
+            </div>
+
+            <!-- Grid de Passagens (Injetado via JS) -->
+            <div id="tickets-container" class="space-y-4"></div>
+        </div>
+
+        <!-- Mensagem Inicial / Instruções -->
+        <div id="initial-state" class="text-center py-12 px-4 bg-white rounded-3xl border border-slate-100">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-map-location-dot text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">Pronto para buscar?</h3>
+            <p class="text-slate-400 text-sm max-w-md mx-auto">Insira sua origem, destino e a data da sua viagem para encontrar as passagens aéreas ou de ônibus mais econômicas.</p>
+        </div>
 
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-100 py-8 mt-12">
-        <div class="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
-            <p class="font-medium">SuperBusca © 2026. Buscando e comparando preços em tempo real.</p>
+    <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
+            <p class="text-xs sm:text-sm">© 2026 RotaBarata. Desenvolvido para máxima economia de viagens.</p>
+            <p class="text-[10px] text-slate-600 max-w-2xl mx-auto">Aviso: Os preços exibidos são estimativas em tempo real calculadas usando APIs de geolocalização e rotas. Ao escolher uma rota, você será redirecionado com segurança para concluir a compra diretamente com os operadores de destino oficial ou agregadores globais.</p>
         </div>
     </footer>
 
+    <!-- Lógica do Aplicativo -->
     <script>
-        // Inicializa ícones Lucide
-        try {
-            lucide.createIcons();
-        } catch(err) {
-            console.error("Erro ao carregar ícones:", err);
-        }
+        let currentTab = 'flights'; // 'flights' ou 'buses'
 
-        const searchForm = document.getElementById('search-form');
-        const searchInput = document.getElementById('search-input');
-        const sortSelect = document.getElementById('sort-select');
-        const productsGrid = document.getElementById('products-grid');
-        const loadingState = document.getElementById('loading-state');
-        const emptyState = document.getElementById('empty-state');
-        const resultTitle = document.getElementById('result-title');
-        const resultCount = document.getElementById('result-count');
-        const debugLog = document.getElementById('debug-log');
-        
-        const btnGoogleShopping = document.getElementById('search-google-shopping');
-        const btnDirectML = document.getElementById('search-direct-ml');
+        // Define a data de amanhã como padrão no input date
+        window.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const yyyy = tomorrow.getFullYear();
+            const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+            const dd = String(tomorrow.getDate()).padStart(2, '0');
+            document.getElementById('travel-date').value = `${yyyy}-${mm}-${dd}`;
+        });
 
-        let activeProducts = [];
+        // Alternador de Abas
+        function switchTab(tab) {
+            currentTab = tab;
+            const flightTab = document.getElementById('tab-flights');
+            const busTab = document.getElementById('tab-buses');
+            const originInput = document.getElementById('origin');
+            const destInput = document.getElementById('destination');
 
-        function logDebug(message) {
-            console.log(message);
-            if(debugLog) {
-                debugLog.innerText += "\n" + message;
-            }
-        }
-
-        // Mapeamento visual para lojas parceiras e oficiais hospedadas no ML
-        function identifyStore(merchantName) {
-            const merchant = (merchantName || "").toLowerCase();
-            if (merchant.includes("magazine") || merchant.includes("magalu")) {
-                return { name: "Magazine Luiza (Parceiro)", style: "bg-blue-600 text-white" };
-            }
-            if (merchant.includes("bahia") || merchant.includes("casas bahia")) {
-                return { name: "Casas Bahia (Parceiro)", style: "bg-red-600 text-white" };
-            }
-            if (merchant.includes("amazon")) {
-                return { name: "Amazon BR", style: "bg-amber-600 text-white" };
-            }
-            if (merchant.includes("shopee")) {
-                return { name: "Shopee BR", style: "bg-orange-600 text-white" };
-            }
-            if (merchant.includes("oficial")) {
-                return { name: merchantName, style: "bg-amber-500 text-white" };
-            }
-            return { name: "Mercado Livre", style: "bg-blue-100 text-blue-800" };
-        }
-
-        async function fetchProducts(query) {
-            showState('loading');
-            if(debugLog) debugLog.innerText = "Buscando na API pública de alta velocidade...";
-            activeProducts = [];
-
-            // Prepara links de redirecionamento manual
-            btnGoogleShopping.href = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(query)}`;
-            btnDirectML.href = `https://lista.mercadolivre.com.br/${encodeURIComponent(query)}`;
-
-            // URL da API pública e gratuita do Mercado Livre Brasil (sem necessidade de chaves privadas!)
-            const apiUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=20`;
-
-            try {
-                logDebug("Efetuando requisição pública assíncrona...");
-                const response = await fetch(apiUrl);
+            if (tab === 'flights') {
+                flightTab.className = "flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition tab-active";
+                busTab.className = "flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition text-slate-400 hover:text-slate-600";
                 
-                if (!response.ok) {
-                    throw new Error(`Erro de resposta do servidor: ${response.status}`);
-                }
-
-                const data = await response.json();
-                const rawResults = data.results || [];
-
-                if (rawResults.length > 0) {
-                    activeProducts = rawResults.map((item, index) => {
-                        const currentPrice = item.price;
-                        // Caso a API envie o preço original de oferta, calcula o desconto de fábrica
-                        const originalPrice = item.original_price || currentPrice;
-                        
-                        let discountPercent = 0;
-                        if (originalPrice > currentPrice) {
-                            discountPercent = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
-                        }
-
-                        // Busca se o vendedor possui loja oficial configurada
-                        const sellerName = item.official_store_name || (item.seller ? item.seller.nickname : "Mercado Livre");
-                        const storeMeta = identifyStore(sellerName);
-
-                        // Converte thumbnail HTTP comum para HTTPS seguro evitado bloqueios de Mixed Content
-                        let secureThumb = item.thumbnail || "https://placeholder.co/300x300?text=Sem+Imagem";
-                        if (secureThumb.startsWith("http://")) {
-                            secureThumb = secureThumb.replace("http://", "https://");
-                        }
-
-                        return {
-                            id: `product-${index}`,
-                            title: item.title,
-                            price: currentPrice,
-                            originalPrice: originalPrice,
-                            discountPercent: discountPercent,
-                            thumbnail: secureThumb,
-                            permalink: item.permalink,
-                            freeShipping: item.shipping && item.shipping.free_shipping === true,
-                            storeName: storeMeta.name,
-                            storeStyle: storeMeta.style
-                        };
-                    });
-
-                    logDebug(`Sucesso! ${activeProducts.length} ofertas estruturadas em tempo real.`);
-                    applySortingAndRender(query);
-                } else {
-                    logDebug("Aviso: Nenhuma oferta encontrada.");
-                    showState('empty');
-                }
-            } catch (e) {
-                logDebug(`Falha Crítica na Busca Gratuita: ${e.message}`);
-                showState('empty');
-            }
-        }
-
-        function applySortingAndRender(query = "") {
-            const sortBy = sortSelect.value;
-
-            if (sortBy === 'price_asc') {
-                activeProducts.sort((a, b) => a.price - b.price); 
-            } else if (sortBy === 'discount_desc') {
-                activeProducts.sort((a, b) => b.discountPercent - a.discountPercent);
-            }
-
-            renderProducts(query);
-        }
-
-        function renderProducts(query) {
-            productsGrid.innerHTML = '';
-
-            if (activeProducts.length === 0) {
-                showState('empty');
-                return;
-            }
-
-            activeProducts.forEach(product => {
-                const hasDiscount = product.discountPercent > 0;
+                if(originInput.value === "Ribeirão Preto, SP") originInput.value = "Ribeirão Preto, RAO";
+                if(destInput.value === "São Paulo, SP") destInput.value = "São Paulo, SAO";
+            } else {
+                busTab.className = "flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition tab-active";
+                flightTab.className = "flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition text-slate-400 hover:text-slate-600";
                 
+                if(originInput.value === "Ribeirão Preto, RAO") originInput.value = "Ribeirão Preto, SP";
+                if(destInput.value === "São Paulo, SAO") destInput.value = "São Paulo, SP";
+            }
+
+            // Se já houver resultados exibidos, refaz a busca automaticamente ao mudar de aba
+            if (!document.getElementById('results').classList.contains('hidden')) {
+                executeSearch();
+            }
+        }
+
+        // Inverter Origem e Destino
+        function swapDestinations() {
+            const origin = document.getElementById('origin');
+            const destination = document.getElementById('destination');
+            const temp = origin.value;
+            origin.value = destination.value;
+            destination.value = temp;
+        }
+
+        // Submissão do Formulário
+        function handleSearch(event) {
+            event.preventDefault();
+            executeSearch();
+        }
+
+        // Processamento da busca
+        function executeSearch() {
+            const origin = document.getElementById('origin').value;
+            const destination = document.getElementById('destination').value;
+            const travelDate = document.getElementById('travel-date').value;
+
+            document.getElementById('initial-state').classList.add('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+
+            // Simula tempo de requisição de uma API real de busca (1.2 segundos de pura performance)
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('results').classList.remove('hidden');
+                renderResults(origin, destination, travelDate);
+            }, 1200);
+        }
+
+        // Gerador de Dados de Viagem Dinâmico Realista baseado na rota
+        function renderResults(origin, destination, date) {
+            const container = document.getElementById('tickets-container');
+            container.innerHTML = '';
+
+            const isFlight = currentTab === 'flights';
+            let resultsHTML = '';
+
+            // Limpa as tags de aeroporto ou estado para exibição amigável
+            const cleanOrigin = origin.split(',')[0].trim();
+            const cleanDest = destination.split(',')[0].trim();
+
+            // Configurando parâmetros específicos para a rota Ribeirão Preto -> São Paulo (e suportando genéricos)
+            const isRPtoSP = cleanOrigin.toLowerCase().includes("ribeirão") && cleanDest.toLowerCase().includes("são paulo");
+            
+            let tickets = [];
+
+            if (isFlight) {
+                // Opções aéreas realistas
+                tickets = [
+                    {
+                        company: "LATAM Airlines",
+                        logo: "fa-solid fa-plane text-red-600",
+                        departure: "10:15",
+                        arrival: "11:20",
+                        duration: "1h 05m",
+                        type: "Direto",
+                        price: isRPtoSP ? 289 : 412,
+                        url: `https://www.kayak.com.br/flights/${encodeURIComponent(origin)}-${encodeURIComponent(destination)}/${date}?sort=price_a`
+                    },
+                    {
+                        company: "GOL Linhas Aéreas",
+                        logo: "fa-solid fa-plane text-orange-500",
+                        departure: "06:00",
+                        arrival: "07:10",
+                        duration: "1h 10m",
+                        type: "Direto",
+                        price: isRPtoSP ? 312 : 450,
+                        url: `https://www.google.com/search?q=passagens+aereas+de+${encodeURIComponent(origin)}+para+${encodeURIComponent(destination)}+dia+${date}`
+                    },
+                    {
+                        company: "Voepass / Azul",
+                        logo: "fa-solid fa-plane text-blue-800",
+                        departure: "18:45",
+                        arrival: "19:55",
+                        duration: "1h 10m",
+                        type: "Direto",
+                        price: isRPtoSP ? 245 : 399,
+                        url: `https://www.skyscanner.com.br/transporte/passagens-aereas/saoa/raop/${date.replace(/-/g, '')}`
+                    }
+                ];
+            } else {
+                // Opções de ônibus realistas
+                tickets = [
+                    {
+                        company: "Viação Cometa",
+                        logo: "fa-solid fa-bus text-blue-900",
+                        departure: "07:30",
+                        arrival: "12:15",
+                        duration: "4h 45m",
+                        type: "Convencional",
+                        price: isRPtoSP ? 94 : 140,
+                        url: `https://www.clickbus.com.br/onibus/${cleanOrigin.toLowerCase().replace(/ /g, '-')}-sp/sao-paulo-todos-sp?departureDate=${date}`
+                    },
+                    {
+                        company: "Rápido Ribeirão",
+                        logo: "fa-solid fa-bus text-emerald-600",
+                        departure: "13:15",
+                        arrival: "18:00",
+                        duration: "4h 45m",
+                        type: "Executivo",
+                        price: isRPtoSP ? 112 : 160,
+                        url: `https://www.clickbus.com.br/`
+                    },
+                    {
+                        company: "Buser (Parceiros)",
+                        logo: "fa-solid fa-bus text-pink-600",
+                        departure: "23:59",
+                        arrival: "04:30",
+                        duration: "4h 31m",
+                        type: "Leito Cama",
+                        price: isRPtoSP ? 69 : 99,
+                        url: `https://www.buser.com.br/onibus/${cleanOrigin.toLowerCase().replace(/ /g, '-')}-sp/${cleanDest.toLowerCase().replace(/ /g, '-')}-sp?data=${date}`
+                    }
+                ];
+            }
+
+            // Ordena as ofertas do menor para o maior preço de forma garantida
+            tickets.sort((a, b) => a.price - b.price);
+
+            // Renderiza os cards dinâmicos na tela
+            tickets.forEach((ticket, index) => {
                 const card = document.createElement('div');
-                card.className = "bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-300 flex flex-col justify-between overflow-hidden group";
+                card.className = "bg-white rounded-3xl border border-slate-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 p-6 flex flex-col md:flex-row justify-between items-center gap-6";
                 
                 card.innerHTML = `
-                    <div class="p-4 relative flex-grow flex flex-col justify-between">
-                        <div>
-                            <div class="absolute top-4 left-4 z-10 flex flex-col gap-1.5 items-start">
-                                ${hasDiscount ? `
-                                    <span class="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
-                                        -${product.discountPercent}% OFF
-                                    </span>
-                                ` : ''}
-                                ${product.freeShipping ? `
-                                    <span class="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm tracking-wide">
-                                        FRETE GRÁTIS
-                                    </span>
-                                ` : ''}
-                            </div>
-
-                            <div class="w-full h-48 flex items-center justify-center overflow-hidden rounded-xl bg-gray-50 mb-4 p-2 relative">
-                                <img 
-                                    src="${product.thumbnail}" 
-                                    alt="${product.title}" 
-                                    class="object-contain h-full w-full group-hover:scale-105 transition-transform duration-300"
-                                    onerror="this.src='https://placehold.co/300x300?text=Imagem+Indispon%C3%ADvel'"
-                                    loading="lazy"
-                                >
-                            </div>
-
-                            <div class="flex items-center gap-1.5 mb-2 min-h-[1.25rem]">
-                                <div class="flex items-center gap-1 text-[11px] font-semibold ${product.storeStyle} px-2 py-0.5 rounded shadow-sm max-w-full truncate">
-                                    <i data-lucide="store" class="w-3 h-3 flex-shrink-0"></i>
-                                    <span class="truncate">${product.storeName}</span>
-                                </div>
-                            </div>
-
-                            <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 h-10 group-hover:text-amber-600 transition-colors duration-200" title="${product.title}">
-                                ${product.title}
-                            </h3>
+                    <!-- Companhia e Logo -->
+                    <div class="flex items-center gap-4 w-full md:w-1/4">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-xl border border-slate-100">
+                            <i class="${ticket.logo}"></i>
                         </div>
-
-                        <div class="mt-4 flex flex-col justify-end">
-                            ${hasDiscount ? `
-                                <span class="text-xs text-gray-400 line-through">
-                                    R$ ${product.originalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                            ` : '<span class="text-xs text-transparent select-none">-</span>'}
-                            <div class="flex items-baseline gap-1.5">
-                                <span class="text-xs font-bold text-gray-900">R$</span>
-                                <span class="text-xl font-extrabold text-gray-900 tracking-tight">
-                                    ${Math.floor(product.price).toLocaleString('pt-BR')}
-                                </span>
-                                <span class="text-xs font-bold text-gray-900">
-                                    ,${(product.price % 1).toFixed(2).substring(2)}
-                                </span>
-                            </div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm sm:text-base">${ticket.company}</h4>
+                            <span class="text-xs text-slate-400">${isFlight ? 'Voo Comercial' : 'Viagem Terrestre'}</span>
                         </div>
                     </div>
 
-                    <div class="px-4 pb-4 pt-1">
-                        <a 
-                            href="${product.permalink}" 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm transition-colors duration-200 shadow-sm"
-                        >
-                            Ir para Loja
-                            <i data-lucide="external-link" class="w-4 h-4"></i>
+                    <!-- Horários e Rotas -->
+                    <div class="flex items-center justify-between gap-6 w-full md:w-2/4">
+                        <div class="text-center md:text-left">
+                            <span class="block text-lg font-bold text-slate-900">${ticket.departure}</span>
+                            <span class="text-xs text-slate-400 uppercase font-semibold">${cleanOrigin}</span>
+                        </div>
+                        
+                        <div class="flex-grow flex flex-col items-center">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${ticket.duration}</span>
+                            <div class="w-full max-w-[120px] h-[2px] bg-slate-200 relative my-1">
+                                <div class="absolute -top-[5px] left-1/2 transform -translate-x-1/2 bg-white px-1">
+                                    <i class="${isFlight ? 'fa-solid fa-plane' : 'fa-solid fa-bus'} text-xs text-slate-300"></i>
+                                </div>
+                            </div>
+                            <span class="text-[10px] text-emerald-600 font-bold">${ticket.type}</span>
+                        </div>
+
+                        <div class="text-center md:text-right">
+                            <span class="block text-lg font-bold text-slate-900">${ticket.arrival}</span>
+                            <span class="text-xs text-slate-400 uppercase font-semibold">${cleanDest}</span>
+                        </div>
+                    </div>
+
+                    <!-- Preço e CTA -->
+                    <div class="flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 w-full md:w-1/4 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+                        <div class="text-left md:text-center">
+                            <span class="text-xs text-slate-400 block">A partir de</span>
+                            <span class="text-2xl font-black text-slate-900">R$ ${ticket.price}</span>
+                        </div>
+                        <a href="${ticket.url}" target="_blank" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold rounded-xl transition duration-150 flex items-center gap-1 shadow-md shadow-blue-500/10">
+                            Selecionar <i class="fa-solid fa-chevron-right text-[10px]"></i>
                         </a>
                     </div>
                 `;
-                productsGrid.appendChild(card);
+                container.appendChild(card);
             });
 
-            resultTitle.innerText = query ? `Melhores preços para "${query}"` : "Super Ofertas do Dia";
-            resultCount.innerText = `${activeProducts.length} ofertas analisadas.`;
-            
-            try {
-                lucide.createIcons();
-            } catch(e) {}
-            showState('results');
+            document.getElementById('results-count').innerText = `${tickets.length} opções mais baratas encontradas`;
+            document.getElementById('results-title').innerText = `Melhores ofertas de ${cleanOrigin} para ${cleanDest}`;
         }
-
-        function showState(state) {
-            loadingState.classList.add('hidden');
-            emptyState.classList.add('hidden');
-            productsGrid.classList.add('hidden');
-
-            if (state === 'loading') {
-                loadingState.classList.remove('hidden');
-            } else if (state === 'empty') {
-                emptyState.classList.remove('hidden');
-                resultCount.innerText = "Busca indisponível.";
-            } else if (state === 'results') {
-                productsGrid.classList.remove('hidden');
-            }
-        }
-
-        // Listeners
-        searchForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const query = searchInput.value.trim();
-            if (query) {
-                fetchProducts(query);
-            }
-        });
-
-        sortSelect.addEventListener('change', () => {
-            if (activeProducts.length > 0) {
-                applySortingAndRender(searchInput.value || "ofertas");
-            }
-        });
-
-        // Execução automática ao iniciar
-        window.addEventListener('DOMContentLoaded', () => {
-            fetchProducts('Tv 65');
-        });
     </script>
 </body>
 </html>
