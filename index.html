@@ -67,7 +67,6 @@
                 <select id="sort-select" class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 cursor-pointer transition-all">
                     <option value="price_asc" selected>Menor Preço (R$)</option>
                     <option value="discount_desc">Maior Desconto (%)</option>
-                    <option value="relevance">Relevância</option>
                 </select>
             </div>
         </div>
@@ -82,7 +81,6 @@
                 <div class="h-6 bg-gray-200 rounded w-1/2"></div>
                 <div class="h-10 bg-gray-200 rounded w-full"></div>
             </div>
-            <!-- Duplicados para Skeleton -->
             <div class="bg-white rounded-xl border border-gray-100 p-4 space-y-4 animate-pulse hidden sm:block">
                 <div class="bg-gray-200 h-48 w-full rounded-lg"></div>
                 <div class="h-4 bg-gray-200 rounded w-2/3"></div>
@@ -153,77 +151,80 @@
             debugLog.innerText += "\n" + message;
         }
 
-        // Função para simular o mapeamento de qual plataforma é a dona da oferta com base no nome do vendedor/loja oficial
+        // Identifica a loja de origem do produto com base no título e dados do vendedor
         function identifyStore(item) {
-            const title = item.title.toLowerCase();
+            const title = (item.title || "").toLowerCase();
             const officialStore = (item.official_store_name || "").toLowerCase();
             const sellerNickname = (item.seller && item.seller.eshop && item.seller.eshop.nick_name ? item.seller.eshop.nick_name.toLowerCase() : "");
 
-            // 1. Verificar Magazine Luiza
-            if (officialStore.includes("magazine") || officialStore.includes("magalu") || title.includes("magazine luiza") || sellerNickname.includes("magazine")) {
+            if (officialStore.includes("magazine") || officialStore.includes("magalu") || title.includes("magazine luiza") || title.includes("magalu") || sellerNickname.includes("magazine")) {
                 return { name: "Magazine Luiza", style: "bg-blue-600 text-white" };
             }
-            // 2. Verificar Casas Bahia
             if (officialStore.includes("bahia") || title.includes("casas bahia") || sellerNickname.includes("bahia")) {
                 return { name: "Casas Bahia", style: "bg-red-600 text-white" };
             }
-            // 3. Verificar Ponto Frio
             if (officialStore.includes("ponto") || title.includes("ponto frio") || sellerNickname.includes("ponto")) {
                 return { name: "Ponto Frio", style: "bg-red-500 text-white" };
             }
-            // 4. Verificar Amazon Br ou Shopee (identificados por equivalência ou lojas integradas de importação)
             if (officialStore.includes("amazon") || title.includes("amazon") || sellerNickname.includes("amazon")) {
                 return { name: "Amazon BR", style: "bg-amber-600 text-white" };
             }
             if (officialStore.includes("shopee") || title.includes("shopee") || sellerNickname.includes("shopee")) {
                 return { name: "Shopee BR", style: "bg-orange-600 text-white" };
             }
-            // 5. Padrão Mercado Livre
             return { name: "Mercado Livre", style: "bg-blue-100 text-blue-800" };
         }
 
+        // Faz chamadas assíncronas simultâneas sem travar em caso de erro individual
         async function fetchProducts(query) {
             showState('loading');
             debugLog.innerText = "Iniciando motor de busca comparativo...";
-            
-            // Faremos múltiplos termos de busca em paralelo para garantir ofertas que mencionem as grandes redes
+            activeProducts = [];
+
             const searchQueries = [
-                query,                             // Busca Geral
-                `${query} magazine luiza`,         // Tenta capturar ofertas da Magalu cadastradas
-                `${query} casas bahia`,            // Tenta capturar Casas Bahia
-                `${query} amazon`                  // Tenta capturar equivalentes Amazon
+                query,                             
+                `${query} magazine luiza`,         
+                `${query} casas bahia`,            
+                `${query} amazon`                  
             ];
 
-            let allResults = [];
-
-            for (let currentQuery of searchQueries) {
+            // Gera as Promises para buscar em paralelo usando o Allorigins
+            const fetchPromises = searchQueries.map(async (currentQuery) => {
                 const encodedQuery = encodeURIComponent(currentQuery);
-                const targetUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodedQuery}&limit=25`;
+                const targetUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodedQuery}&limit=15`;
                 const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
                 try {
-                    logDebug(`Buscando lote de ofertas para: "${currentQuery}"...`);
                     const response = await fetch(proxyUrl);
                     if (response.ok) {
                         const wrapper = await response.json();
                         if (wrapper && wrapper.contents) {
                             const data = JSON.parse(wrapper.contents);
-                            if (data && data.results) {
-                                allResults = allResults.concat(data.results);
-                            }
+                            return data.results || [];
                         }
                     }
-                } catch (error) {
-                    logDebug(`Erro ao buscar lote para "${currentQuery}": ${error.message}`);
+                } catch (e) {
+                    logDebug(`Aviso: Falha parcial na busca de "${currentQuery}": ${e.message}`);
                 }
-            }
+                return [];
+            });
 
-            // Remover duplicados (IDs idênticos de produtos trazidos por termos de busca diferentes)
+            // Executa tudo em paralelo. Se uma falhar, as outras ainda resolvem!
+            const results = await Promise.allSettled(fetchPromises);
+            let rawCombinedResults = [];
+
+            results.forEach(result => {
+                if (result.status === 'fulfilled' && result.value) {
+                    rawCombinedResults = rawCombinedResults.concat(result.value);
+                }
+            });
+
+            // Remove duplicatas de produtos
             const uniqueResults = [];
-            const map = new Map();
-            for (const item of allResults) {
-                if(!map.has(item.id)){
-                    map.set(item.id, true);
+            const seenIds = new Set();
+            for (const item of rawCombinedResults) {
+                if (item && item.id && !seenIds.has(item.id)) {
+                    seenIds.add(item.id);
                     uniqueResults.push(item);
                 }
             }
@@ -241,10 +242,9 @@
                     let imageUrl = item.thumbnail;
                     if (imageUrl) {
                         imageUrl = imageUrl.replace("http://", "https://");
-                        imageUrl = imageUrl.replace("-I.jpg", "-O.jpg");
+                        imageUrl = imageUrl.replace("-I.jpg", "-O.jpg"); // Melhora a qualidade da imagem
                     }
 
-                    // Identificar inteligentemente a loja correspondente
                     const storeMeta = identifyStore(item);
 
                     return {
@@ -253,7 +253,7 @@
                         price: currentPrice,
                         originalPrice: originalPrice,
                         discountPercent: discountPercent,
-                        thumbnail: imageUrl || "https://placehold.co/300x300?text=Sem+Imagem",
+                        thumbnail: imageUrl || "https://placeholder.co/300x300?text=Sem+Imagem",
                         fallbackThumbnail: item.thumbnail ? item.thumbnail.replace("http://", "https://") : "",
                         permalink: item.permalink,
                         freeShipping: item.shipping && item.shipping.free_shipping,
@@ -262,9 +262,10 @@
                     };
                 });
 
+                logDebug(`Sucesso: ${activeProducts.length} ofertas consolidadas!`);
                 applySortingAndRender(query);
             } else {
-                logDebug("A busca comparativa falhou em retornar resultados nas lojas.");
+                logDebug("Erro fatal: Nenhuma resposta válida obtida de nenhuma loja parceira.");
                 showState('empty');
             }
         }
@@ -273,11 +274,9 @@
             const sortBy = sortSelect.value;
 
             if (sortBy === 'price_asc') {
-                activeProducts.sort((a, b) => a.price - b.price); // Menor Preço (Default)
+                activeProducts.sort((a, b) => a.price - b.price); 
             } else if (sortBy === 'discount_desc') {
                 activeProducts.sort((a, b) => b.discountPercent - a.discountPercent);
-            } else {
-                activeProducts.sort((a, b) => 0); 
             }
 
             renderProducts(query);
@@ -330,7 +329,6 @@
                             >
                         </div>
 
-                        <!-- Badge Dinâmico Indicando de Onde é o Valor -->
                         <div class="flex items-center gap-1.5 mb-2 min-h-[1.25rem]">
                             <div class="flex items-center gap-1 text-[11px] font-semibold ${product.storeStyle} px-2 py-0.5 rounded shadow-sm">
                                 <i data-lucide="store" class="w-3 h-3"></i>
@@ -397,6 +395,7 @@
             }
         }
 
+        // Listeners
         searchForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const query = searchInput.value.trim();
@@ -411,8 +410,9 @@
             }
         });
 
+        // Carga inicial automatizada
         window.addEventListener('DOMContentLoaded', () => {
-            fetchProducts('Monitor IPS');
+            fetchProducts('Monitor');
         });
     </script>
 </body>
