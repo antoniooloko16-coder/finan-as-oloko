@@ -2,497 +2,1075 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RotaBarata - Passagens Aéreas e de Ônibus</title>
-    <!-- Tailwind CSS para Design Premium -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome para Ícones -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SHADOW LEGENDS: INFINITE</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&display=swap');
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+        :root {
+            --comum: #a4b0be;
+            --uncommon: #2ed573;
+            --rare: #00a8ff; 
+            --super-rare: #a55eea;
+            --diamante: #00ecec; 
+            --bg: #05070a;
+            --panel: linear-gradient(180deg, #161a26 0%, #0a0d14 100%); 
+            --accent: #ff4757;
+            --hp-player: linear-gradient(90deg, #10ac84, #1dd1a1);
+            --hp-monster: linear-gradient(90deg, #ff4757, #ff6b6b);
+            --border-ui: rgba(255, 255, 255, 0.12);
         }
-        .tab-active {
-            border-bottom: 3px solid #3b82f6;
-            color: #3b82f6;
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        
+        body { 
+            margin: 0; background: var(--bg); color: #f1f2f6; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            overflow: hidden; height: 100vh; display: flex; flex-direction: column; 
+            max-width: 480px; margin: 0 auto; border-left: 1px solid #111; border-right: 1px solid #111;
         }
+
+        #game-arena {
+            position: relative; width: 100%; height: 42vh;
+            background-image: url('https://latin-salmon-sldip5ie.edgeone.dev/7d095ae81e099c20e7db776ea1a6e2ea.gif'), linear-gradient(to bottom, #111, #222);
+            background-size: cover;
+            background-position: center bottom;
+            background-repeat: no-repeat;
+            border-bottom: 4px solid #0d1117; overflow: hidden;
+            box-shadow: inset 0 -40px 30px rgba(0,0,0,0.5);
+        }
+
+        .floor { 
+            position: absolute; bottom: 0; width: 100%; height: 8%; 
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(1px);
+        }
+
+        #player { 
+            position: absolute; bottom: 6%; left: 30px; width: 75px; height: 75px; 
+            z-index: 10; transition: left 0.18s cubic-bezier(0.25, 1, 0.5, 1);
+            filter: drop-shadow(0 6px 4px rgba(0,0,0,0.5));
+            background-image: url('https://visual-aquamarine-74uhjc6d.edgeone.dev/7d4920500a20bf03aa226c3d206999a9.gif');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: bottom center;
+        }
+        
+        .p-sprite { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; }
+        .p-head { width: 22px; height: 22px; background: var(--skin); border-radius: 50%; position: relative; border: 2px solid #000; }
+        .p-hair { position: absolute; top: -5px; width: 110%; left: -5%; height: 14px; background: var(--hair); border-radius: 6px; }
+        .p-body { width: 26px; height: 28px; background: var(--armor); border-radius: 8px; border: 2px solid #000; position: relative; margin-top: -2px; }
+        .p-arm { width: 10px; height: 22px; background: var(--skin); position: absolute; top: 4px; right: -6px; transform-origin: top center; border: 2px solid #000; z-index: 5; border-radius: 6px; }
+        .p-weapon { position: absolute; bottom: -12px; width: 6px; height: 32px; background: #f1f2f6; border: 2px solid #000; transform-origin: top center; border-radius: 3px; }
+
+        #monster { 
+            position: absolute; bottom: 6%; right: 30px; width: 75px; height: 75px; z-index: 5; 
+            transition: transform 0.1s, width 0.2s, height 0.2s; filter: drop-shadow(0 6px 4px rgba(0,0,0,0.5)); 
+            background-size: contain; background-repeat: no-repeat; background-position: bottom center;
+        }
+
+        .ui-header { padding: 12px 16px; background: #0d1117; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-ui); }
+        .stage-title { color: #ffcc00; font-weight: bold; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .hp-hud-container { display: flex; flex-direction: column; gap: 5px; width: 100%; }
+        .hp-row { display: flex; align-items: center; gap: 8px; }
+        .hp-label { font-size: 10px; font-weight: bold; width: 50px; text-shadow: 1px 1px #000; }
+        .hp-container { flex: 1; height: 12px; background: #0b0e14; border-radius: 10px; overflow: hidden; border: 1px solid #232a38; }
+        .hp-fill { height: 100%; border-radius: 10px; transition: width 0.2s ease; }
+
+        .dashboard { flex: 1; background: var(--panel); padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .stat-box { background: rgba(255,255,255,0.02); padding: 6px; border-radius: 10px; text-align: center; border: 1px solid var(--border-ui); }
+        .stat-val { display: block; font-size: 13px; font-weight: bold; color: #fff; }
+        .stat-label { font-size: 8px; color: #a4b0be; text-transform: uppercase; }
+
+        .dmg-popup { 
+            position: absolute; font-size: 26px; font-weight: 900; pointer-events: none;
+            animation: dmgAnim 0.65s ease-out forwards; text-shadow: 2px 2px 0px #000; z-index: 100; font-family: 'Impact', sans-serif;
+        }
+        @keyframes dmgAnim {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            25% { opacity: 1; transform: scale(1.2); }
+            100% { transform: translateY(-60px) scale(0.8); opacity: 0; }
+        }
+        
+        .shake { animation: shake 0.15s ease-in-out 1; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 33% { transform: translateX(-8px); } 66% { transform: translateX(8px); } }
+
+        .modal { position: fixed; inset: 0; background: #090c12; z-index: 1000; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 480px; margin: 0 auto; }
+        .class-select { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 12px 0; }
+        .class-btn { background: rgba(255,255,255,0.02); border: 1px solid var(--border-ui); color: #fff; padding: 10px; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .class-btn.active { border-color: #ffcc00; background: rgba(255, 204, 0, 0.12); color: #ffcc00; }
+        .start-btn { background: linear-gradient(135deg, #ff4757 0%, #ff6b6b 100%); color: white; border: none; padding: 14px 40px; border-radius: 25px; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 6px 15px rgba(255,71,87,0.3); }
+
+        .projectile { position: absolute; width: 25px; height: 6px; background: linear-gradient(90deg, #fff, #00c6ff); border-radius: 10px; z-index: 100; }
+
+        .bag-trigger-btn {
+            background: linear-gradient(135deg, #2c3e50 0%, #0f171e 100%); border: 1px solid #ffcc00; color: #fff; font-weight: bold; font-size: 12px;
+            padding: 10px; border-radius: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .bag-container { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 8px; width: 100%; height: 75vh; margin-top: 10px; }
+        .bag-column { background: rgba(15, 23, 36, 0.6); border: 1px solid var(--border-ui); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        .bag-col-header { background: rgba(255,255,255,0.04); padding: 8px; text-align: center; font-size: 12px; font-weight: bold; letter-spacing: 1px; color: #fff; border-bottom: 1px solid var(--border-ui); text-transform: uppercase; }
+        .eq-slots-list { padding: 8px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; height: 100%; }
+        .eq-slot-box {
+            background: rgba(0,0,0,0.3); border: 1px dashed rgba(255,255,255,0.2); border-radius: 10px; padding: 6px; display: flex; align-items: center; gap: 6px;
+            cursor: pointer; min-height: 44px; transition: all 0.2s;
+        }
+        .eq-slot-box.filled-comum { border: 1px solid var(--comum); background: rgba(164,176,190,0.08); }
+        .eq-slot-box.filled-uncommon { border: 1px solid var(--uncommon); background: rgba(46,213,115,0.08); }
+        .eq-slot-box.filled-rare { border: 1px solid var(--rare); background: rgba(0,168,255,0.08); }
+        .eq-slot-box.filled-super-rare { border: 1px solid var(--super-rare); background: rgba(165,94,234,0.08); }
+        .eq-slot-box.filled-diamante { border: 1px solid var(--diamante); background: rgba(0,236,236,0.12); box-shadow: inset 0 0 8px rgba(0,236,236,0.2); }
+        
+        .eq-slot-icon { font-size: 20px; width: 28px; text-align: center; }
+        .eq-slot-info { display: flex; flex-direction: column; }
+        .eq-slot-name { font-size: 9px; font-weight: bold; }
+        .eq-slot-type { font-size: 8px; color: #a4b0be; text-transform: uppercase; }
+
+        .grid-backpack { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px; overflow-y: auto; align-content: start; height: 100%; }
+        .grid-item-slot {
+            aspect-ratio: 1; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; cursor: pointer; position: relative; transition: all 0.15s;
+        }
+        .grid-item-slot.comum { border: 1px solid var(--comum); background: rgba(164,176,190,0.12); }
+        .grid-item-slot.uncommon { border: 1px solid var(--uncommon); background: rgba(46,213,115,0.12); }
+        .grid-item-slot.rare { border: 1px solid var(--rare); background: rgba(0,168,255,0.12); }
+        .grid-item-slot.super-rare { border: 1px solid var(--super-rare); background: rgba(165,94,234,0.12); }
+        .grid-item-slot.diamante { border: 1px solid var(--diamante); background: rgba(0,236,236,0.15); box-shadow: inset 0 0 6px rgba(0,236,236,0.2); }
+        .grid-item-slot:active { transform: scale(0.95); }
+
+        .item-details-pop {
+            position: absolute; bottom: 0; left: 0; right: 0; background: #0f131c; border-top: 3px solid #ffcc00; padding: 14px; border-top-left-radius: 16px;
+            border-top-right-radius: 16px; display: none; flex-direction: column; gap: 8px; box-shadow: 0 -10px 25px rgba(0,0,0,0.8); z-index: 2100;
+        }
+        
+        .reset-save-btn { background: transparent; border: 1px solid #ff4757; color: #ff4757; font-size: 9px; padding: 4px 8px; border-radius: 6px; cursor: pointer; margin-top: 15px; text-transform: uppercase; font-weight: bold; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body>
 
-    <!-- Header Principal -->
-    <header class="bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="bg-blue-600 text-white p-2 rounded-xl">
-                    <i class="fa-solid fa-plane-departure text-xl"></i>
-                </div>
-                <span class="text-xl font-extrabold tracking-tight text-slate-900">Rota<span class="text-blue-600">Barata</span></span>
-            </div>
-            <nav class="hidden md:flex space-x-8">
-                <a href="#" class="text-sm font-semibold text-blue-600">Buscador Multi-API</a>
-                <a href="#" class="text-sm font-semibold text-slate-500 hover:text-slate-900 transition">Ofertas do Dia</a>
-                <a href="#" class="text-sm font-semibold text-slate-500 hover:text-slate-900 transition">Alertas de Preço</a>
-            </nav>
-            <div class="flex items-center gap-4">
-                <span class="hidden sm:inline-block text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">APIs Públicas Ativas</span>
-                <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
-            </div>
-        </div>
-    </header>
-
-    <!-- Seção de Busca -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div id="screen-setup" class="modal">
+        <h1 style="color:#ffcc00; letter-spacing: 2px; font-size: 24px; margin-bottom: 0;">SHADOW LEGENDS</h1>
+        <p style="color:#a4b0be; font-size: 11px; margin-bottom: 15px;">MODO RETRATO ACTIVO</p>
+        <input type="text" id="p-name" placeholder="NOME DO HERÓI" style="width:100%; padding:12px; background:rgba(0,0,0,0.3); border:1.5px solid var(--border-ui); color:white; border-radius:12px; text-align: center; font-weight: bold;">
         
-        <!-- Hero Intro -->
-        <div class="text-center max-w-2xl mx-auto mb-8">
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-2">Encontre a sua próxima viagem pelo menor preço</h1>
-            <p class="text-slate-500 text-sm sm:text-base">Varremos de forma inteligente os melhores buscadores globais, consolidadoras de milhas e agências em tempo real.</p>
+        <div class="class-select" id="class-list">
+            <button class="class-btn active" onclick="selClass('Guerreiro')">GUERREIRO (GIF)</button>
+            <button class="class-btn" onclick="selClass('Arqueiro')">ARQUEIRO</button>
+            <button class="class-btn" onclick="selClass('Mago')">MAGO</button>
+            <button class="class-btn" onclick="selClass('Assassino')">ASSASSINO</button>
+            <button class="class-btn" onclick="selClass('Paladino')">PALADINO</button>
+            <button class="class-btn" onclick="selClass('Druida')">DRUIDA</button>
         </div>
 
-        <!-- Seletor de Tipo de Transporte (Abas) -->
-        <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden mb-8">
-            <div class="flex border-b border-slate-100 bg-slate-50/50">
-                <button id="tab-flights" onclick="switchTab('flights')" class="flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition tab-active">
-                    <i class="fa-solid fa-plane"></i> Passagens Aéreas
-                </button>
-                <button id="tab-buses" onclick="switchTab('buses')" class="flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-bus"></i> Passagens de Ônibus
-                </button>
+        <div style="display:flex; gap:20px; margin-bottom:20px; background: rgba(0,0,0,0.2); padding: 8px 20px; border-radius: 12px; border: 1px solid var(--border-ui);">
+            <div style="text-align:center">
+                <span style="font-size:9px; color:#a4b0be;">COR PELE</span><br>
+                <input type="color" id="p-skin" value="#ffdbac" onchange="updateVisual()" style="border:none; width:30px; height:30px; background:transparent;">
             </div>
-
-            <!-- Form de Busca -->
-            <div class="p-6">
-                <!-- Seletores Auxiliares (Tipo de Viagem) -->
-                <div class="flex flex-wrap gap-4 mb-4 items-center">
-                    <div class="relative">
-                        <select id="trip-type" onchange="toggleReturnDate()" class="appearance-none bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2 pr-8 rounded-full focus:outline-none transition cursor-pointer">
-                            <option value="roundtrip" selected>Ida e Volta</option>
-                            <option value="oneway">Somente Ida</option>
-                        </select>
-                        <i class="fa-solid fa-chevron-down absolute right-3 top-3 text-[10px] text-slate-500 pointer-events-none"></i>
-                    </div>
-                </div>
-
-                <form id="search-form" onsubmit="handleSearch(event)" class="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-12 lg:gap-4 items-end">
-                    <!-- Origem -->
-                    <div class="col-span-12 lg:col-span-3">
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Origem</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-location-dot absolute left-4 top-3.5 text-slate-400"></i>
-                            <input type="text" id="origin" required value="Ribeirão Preto, RAO" placeholder="Cidade ou Aeroporto" 
-                                class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
-                        </div>
-                    </div>
-
-                    <!-- Botão de Inverter -->
-                    <div class="hidden lg:flex lg:col-span-1 justify-center pb-2">
-                        <button type="button" onclick="swapDestinations()" class="p-3 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition shadow-sm">
-                            <i class="fa-solid fa-arrows-rotate"></i>
-                        </button>
-                    </div>
-
-                    <!-- Destino -->
-                    <div class="col-span-12 lg:col-span-3">
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Destino</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-plane-arrival absolute left-4 top-3.5 text-slate-400"></i>
-                            <input type="text" id="destination" required value="Salvador, SSA" placeholder="Cidade ou Aeroporto" 
-                                class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
-                        </div>
-                    </div>
-
-                    <!-- Data de Partida -->
-                    <div class="col-span-12 md:col-span-6 lg:col-span-2">
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Data de Ida</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-calendar absolute left-4 top-3.5 text-slate-400"></i>
-                            <input type="date" id="travel-date" required onchange="validateDates()" class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
-                        </div>
-                    </div>
-
-                    <!-- Data de Retorno -->
-                    <div id="return-date-container" class="col-span-12 md:col-span-6 lg:col-span-2">
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Data de Volta</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-calendar absolute left-4 top-3.5 text-slate-400"></i>
-                            <input type="date" id="return-date" onchange="validateDates()" class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white font-medium transition text-slate-700">
-                        </div>
-                    </div>
-
-                    <!-- Botão de Ação -->
-                    <div class="col-span-12 lg:col-span-1">
-                        <button type="submit" class="w-full px-4 py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-magnifying-glass"></i> <span class="lg:hidden">Buscar Agora</span>
-                        </button>
-                    </div>
-                </form>
+            <div style="text-align:center">
+                <span style="font-size:9px; color:#a4b0be;">CABELO</span><br>
+                <input type="color" id="p-hair" value="#4b3621" onchange="updateVisual()" style="border:none; width:30px; height:30px; background:transparent;">
             </div>
         </div>
 
-        <!-- Indicador de Busca (Skeleton) -->
-        <div id="loading" class="hidden space-y-4">
-            <div class="flex items-center justify-between p-4 bg-blue-50 text-blue-800 rounded-2xl border border-blue-100 animate-pulse">
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-circle-notch animate-spin text-xl"></i>
-                    <span class="font-bold text-sm sm:text-base">Varrendo APIs públicas de dezenas de parceiros simultaneamente...</span>
-                </div>
+        <button class="start-btn" onclick="startGame()">INICIAR MISSÃO</button>
+    </div>
+
+    <div id="game-main" style="display:none; height: 100%; flex-direction: column;">
+        <div class="ui-header">
+            <div>
+                <span class="stage-title" id="stage-info">FASE 1-1</span><br>
+                <small id="kills-info" style="color:#a4b0be; font-size: 10px;">MONSTROS: 0/10</small>
             </div>
-            <div class="space-y-3">
-                <div class="h-32 bg-white rounded-3xl border border-slate-100 animate-pulse"></div>
-                <div class="h-32 bg-white rounded-3xl border border-slate-100 animate-pulse"></div>
+            <div style="text-align:right">
+                <span style="color:#1dd1a1; font-weight: bold; font-size: 14px;">LVL <span id="p-lvl">1</span></span><br>
+                <small id="p-class-ui" style="color:#a4b0be; text-transform: uppercase; font-size: 9px;">GUERREIRO</small>
             </div>
         </div>
 
-        <!-- Resultados -->
-        <div id="results" class="hidden space-y-4">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
-                <div>
-                    <h2 class="text-xl font-extrabold text-slate-900" id="results-title">Melhores Passagens Encontradas</h2>
-                    <p class="text-xs font-semibold text-rose-500">Nota: Os valores exibidos são referências de mercado atualizadas em tempo real nos portais oficiais ao clicar em Selecionar.</p>
-                </div>
-                <span class="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-xs" id="results-count">Calculando parceiros...</span>
-            </div>
-            <div id="tickets-container" class="space-y-4"></div>
-        </div>
-
-        <!-- Mensagem Inicial -->
-        <div id="initial-state" class="text-center py-12 px-4 bg-white rounded-3xl border border-slate-100">
-            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fa-solid fa-map-location-dot text-2xl"></i>
-            </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1">Pronto para buscar?</h3>
-            <p class="text-slate-400 text-sm max-w-md mx-auto">Insira sua origem, destino e as datas desejadas para varrer a internet de forma automatizada.</p>
-        </div>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
-            <p class="text-xs sm:text-sm">© 2026 RotaBarata. Desenvolvido para máxima economia de viagens.</p>
-        </div>
-    </footer>
-
-    <!-- Lógica Avançada do Aplicativo -->
-    <script>
-        let currentTab = 'flights';
-
-        // Inicializador automático de datas (Amanhã e próxima semana)
-        window.addEventListener('DOMContentLoaded', () => {
-            const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
+        <div id="game-arena">
+            <div class="floor"></div>
             
-            const returnDate = new Date(today);
-            returnDate.setDate(returnDate.getDate() + 8);
+            <div id="player">
+                <div class="p-sprite" id="vector-sprite" style="display: none;">
+                    <div class="p-head"><div class="p-hair"></div></div>
+                    <div class="p-body">
+                        <div class="p-arm" id="main-arm"><div class="p-weapon" id="weapon-visual"></div></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="monster">
+                <div class="m-body" id="m-body-color" style="display: none;">
+                    <div class="m-eye"></div>
+                </div>
+            </div>
 
-            document.getElementById('travel-date').value = formatDate(tomorrow);
-            document.getElementById('return-date').value = formatDate(returnDate);
+            <div style="position:absolute; top:12px; width:92%; left:4%; background: rgba(13, 17, 23, 0.85); padding: 8px; border-radius: 10px; backdrop-filter: blur(4px); border: 1px solid var(--border-ui);">
+                <div class="hp-hud-container">
+                    <div class="hp-row">
+                        <span class="hp-label" style="color:#ff6b6b">INIMIGO</span>
+                        <div class="hp-container"><div id="m-hp-bar" class="hp-fill" style="width:100%; background: var(--hp-monster)"></div></div>
+                    </div>
+                    <div class="hp-row">
+                        <span class="hp-label" style="color:#1dd1a1">HERÓI</span>
+                        <div class="hp-container"><div id="p-hp-bar" class="hp-fill" style="width:100%; background: var(--hp-player)"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <button class="bag-trigger-btn" onclick="openBagModal()">🎒 Ver Equipamentos & Mochila</button>
+
+            <div class="stats-grid">
+                <div class="stat-box"><span class="stat-val" id="st-str">0</span><span class="stat-label">FOR</span></div>
+                <div class="stat-box"><span class="stat-val" id="st-def">0</span><span class="stat-label">DEF</span></div>
+                <div class="stat-box"><span class="stat-val" id="st-luk">0</span><span class="stat-label">SOR</span></div>
+                <div class="stat-box"><span class="stat-val" id="st-agi">0</span><span class="stat-label">AGI</span></div>
+                <div class="stat-box"><span class="stat-val" id="st-eva">0</span><span class="stat-label">ESQ</span></div>
+                <div class="stat-box"><span class="stat-val" id="st-int">0</span><span class="stat-label">INT</span></div>
+                <div class="stat-box"><span class="stat-val" id="st-dex">0</span><span class="stat-label">DES</span></div>
+                <div class="stat-box"><span class="stat-val" id="st-vit">0</span><span class="stat-label">VIT</span></div>
+            </div>
+
+            <div class="inventory-list" id="inv-ui" style="display: none;"></div>
+            
+            <center><button class="reset-save-btn" onclick="resetGameSave()">⚠️ Resetar Progresso</button></center>
+        </div>
+    </div>
+
+    <div id="bag-modal" class="modal" style="display:none; background: rgba(5, 7, 10, 0.98); padding: 12px; justify-content: flex-start;">
+        <div style="width:100%; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-ui); padding-bottom:8px;">
+            <span style="color:#ffcc00; font-weight:bold; font-size:16px; letter-spacing:1px;">EQUIPAMENTO & ARMAZÉM</span>
+            <button onclick="closeBagModal()" style="background:transparent; border:none; color:#ff4757; font-size:20px; font-weight:bold; cursor:pointer;">✕</button>
+        </div>
+
+        <div class="bag-container">
+            <div class="bag-column">
+                <div class="bag-col-header">Personagem</div>
+                <div class="eq-slots-list" id="eq-slots-ui"></div>
+            </div>
+
+            <div class="bag-column">
+                <div class="bag-col-header">Mochila</div>
+                <div class="grid-backpack" id="backpack-grid-ui"></div>
+            </div>
+        </div>
+
+        <div id="item-details" class="item-details-pop">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div id="pop-item-title-wrapper">
+                    <strong id="pop-item-name" style="font-size:14px; display:block;">Nome do Item</strong>
+                    <span id="pop-item-rarity" style="font-size:9px; text-transform:uppercase; font-weight:bold;">RARIDADE</span>
+                </div>
+                <span id="pop-item-icon" style="font-size:28px;">⚔️</span>
+            </div>
+            <div id="pop-item-stats" style="color:#a4b0be; font-size:11px; background:rgba(0,0,0,0.2); padding:6px; border-radius:6px; margin:4px 0;"></div>
+            <div style="display:flex; gap:8px; margin-top:4px;">
+                <button id="pop-action-btn" class="class-btn" style="flex:1; border-color:#1dd1a1; color:#1dd1a1; padding:6px;" onclick="executeItemAction()">EQUIPAR</button>
+                <button class="class-btn" style="flex:1; padding:6px;" onclick="closeDetailsPop()">FECHAR</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let player = {
+        name: "", class: "Guerreiro", lvl: 1, 
+        hp: 100, maxHp: 100, range: "melee",
+        str: 5, def: 5, luk: 5, agi: 5, eva: 5, int: 5, dex: 5, vit: 5,
+        skinColor: "#ffdbac", hairColor: "#4b3621",
+        equipped: { weapon: null, head: null, torso: null, feet: null, ring: null, shield: null, wings: null },
+        inventory: []
+    };
+
+    let game = { 
+        stage: 1, kills: 0, isAttacking: false, monster: null, 
+        lastAttackTime: 0, attackCounter: 0, isEngineRunning: false
+    };
+
+    const slotMapping = {
+        head: { label: 'Elmo', icon: '🪖' },
+        weapon: { label: 'Arma', icon: '⚔️' },
+        torso: { label: 'Armadura', icon: '🛡️' },
+        shield: { label: 'Escudo', icon: '🎚️' },
+        feet: { label: 'Botas', icon: '🥾' },
+        ring: { label: 'Anel', icon: '💍' },
+        wings: { label: 'Asa', icon: '🕊️' }
+    };
+
+    let selectedItemContext = null; 
+    let selectedItemIsEquipped = false;
+
+    const classColors = {
+        'Guerreiro': '#57606f', 'Arqueiro': '#2ed573', 'Mago': '#574b90',
+        'Assassino': '#2f3542', 'Paladino': '#f1f2f6', 'Druida': '#10ac84'
+    };
+
+    const assets = {
+        playerGif: "https://visual-aquamarine-74uhjc6d.edgeone.dev/7d4920500a20bf03aa226c3d206999a9.gif", 
+        backgroundLandscape: "https://latin-salmon-sldip5ie.edgeone.dev/7d095ae81e099c20e7db776ea1a6e2ea.gif",
+        normalMonsters: [
+            "https://working-blush-wvzi37my.edgeone.dev/joe-dupras-revenant.gif",
+            "https://i.ibb.co/S7c8BKMG/image.png"
+        ],
+        bossMonster: "https://i.ibb.co/3y8WY1B9/image.png"
+    };
+
+    function saveGame() {
+        const saveData = {
+            player: player,
+            game: { stage: game.stage, kills: game.kills }
+        };
+        localStorage.setItem('shadow_legends_infinite_save', JSON.stringify(saveData));
+    }
+
+    function loadGame() {
+        const rawData = localStorage.getItem('shadow_legends_infinite_save');
+        if (!rawData) return false;
+
+        try {
+            const saved = JSON.parse(rawData);
+            if (!saved || !saved.player || !saved.game) return false;
+            
+            player = Object.assign(player, saved.player);
+            
+            if(!player.equipped) player.equipped = { weapon: null, head: null, torso: null, feet: null, ring: null, shield: null, wings: null };
+            if(!player.equipped.shield) player.equipped.shield = null;
+            if(!player.equipped.wings) player.equipped.wings = null;
+            if(player.dex === undefined) player.dex = 5;
+            if(player.vit === undefined) player.vit = 5;
+            if(!player.inventory) player.inventory = [];
+
+            game.stage = saved.game.stage || 1;
+            game.kills = saved.game.kills || 0;
+
+            if(document.getElementById('p-skin')) document.getElementById('p-skin').value = player.skinColor || "#ffdbac";
+            if(document.getElementById('p-hair')) document.getElementById('p-hair').value = player.hairColor || "#4b3621";
+
+            return true;
+        } catch(e) {
+            console.error("Erro ao carregar o save corrompido:", e);
+            return false;
+        }
+    }
+
+    function resetGameSave() {
+        if(confirm("Tem certeza que deseja apagar todo o progresso do seu herói?")) {
+            localStorage.removeItem('shadow_legends_infinite_save');
+            window.location.reload();
+        }
+    }
+
+    function selClass(c) {
+        player.class = c;
+        document.querySelectorAll('.class-btn').forEach(b => {
+            b.classList.remove('active');
+            if(b.innerText.startsWith(c.toUpperCase())) b.classList.add('active');
         });
+        updateVisual();
+    }
 
-        function formatDate(date) {
-            const yyyy = date.getFullYear();
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const dd = String(date.getDate()).padStart(2, '0');
-            return `${yyyy}-${mm}-${dd}`;
-        }
+    function updateVisual() {
+        const pEl = document.getElementById('player');
+        const vSprite = document.getElementById('vector-sprite');
+        if (!pEl) return;
 
-        function validateDates() {
-            const travelDateInput = document.getElementById('travel-date');
-            const returnDateInput = document.getElementById('return-date');
+        if(player.class === 'Guerreiro') {
+            pEl.style.backgroundImage = `url('${assets.playerGif}')`;
+            if(vSprite) vSprite.style.display = 'none';
+        } else {
+            pEl.style.backgroundImage = 'none';
+            if(vSprite) vSprite.style.display = 'flex';
             
-            const travelDate = new Date(travelDateInput.value);
-            const returnDate = new Date(returnDateInput.value);
+            if(document.getElementById('p-skin')) player.skinColor = document.getElementById('p-skin').value;
+            if(document.getElementById('p-hair')) player.hairColor = document.getElementById('p-hair').value;
 
-            if (returnDate <= travelDate) {
-                const newReturn = new Date(travelDate);
-                newReturn.setDate(newReturn.getDate() + 3);
-                returnDateInput.value = formatDate(newReturn);
+            document.documentElement.style.setProperty('--skin', player.skinColor);
+            document.documentElement.style.setProperty('--hair', player.hairColor);
+            document.documentElement.style.setProperty('--armor', classColors[player.class] || '#57606f');
+            
+            const w = document.getElementById('weapon-visual');
+            if(w) {
+                if(player.class === 'Paladino') { w.style.width = '8px'; w.style.backgroundColor = '#d1d8e0'; }
+                else if(player.class === 'Assassino') { w.style.width = '4px'; w.style.backgroundColor = '#747d8c'; }
+                else if(player.class === 'Mago' || player.class === 'Druida') { w.style.width = '5px'; w.style.backgroundColor = '#ffa502'; }
+                else { w.style.backgroundColor = 'transparent'; }
             }
         }
+    }
 
-        function toggleReturnDate() {
-            const tripType = document.getElementById('trip-type').value;
-            const container = document.getElementById('return-date-container');
-            const returnInput = document.getElementById('return-date');
+    function startGame() {
+        player.name = document.getElementById('p-name').value || "HERÓI";
+        const c = player.class;
+        
+        player.str = 5; player.def = 5; player.luk = 5; player.agi = 5;
+        player.eva = 5; player.int = 5; player.dex = 5; player.vit = 5;
 
-            if (tripType === 'oneway') {
-                container.classList.add('opacity-40', 'pointer-events-none');
-                returnInput.required = false;
+        if(c === "Guerreiro") { player.str += 10; player.def += 5; player.vit += 5; player.range = "melee"; }
+        if(c === "Arqueiro") { player.agi += 10; player.luk += 5; player.dex += 5; player.range = "ranged"; }
+        if(c === "Mago") { player.int += 10; player.luk += 5; player.dex += 3; player.range = "magic"; }
+        if(c === "Assassino") { player.agi += 10; player.eva += 10; player.dex += 5; player.range = "melee"; }
+        if(c === "Paladino") { player.def += 12; player.str += 3; player.vit += 5; player.range = "melee"; }
+        if(c === "Druida") { player.int += 5; player.def += 5; player.vit += 5; player.range = "magic"; }
+
+        const initialStats = calcStats();
+        player.hp = initialStats.maxHp;
+
+        initGameEngine();
+    }
+
+    function initGameEngine() {
+        document.getElementById('screen-setup').style.display = 'none';
+        document.getElementById('game-main').style.display = 'flex';
+        document.getElementById('p-class-ui').innerText = player.class;
+        document.getElementById('game-arena').style.backgroundImage = `url('${assets.backgroundLandscape}')`;
+        
+        updateVisual();
+        spawnMonster();
+        
+        game.lastAttackTime = performance.now();
+        saveGame();
+        
+        if (!game.isEngineRunning) {
+            game.isEngineRunning = true;
+            engine();
+        }
+    }
+
+    function spawnMonster() {
+        const isBoss = (game.kills >= 10);
+        
+        let baseHp, baseAtk, baseDef;
+
+        if (game.stage === 1) {
+            baseHp = isBoss ? 172.8 : 46.08;  
+            baseAtk = isBoss ? 7.68 : 3.84;   
+            baseDef = 0;                
+        } else {
+            // CORREÇÃO: O poder dos monstros agora depende APENAS do progresso da fase (game.stage)
+            // O nível do jogador (player.lvl) foi completamente removido do cálculo!
+            const stageScale = 1.0 + (game.stage * 0.15);  
+            
+            baseHp = ((70 + (game.stage * 45)) * (isBoss ? 4.5 : 1) * stageScale) * 0.5; 
+            baseAtk = ((8 + (game.stage * 4)) * (isBoss ? 1.4 : 1) * stageScale) * 0.5;
+            baseDef = (3 + (game.stage * 2)) * stageScale * 0.5;
+        }
+
+        game.monster = {
+            isBoss: isBoss,
+            maxHp: Math.max(5, Math.floor(baseHp)),
+            hp: Math.max(5, Math.floor(baseHp)),
+            atk: Math.max(1, Math.floor(baseAtk)),
+            def: Math.max(0, Math.floor(baseDef))
+        };
+        
+        const mEl = document.getElementById('monster');
+        const mBody = document.getElementById('m-body-color');
+        
+        if (mEl) {
+            if (isBoss) {
+                mEl.style.backgroundImage = `url('${assets.bossMonster}')`;
+                mEl.style.width = '100px';
+                mEl.style.height = '100px';
             } else {
-                container.classList.remove('opacity-40', 'pointer-events-none');
-                returnInput.required = true;
+                const randomNormalImg = assets.normalMonsters[Math.floor(Math.random() * assets.normalMonsters.length)];
+                mEl.style.backgroundImage = `url('${randomNormalImg}')`;
+                mEl.style.width = '75px';
+                mEl.style.height = '75px';
             }
         }
+        if (mBody) mBody.style.display = 'none';
+        
+        updateUI();
+    }
 
-        function switchTab(tab) {
-            currentTab = tab;
-            const flightTab = document.getElementById('tab-flights');
-            const busTab = document.getElementById('tab-buses');
-            const originInput = document.getElementById('origin');
-            const destInput = document.getElementById('destination');
+    function engine() {
+        if (!game.isEngineRunning) return;
+        const currentTime = performance.now();
+        const stats = calcStats();
+        let attackCooldown = 1500 - (stats.agi * 8) - (stats.dex * 2);
 
-            if (tab === 'flights') {
-                flightTab.className = "flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition tab-active";
-                busTab.className = "flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition text-slate-400 hover:text-slate-600";
-                
-                if(originInput.value === "Ribeirão Preto, SP") originInput.value = "Ribeirão Preto, RAO";
-                if(destInput.value === "Salvador, BA") destInput.value = "Salvador, SSA";
+        if (attackCooldown < 200) attackCooldown = 200; 
+
+        if (!game.isAttacking && game.monster && game.monster.hp > 0 && (currentTime - game.lastAttackTime >= attackCooldown)) {
+            combatCycle(stats);
+            game.lastAttackTime = currentTime;
+        }
+        requestAnimationFrame(engine);
+    }
+
+    function combatCycle(stats) {
+        if (!game.monster || game.monster.hp <= 0) return;
+        game.isAttacking = true;
+        const pEl = document.getElementById('player');
+        const arm = document.getElementById('main-arm');
+
+        game.attackCounter++;
+
+        if(player.range === "melee") {
+            const containerWidth = document.getElementById('game-arena').clientWidth;
+            if (pEl) pEl.style.left = (containerWidth - 120) + "px";
+            setTimeout(() => { 
+                if(player.class !== 'Guerreiro' && arm) arm.style.transform = "rotate(-90deg)";
+                applyDamage(stats); 
+            }, 120);
+        } else {
+            if(player.class !== 'Guerreiro' && arm) arm.style.transform = "rotate(-45deg)";
+            createProjectile(player.range, stats);
+        }
+
+        setTimeout(() => {
+            if (pEl) pEl.style.left = "30px";
+            if(player.class !== 'Guerreiro' && arm) arm.style.transform = "rotate(0deg)";
+            
+            if(game.monster && game.monster.hp > 0) {
+                setTimeout(() => {
+                    if (!game.monster || game.monster.hp <= 0) { game.isAttacking = false; return; }
+                    let monsterAccuracyBonus = game.monster.isBoss ? 60 : 35;
+                    let hitChance = Math.max(25, (100 - stats.eva) + monsterAccuracyBonus);
+
+                    if(Math.random() * 100 <= hitChance) {
+                        let mDmg = Math.max(1, game.monster.atk - (stats.def * 0.35));
+                        
+                        if(stats.bonusShield > 0) {
+                            let reduction = mDmg * (stats.bonusShield / 100);
+                            mDmg = Math.max(1, mDmg - reduction);
+                        }
+
+                        player.hp -= mDmg;
+                        showDmg(Math.floor(mDmg), 'player');
+                        const mainContainer = document.getElementById('game-main');
+                        if (mainContainer) {
+                            mainContainer.classList.add('shake');
+                            setTimeout(()=>mainContainer.classList.remove('shake'), 150);
+                        }
+
+                        if(stats.bonusReflect > 0 && game.monster && game.monster.hp > 0) {
+                            let reflectedDmg = Math.floor(mDmg * (stats.bonusReflect / 100));
+                            if(reflectedDmg > 0) {
+                                game.monster.hp = Math.max(0, game.monster.hp - reflectedDmg);
+                                showDmg(reflectedDmg, 'monster', true);
+                            }
+                        }
+                    } else {
+                        showDmg("MISS", 'player', true);
+                    }
+                    checkGameState(stats);
+                }, 150);
             } else {
-                busTab.className = "flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition tab-active";
-                flightTab.className = "flex-1 py-4 text-center font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition text-slate-400 hover:text-slate-600";
-                
-                if(originInput.value.includes("RAO")) originInput.value = "Ribeirão Preto, SP";
-                if(destInput.value.includes("SSA")) destInput.value = "Salvador, BA";
+                checkGameState(stats);
             }
+            
+            game.isAttacking = false;
+        }, 300);
+    }
 
-            if (!document.getElementById('results').classList.contains('hidden')) {
-                executeSearch();
+    function createProjectile(type, stats) {
+        const arena = document.getElementById('game-arena');
+        if (!arena) return;
+        const proj = document.createElement('div');
+        proj.className = 'projectile';
+        proj.style.left = "90px";
+        proj.style.bottom = "20%";
+        if(type === 'magic') proj.style.background = "linear-gradient(90deg, #fff, #b388ff)";
+        arena.appendChild(proj);
+
+        let pos = 90;
+        const containerWidth = arena.clientWidth;
+        let id = setInterval(() => {
+            pos += 16;
+            proj.style.left = pos + "px";
+            if(pos >= containerWidth - 100) {
+                clearInterval(id);
+                proj.remove();
+                applyDamage(stats);
             }
+        }, 16);
+    }
+
+    const itemNamingData = {
+        prefixes: {
+            comum: ['Gasto', 'Treino', 'Ferrugem', 'Recruta', 'Padrão'],
+            uncommon: ['Forjado', 'Aço Frio', 'Caçador', 'Guardião', 'Vanguardista'],
+            rare: ['Místico', 'Obsidiana', 'Tempestade', 'Rúnico', 'Ancião'],
+            'super-rare': ['Celestial', 'Vortex', 'Soberano', 'Abissal', 'Do Caos'],
+            diamante: ['Eterno', 'Cosmo', 'Supernova', 'Divino', 'Infinito']
+        },
+        slots: {
+            weapon: ['Gume', 'Lâmina', 'Arco', 'Cajado', 'Montante'],
+            head: ['Visor', 'Yoroi', 'Coroa', 'Diadema', 'Capacete'],
+            torso: ['Manto', 'Peitoral', 'Placa Pesada', 'Cota Runada', 'Couraça'],
+            feet: ['Grevas', 'Botas', 'Passos Rápidos', 'Sapatilhas', 'Coturnos'],
+            ring: ['Anel', 'Selo Mágico', 'Aliança', 'Signo', 'Eternidade'],
+            shield: ['Brocquel', 'Escudo Real', 'Égide', 'Baluarte', 'Grande Muralha'],
+            wings: ['Asas Celestiales', 'Plumas Flamejantes', 'Planador Corrompido', 'Asas Arcânicas', 'Mantofólio']
+        }
+    };
+
+    function generateCoolItemName(slotKey, rarity) {
+        const prefList = itemNamingData.prefixes[rarity] || itemNamingData.prefixes.comum;
+        const baseList = itemNamingData.slots[slotKey] || ['Item'];
+        const p = prefList[Math.floor(Math.random() * prefList.length)];
+        const b = baseList[Math.floor(Math.random() * baseList.length)];
+        return `${p} ${b}`;
+    }
+
+    function createLoot() {
+        const slotKeys = ['weapon', 'head', 'torso', 'feet', 'ring', 'shield', 'wings'];
+        const allStats = ['str', 'def', 'luk', 'agi', 'eva', 'int', 'dex', 'vit'];
+        
+        const roll = Math.random() * 100; 
+        let rarity = 'comum';
+        let attributesCount = 3;
+
+        if (roll <= 0.009) {       
+            rarity = 'diamante';       
+            attributesCount = 8;
+        } else if (roll <= 0.099) {  
+            rarity = 'super-rare';     
+            attributesCount = 6;
+        } else if (roll <= 0.999) {   
+            rarity = 'rare';           
+            attributesCount = 5;
+        } else if (roll <= 35.0) {
+            rarity = 'uncommon';
+            attributesCount = 4;
         }
 
-        function swapDestinations() {
-            const origin = document.getElementById('origin');
-            const destination = document.getElementById('destination');
-            const temp = origin.value;
-            origin.value = destination.value;
-            destination.value = temp;
+        let selectedStats = [];
+        let statsPool = [...allStats];
+        
+        for(let n = 0; n < attributesCount; n++) {
+            if(statsPool.length === 0) statsPool = [...allStats];
+            let index = Math.floor(Math.random() * statsPool.length);
+            
+            let statValBase = game.stage * (rarity === 'diamante' ? 3.5 : rarity === 'super-rare' ? 2.5 : rarity === 'rare' ? 1.6 : rarity === 'uncommon' ? 1.0 : 0.6);
+            let finalVal = Math.max(1, Math.floor(statValBase + Math.random() * 2));
+
+            selectedStats.push({ name: statsPool[index], val: finalVal });
+            statsPool.splice(index, 1);
         }
 
-        function handleSearch(event) {
-            event.preventDefault();
-            executeSearch();
+        let pctShield = 0, pctLifesteal = 0, pctCritDmg = 0, pctReflect = 0;
+        const possibleBonusTypes = ['shield', 'lifesteal', 'critDmg', 'reflect'];
+
+        if (rarity === 'diamante') {
+            let selectedBonusTypes = [];
+            while (selectedBonusTypes.length < 2) {
+                let randomType = possibleBonusTypes[Math.floor(Math.random() * possibleBonusTypes.length)];
+                if (!selectedBonusTypes.includes(randomType)) selectedBonusTypes.push(randomType);
+            }
+            let valLow = Math.floor(Math.random() * (10 - 2 + 1)) + 2;   
+            let valHigh = Math.floor(Math.random() * (20 - 15 + 1)) + 15; 
+            selectedBonusTypes.forEach((type, idx) => {
+                let finalVal = (idx === 0) ? valLow : valHigh;
+                if (type === 'shield') pctShield = finalVal;
+                if (type === 'lifesteal') pctLifesteal = finalVal;
+                if (type === 'critDmg') pctCritDmg = finalVal;
+                if (type === 'reflect') pctReflect = finalVal;
+            });
+        } else {
+            let chosenBonus = possibleBonusTypes[Math.floor(Math.random() * possibleBonusTypes.length)];
+            let bMin = 2, bMax = 5;
+            if (rarity === 'uncommon') { bMin = 5; bMax = 8; }
+            else if (rarity === 'rare') { bMin = 8; bMax = 12; }
+            else if (rarity === 'super-rare') { bMin = 12; bMax = 15; }
+            let generatedVal = Math.floor(Math.random() * (bMax - bMin + 1)) + bMin;
+            if (chosenBonus === 'shield') pctShield = generatedVal;
+            if (chosenBonus === 'lifesteal') pctLifesteal = generatedVal;
+            if (chosenBonus === 'critDmg') pctCritDmg = generatedVal;
+            if (chosenBonus === 'reflect') pctReflect = generatedVal;
         }
 
-        function executeSearch() {
-            const origin = document.getElementById('origin').value;
-            const destination = document.getElementById('destination').value;
-            const travelDate = document.getElementById('travel-date').value;
-            const returnDate = document.getElementById('return-date').value;
-            const isRoundTrip = document.getElementById('trip-type').value === 'roundtrip';
+        const pickedSlot = slotKeys[Math.floor(Math.random() * slotKeys.length)];
+        const customName = generateCoolItemName(pickedSlot, rarity);
 
-            document.getElementById('initial-state').classList.add('hidden');
-            document.getElementById('results').classList.add('hidden');
-            document.getElementById('loading').classList.remove('hidden');
-
-            setTimeout(() => {
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('results').classList.remove('hidden');
-                renderResults(origin, destination, travelDate, returnDate, isRoundTrip);
-            }, 1200);
-        }
-
-        // Extrator de código IATA inteligente e tolerante a erros
-        function getAirportCodeOrName(input) {
-            const cleaned = input.toUpperCase();
-            const match = cleaned.match(/\b([A-Z]{3})\b/);
-            if (match) return match[1];
-
-            if (cleaned.includes("RIBEIRAO") || cleaned.includes("RIBEIRÃO")) return "RAO";
-            if (cleaned.includes("SALVADOR")) return "SSA";
-            if (cleaned.includes("SÃO PAULO") || cleaned.includes("SAO PAULO") || cleaned.includes("CONGONHAS")) return "CGH";
-            if (cleaned.includes("GUARULHOS")) return "GRU";
-            if (cleaned.includes("RIO DE JANEIRO") || cleaned.includes("GALEAO")) return "GIG";
-            if (cleaned.includes("SANTOS DUMONT")) return "SDU";
-            if (cleaned.includes("BRASILIA") || cleaned.includes("BRASÍLIA")) return "BSB";
-
-            return cleaned.replace(/[^A-Z]/g, '').substring(0, 3);
-        }
-
-        // Coordenadas para cálculo de tarifas realistas baseado em distâncias reais
-        const AIRPORT_COORDINATES = {
-            "RAO": { lat: -21.1364, lon: -47.7767 },
-            "SSA": { lat: -12.9086, lon: -38.3225 },
-            "CGH": { lat: -23.6261, lon: -46.6564 },
-            "GRU": { lat: -23.4356, lon: -46.4731 },
-            "GIG": { lat: -22.8100, lon: -43.2506 },
-            "SDU": { lat: -22.9102, lon: -43.1626 },
-            "BSB": { lat: -15.8697, lon: -47.9172 }
+        const item = {
+            id: Date.now() + Math.random(),
+            slot: pickedSlot,
+            name: customName,
+            rarity: rarity,
+            stats: selectedStats,
+            bonusShield: pctShield,
+            bonusLifesteal: pctLifesteal,
+            bonusCritDmg: pctCritDmg,
+            bonusReflect: pctReflect,
+            icon: slotMapping[pickedSlot].icon
         };
 
-        function calculateDistance(codeA, codeB) {
-            const pA = AIRPORT_COORDINATES[codeA.toUpperCase()] || { lat: -21.1, lon: -47.7 };
-            const pB = AIRPORT_COORDINATES[codeB.toUpperCase()] || { lat: -12.9, lon: -38.3 };
-            const dLat = pB.lat - pA.lat;
-            const dLon = pB.lon - pA.lon;
-            return Math.sqrt(dLat * dLat + dLon * dLon) * 111; 
+        if(player.inventory.length < 24) {
+            player.inventory.unshift(item);
+        } else {
+            player.inventory.pop();
+            player.inventory.unshift(item);
         }
 
-        function getRealisticBasePrice(origin, dest, isFlight) {
-            const dist = calculateDistance(origin, dest);
-            if (isFlight) {
-                const baseTax = 85; 
-                const costPerKm = 0.98; 
-                let calculated = baseTax + (dist * costPerKm);
-                return calculated < 340 ? 340 : calculated;
-            } else {
-                let calculated = dist * 0.29;
-                return calculated < 65 ? 65 : calculated;
+        const currentEquipped = player.equipped[item.slot];
+        let totalNewVal = item.stats.reduce((acc, s) => acc + s.val, 0);
+        let totalCurrentVal = currentEquipped ? currentEquipped.stats.reduce((acc, s) => acc + s.val, 0) : -1;
+
+        if(!currentEquipped || totalNewVal > totalCurrentVal) {
+            const oldStats = calcStats();
+            const hpPercent = player.hp / oldStats.maxHp;
+            
+            player.inventory.splice(player.inventory.indexOf(item), 1);
+            
+            if (currentEquipped && player.inventory.length < 24) {
+                player.inventory.push(currentEquipped);
+            }
+            
+            player.equipped[item.slot] = item;
+            const newStats = calcStats();
+            player.hp = Math.round(hpPercent * newStats.maxHp);
+        }
+        
+        saveGame();
+        updateUI();
+    }
+
+    function gainRandomStatsByClass() {
+        const classPools = {
+            'Guerreiro': ['str', 'str', 'def', 'vit'],
+            'Arqueiro': ['agi', 'agi', 'luk', 'dex'],
+            'Mago': ['int', 'int', 'dex', 'def'],
+            'Assassino': ['agi', 'eva', 'dex', 'luk'],
+            'Paladino': ['def', 'def', 'vit', 'str'],
+            'Druida': ['int', 'def', 'vit', 'str']
+        };
+
+        const pool = classPools[player.class] || ['str', 'def', 'luk', 'agi', 'eva', 'int', 'dex', 'vit'];
+        
+        for (let i = 0; i < 2; i++) {
+            const randomStat = pool[Math.floor(Math.random() * pool.length)];
+            player[randomStat] += 1;
+            setTimeout(() => { showStatGainPopup(`+1 ${randomStat.toUpperCase()}`); }, i * 250);
+        }
+    }
+
+    function showStatGainPopup(text) {
+        const arena = document.getElementById('game-arena');
+        if (!arena) return;
+        const d = document.createElement('div');
+        d.className = 'dmg-popup';
+        d.innerText = text;
+        d.style.color = '#2ed573';
+        d.style.fontSize = '20px';
+        d.style.left = '40px';
+        d.style.bottom = '40%';
+        arena.appendChild(d);
+        setTimeout(() => d.remove(), 800);
+    }
+
+    function applyDamage(stats) {
+        if (!game.monster || game.monster.hp <= 0) return;
+        
+        let crit = Math.random() * 100 < (stats.luk + (stats.dex * 0.5));
+        let baseDmg = Math.max(5, (stats.str + stats.int) - (game.monster.def * 0.4));
+        
+        if(crit) {
+            let multiplier = 1.5 + (stats.bonusCritDmg / 100);
+            baseDmg *= multiplier;
+        }
+
+        baseDmg = Math.floor(baseDmg);
+        game.monster.hp -= baseDmg;
+        showDmg(baseDmg, 'monster', crit);
+
+        if(stats.bonusLifesteal > 0) {
+            let healLoot = Math.floor(baseDmg * (stats.bonusLifesteal / 100));
+            if(healLoot > 0) {
+                player.hp = Math.min(stats.maxHp, player.hp + healLoot);
+                showHealPopup(`+${healLoot} ❤️`);
             }
         }
 
-        function renderResults(origin, destination, travelDate, returnDate, isRoundTrip) {
-            const container = document.getElementById('tickets-container');
-            container.innerHTML = '';
+        updateUI();
+    }
 
-            const isFlight = currentTab === 'flights';
-            const cleanOrigin = origin.split(',')[0].trim();
-            const cleanDest = destination.split(',')[0].trim();
-            const originCode = getAirportCodeOrName(origin).toUpperCase();
-            const destCode = getAirportCodeOrName(destination).toUpperCase();
+    function checkGameState(stats) {
+        if (!game.monster) return;
+        if(player.hp <= 0) {
+            game.stage = Math.max(1, game.stage - 1);
+            game.kills = 0;
+            player.hp = stats.maxHp;
+            saveGame();
+            spawnMonster();
+        } else if(game.monster.hp <= 0) {
+            if(game.monster.isBoss) {
+                let healAmount = Math.floor(stats.maxHp * 0.15);
+                player.hp = Math.min(stats.maxHp, player.hp + healAmount);
+                showHealPopup(`+${healAmount} HP`);
 
-            const formattedTravelDate = travelDate.split('-').reverse().join('/');
-            const formattedReturnDate = returnDate.split('-').reverse().join('/');
-
-            const [yOut, mOut, dOut] = travelDate.split('-');
-            const [yRet, mRet, dRet] = returnDate.split('-');
-
-            const basePrice = getRealisticBasePrice(originCode, destCode, isFlight);
-            const priceMultiplier = isRoundTrip ? 1.82 : 1.0; 
-
-            let tickets = [];
-
-            if (isFlight) {
-                // Formatação específica de datas para as URLs dinâmicas das APIs
-                const skyDateOut = `${yOut.substring(2)}${mOut}${dOut}`;
-                const skyDateReturn = isRoundTrip ? `${yRet.substring(2)}${mRet}${dRet}` : '';
+                game.stage++;
+                game.kills = 0;
+                createLoot();
                 
-                // 1. URLs DINÂMICAS PARA METABUSCADORES GLOBAIS
-                const skyscannerUrl = isRoundTrip
-                    ? `https://www.skyscanner.com.br/transport/flights/${originCode.toLowerCase()}/${destCode.toLowerCase()}/${skyDateOut}/${skyDateReturn}/?adultsv2=1&cabinclass=economy&ref=home`
-                    : `https://www.skyscanner.com.br/transport/flights/${originCode.toLowerCase()}/${destCode.toLowerCase()}/${skyDateOut}/?adultsv2=1&cabinclass=economy&ref=home`;
-
-                const googleFlightsUrl = isRoundTrip
-                    ? `https://www.google.com/travel/flights?q=Voos%20de%20${originCode}%20para%20${destCode}%20em%20${travelDate}%20e%20retorno%20em%20${returnDate}`
-                    : `https://www.google.com/travel/flights?q=Voos%20de%20${originCode}%20para%20${destCode}%20em%20${travelDate}`;
-
-                const kayakUrl = isRoundTrip 
-                    ? `https://www.kayak.com.br/flights/${originCode}-${destCode}/${travelDate}/${returnDate}?sort=price_a`
-                    : `https://www.kayak.com.br/flights/${originCode}-${destCode}/${travelDate}?sort=price_a`;
-
-                const momondoUrl = isRoundTrip 
-                    ? `https://www.momondo.com.br/flight-search/${originCode}-${destCode}/${travelDate}/${returnDate}?sort=price_a`
-                    : `https://www.momondo.com.br/flight-search/${originCode}-${destCode}/${travelDate}?sort=price_a`;
-
-                const trabberUrl = isRoundTrip
-                    ? `https://www.trabber.com.br/search?from_city=${originCode}&to_city=${destCode}&from_date=${formattedTravelDate}&to_date=${formattedReturnDate}`
-                    : `https://www.trabber.com.br/search?from_city=${originCode}&to_city=${destCode}&from_date=${formattedTravelDate}`;
-
-                // 2. URLs DINÂMICAS PARA PARCEIROS DE AGÊNCIAS (OTAs)
-                const decolarUrl = isRoundTrip
-                    ? `https://www.decolar.com/passagens-aereas/buscar/roundtrip/${originCode}/${destCode}/${travelDate}/${returnDate}/1/0/0/CLASSIC/BR`
-                    : `https://www.decolar.com/passagens-aereas/buscar/oneway/${originCode}/${destCode}/${travelDate}/1/0/0/CLASSIC/BR`;
-
-                const viajanetUrl = isRoundTrip
-                    ? `https://www.viajanet.com.br/busca/passagens/voos#/${originCode}/${destCode}/RT/${travelDate}/${returnDate}/1/0/0/Y/BR`
-                    : `https://www.viajanet.com.br/busca/passagens/voos#/${originCode}/${destCode}/OW/${travelDate}/1/0/0/Y/BR`;
-
-                const zupperUrl = isRoundTrip
-                    ? `https://www.zupper.com.br/busca-de-voos?from=${originCode}&to=${destCode}&departureDate=${travelDate}&returnDate=${returnDate}&adults=1`
-                    : `https://www.zupper.com.br/busca-de-voos?from=${originCode}&to=${destCode}&departureDate=${travelDate}&adults=1`;
-
-                // 3. URLs DINÂMICAS PARA SISTEMAS DE EMISSÃO COM MILHAS E PROMOÇÕES
-                const maxmilhasUrl = isRoundTrip
-                    ? `https://www.maxmilhas.com.br/busca-passagens-aereas/RT/${originCode}/${destCode}/${travelDate}/${returnDate}/1/0/0/ECONOMY`
-                    : `https://www.maxmilhas.com.br/busca-passagens-aereas/OW/${originCode}/${destCode}/${travelDate}/1/0/0/ECONOMY`;
-
-                const vaidepromoUrl = isRoundTrip
-                    ? `https://www.vaidepromo.com.br/passagens-aereas/busca?origem=${originCode}&destino=${destCode}&data_ida=${travelDate}&data_volta=${returnDate}`
-                    : `https://www.vaidepromo.com.br/passagens-aereas/busca?origem=${originCode}&destino=${destCode}&data_ida=${travelDate}`;
-
-                // Popula a lista unificada com os 10 motores de busca ativados
-                tickets = [
-                    { company: "MaxMilhas", category: "Emissão em Milhas", logo: "fa-solid fa-ticket-simple text-orange-600", departure: "Tarifa com Milhas", arrival: "Desconto Balcão", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 0.93 * priceMultiplier), url: maxmilhasUrl },
-                    { company: "Skyscanner", category: "Metabuscador Global", logo: "fa-solid fa-plane text-cyan-400", departure: "Varredura Pública", arrival: "Melhor Tarifa Líquida", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 1.0 * priceMultiplier), url: skyscannerUrl },
-                    { company: "Google Flights", category: "Metabuscador Direto", logo: "fa-solid fa-plane text-emerald-600", departure: "Preço de Consolidadora", arrival: "Conexão Oficial", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 1.01 * priceMultiplier), url: googleFlightsUrl },
-                    { company: "Trabber", category: "Metabuscador Alternativo", logo: "fa-solid fa-plane text-neutral-600", departure: "Filtro Econômico", arrival: "Tarifa Standard", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 1.02 * priceMultiplier), url: trabberUrl },
-                    { company: "Kayak", category: "Metabuscador Integrado", logo: "fa-solid fa-plane text-orange-500", departure: "Comparador Veloz", arrival: "Tarifa Econômica", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 1.03 * priceMultiplier), url: kayakUrl },
-                    { company: "Momondo", category: "Metabuscador Inteligente", logo: "fa-solid fa-wand-magic-sparkles text-purple-600", departure: "Análise Algorítmica", arrival: "Voo Otimizado", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 1.04 * priceMultiplier), url: momondoUrl },
-                    { company: "Vai de Promo", category: "Desconto & Cupons", logo: "fa-solid fa-percent text-red-500", departure: "Preço de Distribuidora", arrival: "Tarifa Promocional", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 1.05 * priceMultiplier), url: vaidepromoUrl },
-                    { company: "ViajaNet", category: "Agência Parceira", logo: "fa-solid fa-tag text-teal-600", departure: "Emissão Garantida", arrival: "Suporte Unificado", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 1.06 * priceMultiplier), url: viajanetUrl },
-                    { company: "Decolar.com", category: "Agência Oficial", logo: "fa-solid fa-briefcase text-blue-800", departure: "Tarifa de Operadora", arrival: "Venda Direta", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 1.07 * priceMultiplier), url: decolarUrl },
-                    { company: "Zupper", category: "Agência Credenciada", logo: "fa-solid fa-plane text-yellow-600", departure: "Reserva Imediata", arrival: "Taxa Reduzida", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 1.08 * priceMultiplier), url: zupperUrl }
-                ];
+                player.lvl++;
+                gainRandomStatsByClass();
+                
+                const currentStats = calcStats();
+                player.hp = currentStats.maxHp;
             } else {
-                // MÓDULO RODOVIÁRIO
-                const busOriginSearch = cleanOrigin.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
-                const busDestSearch = cleanDest.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
-
-                const clickbusUrl = isRoundTrip
-                    ? `https://www.clickbus.com.br/onibus/${busOriginSearch}/${busDestSearch}?departureDate=${travelDate}&returnDate=${returnDate}`
-                    : `https://www.clickbus.com.br/onibus/${busOriginSearch}/${busDestSearch}?departureDate=${travelDate}`;
-
-                const buserUrl = isRoundTrip
-                    ? `https://www.buser.com.br/onibus/${busOriginSearch}/${busDestSearch}?data=${travelDate}&retorno=${returnDate}`
-                    : `https://www.buser.com.br/onibus/${busOriginSearch}/${busDestSearch}?data=${travelDate}`;
-
-                tickets = [
-                    { company: "Buser", category: "Fretamento Coletivo", logo: "fa-solid fa-bus text-pink-600", departure: "Embarque Alternativo", arrival: "Desembarque Central", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 0.76 * priceMultiplier), url: buserUrl },
-                    { company: "ClickBus", category: "Rodoviário Regular", logo: "fa-solid fa-bus text-blue-950", departure: "Terminal Rodoviário", arrival: "Terminal Destino", duration: isRoundTrip ? `Ida: ${formattedTravelDate} <br class="sm:hidden"> Volta: ${formattedReturnDate}` : `Ida: ${formattedTravelDate}`, type: isRoundTrip ? "Ida e Volta" : "Só Ida", price: Math.round(basePrice * 1.02 * priceMultiplier), url: clickbusUrl }
-                ];
+                let healAmount = Math.floor(stats.maxHp * 0.06);
+                player.hp = Math.min(stats.maxHp, player.hp + healAmount);
+                showHealPopup(`+${healAmount} HP`);
+                game.kills++;
             }
+            saveGame();
+            spawnMonster();
+        }
+        updateUI();
+    }
 
-            // Ordenação automática pelo menor valor estimado
-            tickets.sort((a, b) => a.price - b.price);
+    function showHealPopup(text) {
+        const arena = document.getElementById('game-arena');
+        if (!arena) return;
+        const d = document.createElement('div');
+        d.className = 'dmg-popup';
+        d.innerText = text;
+        d.style.color = '#1dd1a1';
+        d.style.fontSize = '22px';
+        d.style.left = '80px';
+        d.style.bottom = '30%';
+        arena.appendChild(d);
+        setTimeout(() => d.remove(), 650);
+    }
 
-            tickets.forEach((ticket) => {
-                const card = document.createElement('div');
-                card.className = "bg-white rounded-3xl border border-slate-100 hover:border-blue-200 hover:shadow-lg transition-all duration-300 p-5 sm:p-6 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6";
-                
-                card.innerHTML = `
-                    <div class="flex items-center gap-4 w-full md:w-1/4">
-                        <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-xl border border-slate-100 shrink-0">
-                            <i class="${ticket.logo}"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-slate-900 text-sm sm:text-base leading-snug">${ticket.company}</h4>
-                            <span class="text-[11px] text-slate-400 block font-semibold">${ticket.category}</span>
-                        </div>
-                    </div>
+    function calcStats() {
+        let s = { 
+            str: player.str, def: player.def, luk: player.luk, 
+            agi: player.agi, eva: player.eva, int: player.int,
+            dex: player.dex, vit: player.vit,
+            bonusShield: 0, bonusLifesteal: 0, bonusCritDmg: 0, bonusReflect: 0 
+        };
+        
+        if (player.equipped) {
+            Object.values(player.equipped).forEach(item => {
+                if(item) {
+                    if(item.stats) {
+                        item.stats.forEach(stat => {
+                            if(s[stat.name] !== undefined) s[stat.name] += stat.val;
+                        });
+                    }
+                    if(item.bonusShield) s.bonusShield += item.bonusShield;
+                    if(item.bonusLifesteal) s.bonusLifesteal += item.bonusLifesteal;
+                    if(item.bonusCritDmg) s.bonusCritDmg += item.bonusCritDmg;
+                    if(item.bonusReflect) s.bonusReflect += item.bonusReflect;
+                }
+            });
+        }
+        
+        s.maxHp = Math.floor(100 + (player.lvl * 15) + (s.def * 4) + (s.vit * 8));
+        return s;
+    }
 
-                    <div class="flex items-center justify-between gap-2 sm:gap-6 w-full md:w-2/4 py-2 md:py-0 border-y md:border-y-0 border-slate-100/80">
-                        <div class="text-left w-1/3 md:w-auto">
-                            <span class="block text-xs sm:text-sm font-bold text-slate-900 truncate">${ticket.departure}</span>
-                            <span class="text-[11px] text-slate-400 uppercase font-semibold block">${cleanOrigin} (${originCode})</span>
-                        </div>
-                        
-                        <div class="flex-grow flex flex-col items-center px-1 min-w-[115px]">
-                            <span class="text-[10px] font-bold text-slate-500 tracking-wide text-center leading-relaxed">
-                                ${ticket.duration}
-                            </span>
-                            <div class="w-full max-w-[80px] sm:max-w-[120px] h-[2px] bg-slate-200 relative my-1.5">
-                                <div class="absolute -top-[5px] left-1/2 transform -translate-x-1/2 bg-white px-1.5">
-                                    <i class="${isFlight ? 'fa-solid fa-plane' : 'fa-solid fa-bus'} text-[10px] text-slate-400"></i>
-                                </div>
-                            </div>
-                            <span class="text-[10px] text-emerald-600 font-extrabold uppercase tracking-wider">${ticket.type}</span>
-                        </div>
+    function showDmg(val, target, special) {
+        const arena = document.getElementById('game-arena');
+        if (!arena) return;
+        const d = document.createElement('div');
+        d.className = 'dmg-popup';
+        d.innerText = val;
+        d.style.color = special ? 'var(--diamante)' : (target === 'player' ? '#ff4757' : '#ffffff');
+        
+        const containerWidth = arena.clientWidth;
+        d.style.left = (target === 'player' ? '70px' : (containerWidth - 110) + 'px');
+        d.style.bottom = '25%';
+        arena.appendChild(d);
+        setTimeout(() => d.remove(), 600);
+    }
 
-                        <div class="text-right w-1/3 md:w-auto">
-                            <span class="block text-xs sm:text-sm font-bold text-slate-900 truncate">${ticket.arrival}</span>
-                            <span class="text-[11px] text-slate-400 uppercase font-semibold block">${cleanDest} (${destCode})</span>
-                        </div>
-                    </div>
+    function openBagModal() {
+        document.getElementById('bag-modal').style.display = 'flex';
+        closeDetailsPop();
+        renderBagUI();
+    }
 
-                    <div class="flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 w-full md:w-1/4 md:border-l border-slate-100 md:pl-6">
-                        <div class="text-left md:text-center">
-                            <span class="text-[10px] text-slate-400 block">${isRoundTrip ? 'Estimado Ida/Volta' : 'Estimado por trecho'}</span>
-                            <span class="text-xl sm:text-2xl font-black text-slate-950">R$ ${ticket.price}*</span>
-                        </div>
-                        <a href="${ticket.url}" target="_blank" rel="noopener noreferrer" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs sm:text-sm font-extrabold rounded-xl transition duration-150 flex items-center gap-1.5 shadow-md shadow-blue-500/10">
-                            Pesquisar API <i class="fa-solid fa-chevron-right text-[9px]"></i>
-                        </a>
+    function closeBagModal() { document.getElementById('bag-modal').style.display = 'none'; }
+
+    function renderBagUI() {
+        const eqContainer = document.getElementById('eq-slots-ui');
+        if (!eqContainer) return;
+        eqContainer.innerHTML = '';
+        
+        const slotsOrder = ['head', 'weapon', 'torso', 'shield', 'feet', 'ring', 'wings'];
+        slotsOrder.forEach(slotKey => {
+            const currentItem = player.equipped[slotKey];
+            const meta = slotMapping[slotKey];
+            
+            let boxClass = 'eq-slot-box';
+            let contentHtml = `
+                <div class="eq-slot-icon">${meta.icon}</div>
+                <div class="eq-slot-info">
+                    <div class="eq-slot-name" style="color:#747d8c;">Vazio</div>
+                    <div class="eq-slot-type">${meta.label}</div>
+                </div>
+            `;
+            
+            if(currentItem) {
+                boxClass += ` filled-${currentItem.rarity}`;
+                let rarityColor = `var(--${currentItem.rarity})`;
+                contentHtml = `
+                    <div class="eq-slot-icon">${currentItem.icon}</div>
+                    <div class="eq-slot-info">
+                        <div class="eq-slot-name" style="color:${rarityColor};">${currentItem.name}</div>
+                        <div class="eq-slot-type">${meta.label} (${currentItem.rarity.toUpperCase()})</div>
                     </div>
                 `;
-                container.appendChild(card);
-            });
+            }
+            
+            const slotBox = document.createElement('div');
+            slotBox.className = boxClass;
+            slotBox.innerHTML = contentHtml;
+            slotBox.onclick = () => { if(currentItem) showItemDetails(currentItem, true); };
+            eqContainer.appendChild(slotBox);
+        });
 
-            document.getElementById('results-count').innerText = `${tickets.length} parceiros prontos para varredura`;
-            document.getElementById('results-title').innerText = `Cotação de ${cleanOrigin} (${originCode}) para ${cleanDest} (${destCode})`;
+        const backpackGrid = document.getElementById('backpack-grid-ui');
+        if (!backpackGrid) return;
+        backpackGrid.innerHTML = '';
+        
+        for(let idx = 0; idx < 24; idx++) {
+            const backpackBox = document.createElement('div');
+            backpackBox.className = 'grid-item-slot';
+            
+            if(player.inventory[idx]) {
+                const item = player.inventory[idx];
+                backpackBox.classList.add(item.rarity);
+                backpackBox.innerHTML = item.icon;
+                backpackBox.onclick = () => showItemDetails(item, false);
+            } else {
+                backpackBox.innerHTML = '';
+                backpackBox.style.opacity = '0.3';
+            }
+            backpackGrid.appendChild(backpackBox);
         }
-    </script>
+    }
+
+    function showItemDetails(item, isEquippedContext) {
+        selectedItemContext = item;
+        selectedItemIsEquipped = isEquippedContext;
+        
+        const detailsPop = document.getElementById('item-details');
+        const nameEl = document.getElementById('pop-item-name');
+        const rarityEl = document.getElementById('pop-item-rarity');
+        const iconEl = document.getElementById('pop-item-icon');
+        const statsEl = document.getElementById('pop-item-stats');
+        const actionBtn = document.getElementById('pop-action-btn');
+
+        if(nameEl) { nameEl.innerText = item.name; nameEl.style.color = `var(--${item.rarity})`; }
+        if(rarityEl) { rarityEl.innerText = `${item.rarity} | Slot: ${slotMapping[item.slot].label}`; rarityEl.style.color = `var(--${item.rarity})`; }
+        if(iconEl) iconEl.innerText = item.icon;
+
+        let statStr = '';
+        if(item.stats) {
+            item.stats.forEach(st => { statStr += `<div>+${st.val} ${st.name.toUpperCase()}</div>`; });
+        }
+        
+        if(item.bonusShield)    statStr += `<div style="color:#00ecec; font-weight:bold;">+${item.bonusShield}% PROTEÇÃO</div>`;
+        if(item.bonusLifesteal) statStr += `<div style="color:#ff4757; font-weight:bold;">+${item.bonusLifesteal}% ROUBO DE VIDA</div>`;
+        if(item.bonusCritDmg)   statStr += `<div style="color:#ffcc00; font-weight:bold;">+${item.bonusCritDmg}% DANO CRÍTICO</div>`;
+        if(item.bonusReflect)   statStr += `<div style="color:#a55eea; font-weight:bold;">+${item.bonusReflect}% REFLETIR GOLPE</div>`;
+
+        if(statsEl) statsEl.innerHTML = statStr;
+
+        if(actionBtn) {
+            if(isEquippedContext) {
+                actionBtn.innerText = 'DESEQUIPAR';
+                actionBtn.style.borderColor = '#ff4757';
+                actionBtn.style.color = '#ff4757';
+            } else {
+                actionBtn.innerText = 'EQUIPAR';
+                actionBtn.style.borderColor = '#ffcc00';
+                actionBtn.style.color = '#ffcc00';
+            }
+        }
+        if(detailsPop) detailsPop.style.display = 'flex';
+    }
+
+    function executeItemAction() {
+        if(!selectedItemContext) return;
+        
+        const item = selectedItemContext;
+        const oldStats = calcStats();
+        const hpPercent = player.hp / oldStats.maxHp;
+
+        if(selectedItemIsEquipped) {
+            if (player.inventory.length < 24) {
+                player.inventory.push(item);
+                player.equipped[item.slot] = null;
+            } else {
+                alert("Mochila cheia para desequipar!");
+                return;
+            }
+        } else {
+            const itemIndex = player.inventory.indexOf(item);
+            if (itemIndex > -1) {
+                player.inventory.splice(itemIndex, 1);
+            }
+            
+            const itemAntigo = player.equipped[item.slot];
+            player.equipped[item.slot] = item;
+            
+            if (itemAntigo) {
+                player.inventory.push(itemAntigo);
+            }
+        }
+
+        const newStats = calcStats();
+        player.hp = Math.round(hpPercent * newStats.maxHp);
+        if(player.hp <= 0) player.hp = 1;
+
+        closeDetailsPop();
+        saveGame();
+        renderBagUI();
+        updateUI();
+    }
+
+    function closeDetailsPop() {
+        const detailsPop = document.getElementById('item-details');
+        if(detailsPop) detailsPop.style.display = 'none';
+        selectedItemContext = null;
+    }
+
+    function updateUI() {
+        if (!game.monster) return;
+        const stats = calcStats();
+        
+        const pLvlEl = document.getElementById('p-lvl');
+        const stageInfoEl = document.getElementById('stage-info');
+        const killsInfoEl = document.getElementById('kills-info');
+        const pHpBarEl = document.getElementById('p-hp-bar');
+        const mHpBarEl = document.getElementById('m-hp-bar');
+        
+        if(pLvlEl) pLvlEl.innerText = player.lvl;
+        if(stageInfoEl) stageInfoEl.innerText = `FASE ${Math.floor(game.stage/5) + 1}-${(game.stage%5) || 5}`;
+        if(killsInfoEl) killsInfoEl.innerText = game.monster.isBoss ? "CHEFE!" : `MONSTROS: ${game.kills}/10`;
+        
+        if(pHpBarEl) pHpBarEl.style.width = Math.min(100, Math.max(0, (player.hp / stats.maxHp * 100))) + "%";
+        if(mHpBarEl) mHpBarEl.style.width = Math.min(100, Math.max(0, (game.monster.hp / game.monster.maxHp * 100))) + "%";
+
+        ['str','def','luk','agi','eva','int','dex','vit'].forEach(st => {
+            const el = document.getElementById('st-'+st);
+            if(el) el.innerText = stats[st];
+        });
+
+        const bagModal = document.getElementById('bag-modal');
+        if(bagModal && bagModal.style.display === 'flex') {
+            renderBagUI();
+        }
+    }
+
+    window.onload = function() {
+        const hasSave = loadGame();
+        if (hasSave) {
+            initGameEngine();
+        } else {
+            updateVisual();
+        }
+    };
+</script>
 </body>
 </html>
 
