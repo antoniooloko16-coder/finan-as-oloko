@@ -3608,23 +3608,33 @@
 
     function findMoneyMatches(text) {
         const cleanedText = sanitizeExtratoTextForMoney(text);
-        const regex = /(\d{1,3}(?:\.\d{3})*,\d{2})([CD]?)/gi;
+
+        // REGRA ESTRITA: valor bancário do extrato precisa terminar em C ou D.
+        // Não aceitamos valor sem sufixo para evitar que datas, documentos,
+        // números de conta ou outros números sejam interpretados como dinheiro.
+        const regex = /(\d{1,3}(?:\.\d{3})*,\d{2})\s*([CD])(?=\s|$|\||[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ])/gi;
         const matches = [];
         let match;
 
         while ((match = regex.exec(cleanedText)) !== null) {
-            const integerPart = match[1].replace(/\./g, "");
-            const amount = parseFloat(`${integerPart}.${match[1].slice(-2)}`);
-            const suffix = (match[2] || "").toUpperCase();
+            const valorTexto = match[1];
 
-            if (!Number.isFinite(amount) || amount <= 0) continue;
+            // Conversão bancária EXATA solicitada:
+            // 1.161,62 -> 1161.62
+            const valorFloat = parseFloat(valorTexto.replace(/\./g, '').replace(',', '.'));
+            const sufixo = match[2].toUpperCase();
+
+            if (!Number.isFinite(valorFloat) || valorFloat <= 0) continue;
 
             matches.push({
                 index: match.index,
                 raw: match[0],
-                amount,
-                suffix,
-                isNegative: suffix === "D"
+                valueText: valorTexto,
+                amount: valorFloat,
+                suffix: sufixo,
+                isNegative: sufixo === 'D',
+                isCredit: sufixo === 'C',
+                isDebit: sufixo === 'D'
             });
         }
 
@@ -3632,30 +3642,32 @@
     }
 
     function extractExtratoAmountFromBlock(blockText) {
-        // A limpeza de documentos é obrigatória e ocorre ANTES da captura.
+        // A limpeza de documentos ocorre ANTES da captura de qualquer valor.
         const cleanedBlock = sanitizeExtratoTextForMoney(blockText);
         const matches = findMoneyMatches(cleanedBlock);
 
         if (matches.length === 0) return null;
 
-        // Em extratos bancários, C/D define inequivocamente o fluxo.
-        // Se houver mais de um número monetário auxiliar, priorizamos o último
-        // valor que realmente possui C ou D.
-        const marked = matches.filter(match => match.suffix === "C" || match.suffix === "D");
-        const selected = marked.length ? marked[marked.length - 1] : matches[matches.length - 1];
+        // REGRA SICOOB/BANCÁRIA ESTRITA:
+        // quando existem dois ou mais valores C/D na mesma linha/bloco,
+        // o PRIMEIRO é o valor da transação; os seguintes são saldo acumulado,
+        // saldo do dia ou valores de colunas à direita e devem ser ignorados.
+        const selected = matches[0];
 
         return {
             ...selected,
-            sourceText: cleanedBlock
+            sourceText: cleanedBlock,
+            ignoredRightColumnValues: matches.slice(1)
         };
     }
 
     function removeMoneyValuesFromDescription(text) {
         let cleaned = sanitizeExtratoTextForMoney(text);
 
-        // Remove somente valores no formato bancário, incluindo C/D.
-        // O valor não pode permanecer grudado na descrição.
-        cleaned = cleaned.replace(/\b\d{1,3}(?:\.\d{3})*,\d{2}[CD]?\b/gi, " ");
+        // Remove valores bancários completos, incluindo obrigatoriamente C/D.
+        // Isso elimina tanto o valor da transação quanto o saldo da direita
+        // da descrição, sem deixar os centavos grudados no histórico.
+        cleaned = cleaned.replace(/\b\d{1,3}(?:\.\d{3})*,\d{2}\s*[CD]\b/gi, " ");
 
         return cleaned
             .replace(/\s+/g, " ")
@@ -3836,7 +3848,14 @@
 
             const ownTransfer = getOwnTransferMatch(blockText);
 
-            const tipoFluxo = amountMatch.isNegative ? 'expense' : 'income';
+            // Tipo financeiro é determinado EXCLUSIVAMENTE pelo sufixo bancário.
+            // D = débito/saída; C = crédito/entrada. Nunca inferimos o tipo
+            // pela descrição, posição do número ou sinal visual.
+            if (amountMatch.suffix !== 'D' && amountMatch.suffix !== 'C') continue;
+            const tipoFluxo = amountMatch.suffix === 'D' ? 'expense' : 'income';
+            const valorTransacao = amountMatch.amount;
+            if (!Number.isFinite(valorTransacao) || valorTransacao <= 0) continue;
+
             const learned = findLearnedCategory(normDesc);
 
             let matchedCatId = learned.matchedCatId;
@@ -3858,8 +3877,10 @@
                 fullBlockText: blockText,
                 normalizedDescription: normDesc,
                 normalizedBlockText: normalizedBlock,
-                amount: amountMatch.amount,
+                amount: valorTransacao,
                 flowType: tipoFluxo,
+                bankSuffix: amountMatch.suffix,
+                transactionValueText: amountMatch.valueText,
                 categoryId: matchedCatId,
                 isOwnTransfer: ownTransfer.isOwnTransfer,
                 matchedEntity: ownTransfer.matchedEntity,
@@ -4051,3 +4072,4 @@
 
 </script>
     </html>
+
