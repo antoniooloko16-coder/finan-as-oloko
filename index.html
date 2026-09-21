@@ -799,8 +799,6 @@
         padding: 0;
     }
 </style>
-</head>
-<body>
 
 <div class="success-banner" id="successBanner">🚀 Lançamento Salvo com Sucesso! ✓</div>
 
@@ -1271,8 +1269,7 @@
     </div>
 </div>
 
-<script>
-    let currentProfile = "pessoal"; 
+<script>let currentProfile = "pessoal"; 
     let rawDigits = "0";
     let privacyMode = false;
     let filtroCategoriaAtivo = ""; 
@@ -1295,10 +1292,9 @@
     let pendingDeleteSource = 'transactions';
 
     // Estados para o Módulo de Importação Inteligente de Extrato
-    let ignoreEntities = []; // Nomes de pessoas/empresas adicionais para ignorar
+    let ignoreEntities = []; // Nomes de pessoas/empresas para ignorar transferência entre contas
     let extratoLearningRules = {}; // Palavra-chave normalizada -> categoryId
     let parsedExtratoItems = []; // Itens extraídos do extrato atual para revisão
-    let extratoTitularConfig = { name: "Bruno Cesar Oloko", document: "" };
 
     const defaultCategoriesPessoal = [
         { id: "cat_p_1", name: "🛒 Supermercado", budget: 600, type: "expense", color: "#ffea00" },
@@ -1426,7 +1422,6 @@
                 localStorage.removeItem(`cc_config_${id}`);
                 localStorage.removeItem(`extrato_ignore_${id}`);
                 localStorage.removeItem(`extrato_rules_${id}`);
-                localStorage.removeItem(`extrato_titular_${id}`);
 
                 if (currentProfile === id) {
                     currentProfile = allProfiles[0].id;
@@ -1514,18 +1509,6 @@
         }
     }
 
-    function saveExtratoTitularConfig() {
-        const nameInput = document.getElementById('extrato_titular_name');
-        const docInput = document.getElementById('extrato_titular_document');
-        
-        extratoTitularConfig = {
-            name: nameInput ? nameInput.value.trim() : "",
-            document: docInput ? docInput.value.trim() : ""
-        };
-        
-        localStorage.setItem(`extrato_titular_${currentProfile}`, JSON.stringify(extratoTitularConfig));
-    }
-
     function switchProfileData() {
         const appTitle = document.getElementById('appTitle');
         const lblTitleGanhos = document.getElementById('lblTitleGanhos');
@@ -1560,14 +1543,6 @@
         
         ignoreEntities = JSON.parse(localStorage.getItem(`extrato_ignore_${currentProfile}`)) || [];
         extratoLearningRules = JSON.parse(localStorage.getItem(`extrato_rules_${currentProfile}`)) || {};
-        extratoTitularConfig = JSON.parse(localStorage.getItem(`extrato_titular_${currentProfile}`)) || { name: "Bruno Cesar Oloko", document: "" };
-
-        if (document.getElementById('extrato_titular_name')) {
-            document.getElementById('extrato_titular_name').value = extratoTitularConfig.name || "";
-        }
-        if (document.getElementById('extrato_titular_document')) {
-            document.getElementById('extrato_titular_document').value = extratoTitularConfig.document || "";
-        }
 
         if (categories.length === 0) {
             if (currentProfile === "pessoal") categories = [...defaultCategoriesPessoal];
@@ -1678,7 +1653,6 @@
             localStorage.setItem(`agenda_${currentProfile}`, JSON.stringify(agendaItems));
             localStorage.setItem(`extrato_ignore_${currentProfile}`, JSON.stringify(ignoreEntities));
             localStorage.setItem(`extrato_rules_${currentProfile}`, JSON.stringify(extratoLearningRules));
-            localStorage.setItem(`extrato_titular_${currentProfile}`, JSON.stringify(extratoTitularConfig));
             rebuildTransactionIndex();
         } catch (e) {
             alert("❌ Erro ao salvar dados no navegador.");
@@ -2104,933 +2078,99 @@
 
         let categoryId = item.categoryId || (categories[0] ? categories[0].id : null);
         const isInc = item.type !== 'expense';
-        let autoNotes = item.freeDescription ? `${item.freeDescription} [Baixado da Agenda]` : "[Baixado da Agenda]";
+        let autoNotes = item.freeDescription ? `${item.freeDescription} ` : '';
+        autoNotes += isInc ? "[Previsão Recebida]" : "[Compromisso Pago]";
 
-        transactions.push({
-            id: gerarIDUnico(),
-            groupId: item.groupId || null,
-            categoryId: categoryId,
-            amount: item.amount,
-            type: item.type,
-            paymentMethod: 'dinheiro',
-            description: item.description,
+        transactions.push({ 
+            id: gerarIDUnico(), 
+            groupId: item.groupId,
+            categoryId: categoryId, 
+            amount: item.amount, 
+            type: isInc ? 'income' : 'expense_cash', 
+            paymentMethod: 'dinheiro', 
+            description: item.description, 
             freeDescription: autoNotes,
-            date: item.date
+            date: new Date().toISOString().substring(0, 10)
         });
 
         agendaItems = agendaItems.filter(i => i.id !== id);
+
         safeLocalStorageSave();
+        loadData();
         checkAgendaNotifications();
-        loadData();
         renderAgendaList();
-        
-        showSuccessBanner();
+        showBanner();
     }
 
-    /* LÓGICA DO MÓDULO DE IMPORTAÇÃO DE EXTRATO INTELIGENTE */
-
-    function normalizarTexto(texto) {
-        if (!texto) return "";
-        return texto.toString()
-            .toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-z0-9\s]/g, " ")
-            .replace(/\s+/g, " ")
-            .trim();
-    }
-
-    function extrairPalavrasChaveNomeTitular(nomeCompleto) {
-        if (!nomeCompleto) return [];
-        const ignorarConectivos = new Set(["de", "da", "do", "das", "dos", "e"]);
-        return normalizarTexto(nomeCompleto)
-            .split(" ")
-            .filter(palavra => palavra.length > 1 && !ignorarConectivos.has(palavra));
-    }
-
-    function isTransferenciaPropria(textoTransacao) {
-        const textoNorm = normalizarTexto(textoTransacao);
-        
-        const termosFixos = ["msm tit", "msmtit", "outra if mt", "mesma titularidade", "transf mesma tit", "mesmo titular"];
-        if (termosFixos.some(termo => textoNorm.includes(termo))) {
-            return true;
-        }
-
-        const palavrasNome = extrairPalavrasChaveNomeTitular(extratoTitularConfig.name);
-        if (palavrasNome.some(palavra => textoNorm.includes(palavra))) {
-            return true;
-        }
-
-        if (extratoTitularConfig.document) {
-            const docLimpo = extratoTitularConfig.document.replace(/\D/g, "");
-            if (docLimpo && textoNorm.includes(docLimpo)) {
-                return true;
-            }
-        }
-
-        for (let entidade of ignoreEntities) {
-            const entidadeNorm = normalizarTexto(entidade);
-            if (entidadeNorm && textoNorm.includes(entidadeNorm)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    function openExtratoModal() {
-        document.getElementById('tx_extrato_pasted').value = '';
-        document.getElementById('extratoFileInput').value = '';
-        document.getElementById('extratoModal').style.display = 'flex';
-    }
-
-    function closeExtratoModal() {
-        document.getElementById('extratoModal').style.display = 'none';
-    }
-
-    function closeExtratoReviewModal() {
-        document.getElementById('extratoReviewModal').style.display = 'none';
-    }
-
-    function renderIgnoreEntities() {
-        const container = document.getElementById('ignoreEntitiesListContainer');
-        if (!container) return;
-        container.innerHTML = '';
-
-        if (ignoreEntities.length === 0) {
-            container.innerHTML = `<span style="font-size:11px; color:var(--text-muted);">Nenhuma outra empresa/titular cadastrado para ignorar.</span>`;
-            return;
-        }
-
-        ignoreEntities.forEach((ent, idx) => {
-            let pill = document.createElement('span');
-            pill.className = 'tag-ignore-pill';
-            pill.innerHTML = `${ent} <button onclick="removeIgnoreEntity(${idx})">×</button>`;
-            container.appendChild(pill);
-        });
-    }
-
-    function addIgnoreEntity() {
-        const input = document.getElementById('tx_ignore_entity_name');
-        const val = input.value.trim();
-        if (!val) return;
-
-        if (!ignoreEntities.includes(val)) {
-            ignoreEntities.push(val);
-            safeLocalStorageSave();
-            renderIgnoreEntities();
-        }
-        input.value = '';
-    }
-
-    function removeIgnoreEntity(index) {
-        ignoreEntities.splice(index, 1);
-        safeLocalStorageSave();
-        renderIgnoreEntities();
-    }
-
-    function renderLearningRulesList() {
-        const container = document.getElementById('learningRulesListContainer');
-        if (!container) return;
-        container.innerHTML = '';
-
-        const keys = Object.keys(extratoLearningRules);
-        if (keys.length === 0) {
-            container.innerHTML = `<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:10px;">Nenhuma regra aprendida até o momento.</div>`;
-            return;
-        }
-
-        keys.forEach(key => {
-            const catId = extratoLearningRules[key];
-            const cat = categories.find(c => c.id === catId);
-            const catName = cat ? cat.name : "Removida";
-
-            let div = document.createElement('div');
-            div.style.cssText = "display:flex; justify-content:space-between; align-items:center; font-size:11px; background:var(--bg-input); padding:6px 10px; border-radius:6px; margin-bottom:4px;";
-            div.innerHTML = `
-                <span><strong>"${key}"</strong> ➔ ${catName}</span>
-                <button onclick="removeLearningRule('${key}')" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:12px;">✕</button>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function removeLearningRule(key) {
-        delete extratoLearningRules[key];
-        safeLocalStorageSave();
-        renderLearningRulesList();
-    }
-
-    function clearAllLearningRules() {
-        if (confirm("Deseja apagar todas as regras de aprendizado do extrato?")) {
-            extratoLearningRules = {};
-            safeLocalStorageSave();
-            renderLearningRulesList();
-        }
-    }
-
-    function handleExtratoFileUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const fileName = file.name.toLowerCase();
-
-        if (fileName.endsWith('.pdf')) {
-            lerArquivoPDF(file);
-        } else {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                processarTextoBrutoExtrato(text);
-            };
-            reader.readAsText(file);
-        }
-    }
-
-    function lerArquivoPDF(file) {
-        const fileReader = new FileReader();
-        fileReader.onload = function() {
-            const typedarray = new Uint8Array(this.result);
-            pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
-                let maxPages = pdf.numPages;
-                let countPromises = [];
-                for (let j = 1; j <= maxPages; j++) {
-                    countPromises.push(pdf.getPage(j).then(function(page) {
-                        return page.getTextContent().then(function(textContent) {
-                            return textContent.items.map(item => item.str).join(" ");
-                        });
-                    }));
-                }
-                Promise.all(countPromises).then(function(texts) {
-                    processarTextoBrutoExtrato(texts.join("\n"));
-                });
-            }).catch(err => {
-                alert("Erro ao ler PDF. Certifique-se de que é um PDF com texto selecionável.");
-            });
-        };
-        fileReader.readAsArrayBuffer(file);
-    }
-
-    function processExtratoTextManual() {
-        const text = document.getElementById('tx_extrato_pasted').value;
-        if (!text.trim()) {
-            alert("Cole o texto do extrato para analisar!");
-            return;
-        }
-        processarTextoBrutoExtrato(text);
-    }
-
-    function processarTextoBrutoExtrato(textoBruto) {
-        const linhas = textoBruto.split(/\r?\n/);
-        let items = [];
-        
-        const regexDataGlobal = /(\d{2}[\/\.-]\d{2}[\/\.-]\d{2,4})/;
-
-        let blocoAtual = [];
-
-        for (let i = 0; i < linhas.length; i++) {
-            let linha = linhas[i].trim();
-            if (!linha) continue;
-
-            const contemData = regexDataGlobal.test(linha);
-
-            if (contemData && blocoAtual.length > 0) {
-                let transacao = montarTransacaoDeBloco(blocoAtual);
-                if (transacao) items.push(transacao);
-                blocoAtual = [];
-            }
-
-            blocoAtual.push(linha);
-        }
-
-        if (blocoAtual.length > 0) {
-            let transacao = montarTransacaoDeBloco(blocoAtual);
-            if (transacao) items.push(transacao);
-        }
-
-        if (items.length === 0) {
-            alert("Não foi possível identificar lançamentos claros no extrato fornecido. Tente outro formato.");
-            return;
-        }
-
-        parsedExtratoItems = items;
-        closeExtratoModal();
-        openExtratoReviewModal();
-    }
-
-    function montarTransacaoDeBloco(linhasBloco) {
-        const textoBlocoCompleto = linhasBloco.join(" ");
-        
-        const regexData = /(\d{2})[\/\.-](\d{2})[\/\.-](\d{2,4})/;
-        const matchData = textoBlocoCompleto.match(regexData);
-        if (!matchData) return null;
-
-        const dia = matchData[1];
-        const mes = matchData[2];
-        let ano = matchData[3];
-        if (ano.length === 2) ano = "20" + ano;
-        const dataISO = `${ano}-${mes}-${dia}`;
-
-        const regexTodosValores = /(?:R\$\s*-\s*|R\$\s*\+\s*|-?\s*R\$\s*|-?\s*)(\d{1,3}(?:\.\d{3})*|\d+)[,\.](\d{2})(?:\s*([CD]))?/gi;
-        
-        let matchesValores = [];
-        let match;
-        while ((match = regexTodosValores.exec(textoBlocoCompleto)) !== null) {
-            matchesValores.push(match);
-        }
-
-        if (matchesValores.length === 0) return null;
-
-        let matchValor;
-        if (matchesValores.length > 1) {
-            matchValor = matchesValores[0];
-        } else {
-            matchValor = matchesValores[0];
-        }
-
-        let textoEncontrado = matchValor[0];
-        let inteiro = matchValor[1].replace(/\./g, '');
-        let centavos = matchValor[2];
-        let indicadorCD = matchValor[3] ? matchValor[3].toUpperCase() : '';
-
-        let valorNum = parseFloat(`${inteiro}.${centavos}`);
-
-        let isExpense = false;
-        if (textoEncontrado.includes('-') || textoBlocoCompleto.includes('R$-') || textoBlocoCompleto.includes('-R$')) {
-            isExpense = true;
-        } else if (indicadorCD === 'D') {
-            isExpense = true;
-        } else {
-            if (/saida|pagamento|pix enviado|debito|compra|retirado/i.test(textoBlocoCompleto)) {
-                isExpense = true;
-            }
-        }
-
-        let descLimpa = textoBlocoCompleto
-            .replace(regexData, '')
-            .replace(/R\$\s*-?\s*\d+(?:\.\d{3})*,\d{2}/gi, '')
-            .replace(/-?\d+(?:\.\d{3})*,\d{2}/gi, '')
-            .replace(/\b[0-9a-f]{8,}\b/gi, '')
-            .replace(/\s+/g, ' ')
-            .trim();
-
-        if (!descLimpa) descLimpa = "Lançamento Extrato";
-
-        const isTransfer = isTransferenciaPropria(textoBlocoCompleto);
-
-        let autoCategoryId = "";
-        let autoBadge = "desconhecido";
-
-        if (isTransfer) {
-            autoBadge = "transferencia";
-        } else {
-            const descNorm = normalizarTexto(descLimpa);
-            for (let kw in extratoLearningRules) {
-                if (descNorm.includes(kw)) {
-                    autoCategoryId = extratoLearningRules[kw];
-                    autoBadge = "aprendido";
-                    break;
-                }
-            }
-
-            if (!autoCategoryId) {
-                if (isExpense) {
-                    if (/supermercado|mercado|carrefour|extra|pao de acucar/i.test(descNorm)) autoCategoryId = findCategoryByName("supermercado");
-                    else if (/restaurante|ifood|outback|mcdonald|burger|mcd/i.test(descNorm)) autoCategoryId = findCategoryByName("restaurante");
-                    else if (/posto|combustivel|shell|ipiranga|petrobras/i.test(descNorm)) autoCategoryId = findCategoryByName("combustivel");
-                } else {
-                    autoCategoryId = findIncomeCategory();
-                }
-            }
-        }
-
-        return {
-            id: gerarIDUnico(),
-            date: dataISO,
-            description: descLimpa,
-            amount: valorNum,
-            isExpense: isExpense,
-            isTransfer: isTransfer,
-            selectedCategoryId: autoCategoryId || (categories[0] ? categories[0].id : ""),
-            badgeStatus: autoBadge,
-            shouldImport: !isTransfer
-        };
-    }
-
-    function findCategoryByName(term) {
-        const norm = normalizarTexto(term);
-        const found = categories.find(c => normalizarTexto(c.name).includes(norm));
-        return found ? found.id : "";
-    }
-
-    function findIncomeCategory() {
-        const found = categories.find(c => c.type === 'income');
-        return found ? found.id : (categories[0] ? categories[0].id : "");
-    }
-
-    function openExtratoReviewModal() {
-        const list = document.getElementById('extratoReviewList');
-        const summary = document.getElementById('extratoReviewSummary');
-        list.innerHTML = '';
-
-        const totalEncontrados = parsedExtratoItems.length;
-        const totalIgnorados = parsedExtratoItems.filter(i => i.isTransfer).length;
-
-        summary.innerHTML = `Identificados <strong>${totalEncontrados}</strong> lançamentos. <br><span style="color:var(--accent);">${totalIgnorados} transferências de mesma titularidade desmarcadas.</span>`;
-
-        parsedExtratoItems.forEach((item, idx) => {
-            let card = document.createElement('div');
-            card.className = `extrato-item-card ${!item.shouldImport ? 'ignored' : ''}`;
-            card.id = `extrato-card-${idx}`;
-
-            let badgeHtml = '';
-            if (item.isTransfer) {
-                badgeHtml = `<span class="extrato-badge-transfer">🔄 Transferência Própria</span>`;
-            } else if (item.badgeStatus === 'aprendido') {
-                badgeHtml = `<span class="extrato-badge-learned">🧠 Regra Aprendida</span>`;
-            } else {
-                badgeHtml = `<span class="extrato-badge-unknown">❓ Classificar</span>`;
-            }
-
-            let catOptionsHtml = categories.map(c => `
-                <option value="${c.id}" ${c.id === item.selectedCategoryId ? 'selected' : ''}>${c.name}</option>
-            `).join('');
-
-            const dateFormatted = item.date.split('-').reverse().join('/');
-
-            card.innerHTML = `
-                <div class="extrato-item-row">
-                    <div style="font-size: 11px; color: var(--text-muted);">📅 ${dateFormatted}</div>
-                    <div>${badgeHtml}</div>
-                </div>
-
-                <div class="extrato-item-row">
-                    <div style="font-weight: 700; font-size: 13px; color: var(--text); flex:1;">${item.description}</div>
-                    <div style="font-weight: 800; font-size: 14px; color: ${item.isExpense ? 'var(--danger)' : 'var(--success)'};">
-                        ${item.isExpense ? '-' : '+'} ${formatCurrency(item.amount)}
-                    </div>
-                </div>
-
-                <div class="extrato-item-row" style="margin-top: 4px;">
-                    <div style="flex:1;">
-                        <select class="select-input" style="padding: 8px; font-size: 12px;" onchange="updateExtratoItemCategory(${idx}, this.value)">
-                            ${catOptionsHtml}
-                        </select>
-                    </div>
-                    <label style="font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                        <input type="checkbox" ${item.shouldImport ? 'checked' : ''} onchange="toggleExtratoImport(${idx}, this.checked)">
-                        Lançar
-                    </label>
-                </div>
-            `;
-            list.appendChild(card);
-        });
-
-        document.getElementById('extratoReviewModal').style.display = 'flex';
-    }
-
-    function updateExtratoItemCategory(index, categoryId) {
-        parsedExtratoItems[index].selectedCategoryId = categoryId;
-        
-        const descNorm = normalizarTexto(parsedExtratoItems[index].description);
-        const palavras = descNorm.split(" ").filter(p => p.length > 3);
-        if (palavras.length > 0) {
-            const palavraChave = palavras[0]; 
-            extratoLearningRules[palavraChave] = categoryId;
-            safeLocalStorageSave();
-            renderLearningRulesList();
-        }
-    }
-
-    function toggleExtratoImport(index, checked) {
-        parsedExtratoItems[index].shouldImport = checked;
-        const card = document.getElementById(`extrato-card-${index}`);
-        if (card) {
-            if (checked) card.classList.remove('ignored');
-            else card.classList.add('ignored');
-        }
-    }
-
-    function confirmExtratoImport() {
-        let cont = 0;
-        parsedExtratoItems.forEach(item => {
-            if (item.shouldImport) {
-                transactions.push({
-                    id: gerarIDUnico(),
-                    categoryId: item.selectedCategoryId || (categories[0] ? categories[0].id : ""),
-                    amount: item.amount,
-                    type: item.isExpense ? 'expense' : 'income',
-                    paymentMethod: 'dinheiro',
-                    description: item.description,
-                    freeDescription: "[Extrato Bancário]",
-                    date: item.date
-                });
-                cont++;
-            }
-        });
-
-        safeLocalStorageSave();
-        closeExtratoReviewModal();
-        loadData();
-        showSuccessBanner();
-        alert(`🚀 ${cont} lançamentos importados com sucesso!`);
-    }
-
-    /* FIM DO MÓDULO DE IMPORTAÇÃO DE EXTRATO */
-
-    function formatCurrency(val) {
-        return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    }
-
-    function updateAmountDisplay() {
-        const val = parseInt(rawDigits, 10) / 100;
-        const formatted = val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const parts = formatted.split(',');
-        
-        document.getElementById('amountDisplay').innerHTML = `R$ ${parts[0]}<span class="decimal-small">,${parts[1]}</span>`;
-    }
-
-    function pressKey(key) {
-        triggerHaptic();
-        if (key === 'C') {
-            rawDigits = "0";
-        } else if (key === 'back') {
-            if (rawDigits.length > 1) {
-                rawDigits = rawDigits.slice(0, -1);
-            } else {
-                rawDigits = "0";
-            }
-        } else {
-            if (rawDigits.length >= 9) return; 
-            if (rawDigits === "0") {
-                rawDigits = key;
-            } else {
-                rawDigits += key;
-            }
-        }
+    function editTransaction(id, event) {
+        if (event) event.stopPropagation();
+        const target = transactions.find(t => t.id === id);
+        if (!target) return;
+
+        editingTransactionId = id;
+        rawDigits = String(Math.round(target.amount * 100));
         updateAmountDisplay();
-        checkLiveBudget();
-    }
 
-    function checkLiveBudget() {
-        const amount = parseInt(rawDigits, 10) / 100;
-        const catId = document.getElementById('sl_category').value;
-        const cat = categories.find(c => c.id === catId);
-        const monitor = document.getElementById('budgetMonitor');
-
-        if (!cat || !cat.budget || cat.budget <= 0) {
-            monitor.style.display = 'none';
-            return;
+        if (target.categoryId) {
+            document.getElementById('sl_category').value = target.categoryId;
         }
-
-        monitor.style.display = 'block';
-        const { year, month } = getSelectedYearMonth();
-        const key = `${year}-${month}`;
-        const currentMonthTrans = transactionIndexedMap.get(key) || [];
+        document.getElementById('tx_free_description').value = target.freeDescription || '';
+        document.getElementById('tx_date').value = target.date;
         
-        const spentSoFar = currentMonthTrans
-            .filter(t => t.categoryId === catId && t.type === 'expense')
-            .reduce((acc, t) => acc + t.amount, 0);
-
-        const totalAfter = spentSoFar + amount;
-        const pct = Math.min(100, Math.round((totalAfter / cat.budget) * 100));
-
-        document.getElementById('budgetLabelTarget').innerText = `🎯 ${cat.name}`;
-        document.getElementById('budgetLabelValues').innerText = `${formatCurrency(totalAfter)} / ${formatCurrency(cat.budget)} (${pct}%)`;
+        document.getElementById('editBadge').style.display = 'inline-block';
         
-        const fill = document.getElementById('budgetBarFill');
-        fill.style.width = `${pct}%`;
-        fill.style.background = totalAfter > cat.budget ? 'var(--danger)' : 'var(--success)';
+        document.getElementById('actionButtonsContainer').style.display = 'none';
+        document.getElementById('editButtonsContainer').style.display = 'grid';
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function renderTags() {
-        const container = document.getElementById('tagsContainer');
-        if (!container) return;
-        container.innerHTML = '';
-        categories.forEach(cat => {
-            let tag = document.createElement('div');
-            tag.className = 'tag';
-            tag.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
-            tag.innerText = cat.name;
-            tag.onclick = () => {
-                document.getElementById('sl_category').value = cat.id;
-                checkLiveBudget();
-            };
-            container.appendChild(tag);
-        });
-    }
-
-    function renderExtratoCategoryFilters() {
-        const container = document.getElementById('categoryExtratoFilterContainer');
-        if (!container) return;
-        container.innerHTML = '';
-
-        let btnAll = document.createElement('button');
-        btnAll.className = `pay-filter-btn ${filtroCategoriaAtivo === '' ? 'active' : ''}`;
-        btnAll.innerText = '📦 Todas Caixas';
-        btnAll.onclick = () => setCategoryExtratoFilter('');
-        container.appendChild(btnAll);
-
-        categories.forEach(cat => {
-            let btn = document.createElement('button');
-            btn.className = `pay-filter-btn ${filtroCategoriaAtivo === cat.id ? 'active' : ''}`;
-            btn.innerText = cat.name;
-            btn.onclick = () => setCategoryExtratoFilter(cat.id);
-            container.appendChild(btn);
-        });
-    }
-
-    function setCategoryExtratoFilter(catId) {
-        filtroCategoriaAtivo = catId;
-        renderExtratoCategoryFilters();
-        loadData();
-    }
-
-    function setPaymentFilter(method) {
-        filtroPagamentoAtivo = method;
-        actualizarBotoesFiltroPagamento();
-        loadData();
-    }
-
-    function actualizarBotoesFiltroPagamento() {
-        if(document.getElementById('payFilterAll')) document.getElementById('payFilterAll').classList.toggle('active', filtroPagamentoAtivo === '');
-        if(document.getElementById('payFilterDinheiro')) document.getElementById('payFilterDinheiro').classList.toggle('active', filtroPagamentoAtivo === 'dinheiro');
-        if(document.getElementById('payFilterCartao')) document.getElementById('payFilterCartao').classList.toggle('active', filtroPagamentoAtivo === 'cartao');
-    }
-
-    function setStatusFilter(status) {
-        filtroStatusAtivo = status;
-        actualizarBotoesFiltroStatus();
-        loadData();
-    }
-
-    function actualizarBotoesFiltroStatus() {
-        if(document.getElementById('statusFilterEfetivo')) document.getElementById('statusFilterEfetivo').classList.toggle('active', filtroStatusAtivo === 'efetuados');
-        if(document.getElementById('statusFilterAgendado')) document.getElementById('statusFilterAgendado').classList.toggle('active', filtroStatusAtivo === 'agendados');
-    }
-
-    function clearExtratoFilter() {
-        filtroCategoriaAtivo = "";
-        filtroPagamentoAtivo = "";
-        filtroStatusAtivo = "efetuados";
-        actualizarBotoesFiltroPagamento();
-        actualizarBotoesFiltroStatus();
-        renderExtratoCategoryFilters();
-        loadData();
-    }
-
-    function saveTransaction(type) {
-        const amount = parseInt(rawDigits, 10) / 100;
-        if (amount <= 0) {
-            triggerVisorError();
-            return;
-        }
-
+    function confirmEdit() {
+        const val = getNumericValue();
+        if (val <= 0) return dispararErroVisor();
+        
         const catId = document.getElementById('sl_category').value;
-        const cat = categories.find(c => c.id === catId);
         const freeDesc = document.getElementById('tx_free_description').value.trim();
-        const dateVal = document.getElementById('tx_date').value;
+        const dateInput = document.getElementById('tx_date').value;
 
-        transactions.push({
-            id: gerarIDUnico(),
-            categoryId: catId,
-            amount: amount,
-            type: type,
-            paymentMethod: 'dinheiro',
-            description: cat ? cat.name : "Geral",
-            freeDescription: freeDesc,
-            date: dateVal
+        const selectedCatObj = categories.find(c => c.id === catId);
+        const baseDescription = selectedCatObj ? selectedCatObj.name : "Geral";
+
+        transactions = transactions.map(t => {
+            if (t.id === editingTransactionId) {
+                return { 
+                    ...t, 
+                    amount: val, 
+                    categoryId: catId, 
+                    description: baseDescription, 
+                    freeDescription: freeDesc, 
+                    date: dateInput 
+                };
+            }
+            return t;
         });
 
+        editingTransactionId = null;
+        document.getElementById('editBadge').style.display = 'none';
+        document.getElementById('actionButtonsContainer').style.display = 'grid';
+        document.getElementById('editButtonsContainer').style.display = 'none';
+        
         safeLocalStorageSave();
-        resetInputForm();
-        loadData();
-        showSuccessBanner();
-    }
-
-    function triggerVisorError() {
-        const display = document.getElementById('amountDisplay');
-        display.classList.add('visor-erro');
-        setTimeout(() => display.classList.remove('visor-erro'), 400);
-    }
-
-    function openExpenseModal() {
-        const amount = parseInt(rawDigits, 10) / 100;
-        if (amount <= 0) return triggerVisorError();
-        document.getElementById('expenseModal').style.display = 'flex';
-    }
-
-    function closeExpenseModal() {
-        document.getElementById('expenseModal').style.display = 'none';
-    }
-
-    function executeExpenseSave(method) {
-        closeExpenseModal();
-        const amount = parseInt(rawDigits, 10) / 100;
-        const catId = document.getElementById('sl_category').value;
-        const cat = categories.find(c => c.id === catId);
-        const freeDesc = document.getElementById('tx_free_description').value.trim();
-        const dateVal = document.getElementById('tx_date').value;
-
-        transactions.push({
-            id: gerarIDUnico(),
-            categoryId: catId,
-            amount: amount,
-            type: 'expense',
-            paymentMethod: method,
-            description: cat ? cat.name : "Geral",
-            freeDescription: freeDesc,
-            date: dateVal
-        });
-
-        safeLocalStorageSave();
-        resetInputForm();
-        loadData();
-        showSuccessBanner();
-    }
-
-    function openCreditModal() {
-        const amount = parseInt(rawDigits, 10) / 100;
-        if (amount <= 0) return triggerVisorError();
-        document.getElementById('creditModal').style.display = 'flex';
-    }
-
-    function closeCreditModal() {
-        document.getElementById('creditModal').style.display = 'none';
-    }
-
-    function saveCreditTransaction(installments) {
-        closeCreditModal();
-        const totalAmount = parseInt(rawDigits, 10) / 100;
-        const catId = document.getElementById('sl_category').value;
-        const cat = categories.find(c => c.id === catId);
-        const freeDesc = document.getElementById('tx_free_description').value.trim();
-        const dateVal = document.getElementById('tx_date').value;
-
-        const baseDate = parseSafeDate(dateVal);
-        const installmentVal = totalAmount / installments;
-        const groupId = installments > 1 ? gerarIDUnico() : null;
-
-        for (let i = 0; i < installments; i++) {
-            let targetDate = new Date(baseDate);
-            targetDate.setMonth(baseDate.getMonth() + i);
-
-            let suffix = installments > 1 ? ` (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})` : '';
-
-            transactions.push({
-                id: gerarIDUnico(),
-                groupId: groupId,
-                categoryId: catId,
-                amount: installmentVal,
-                type: 'expense',
-                paymentMethod: 'cartao',
-                description: cat ? cat.name : "Geral",
-                freeDescription: freeDesc + suffix,
-                date: targetDate.toISOString().substring(0, 10)
-            });
-        }
-
-        safeLocalStorageSave();
-        resetInputForm();
-        loadData();
-        showSuccessBanner();
-    }
-
-    function saveCustomCredit() {
-        const val = parseInt(document.getElementById('custom_installments').value, 10);
-        if (isNaN(val) || val < 1) return alert("Digite um número válido de parcelas.");
-        saveCreditTransaction(val);
-    }
-
-    function resetInputForm() {
         rawDigits = "0";
-        updateAmountDisplay();
         document.getElementById('tx_free_description').value = '';
-        checkLiveBudget();
+        updateAmountDisplay();
+        loadData();
     }
 
-    function showSuccessBanner() {
-        const banner = document.getElementById('successBanner');
-        banner.classList.add('show');
-        setTimeout(() => banner.classList.remove('show'), 2000);
-    }
-
-    function loadData() {
-        const { year, month } = getSelectedYearMonth();
-        const key = `${year}-${month}`;
-
-        if (filtroStatusAtivo === 'agendados') {
-            renderScheduledTransactionsForMonth(key);
-            return;
-        }
-
-        const monthTrans = transactionIndexedMap.get(key) || [];
-
-        let filtered = monthTrans;
-
-        if (filtroCategoriaAtivo) {
-            filtered = filtered.filter(t => t.categoryId === filtroCategoriaAtivo);
-        }
-
-        if (filtroPagamentoAtivo) {
-            filtered = filtered.filter(t => t.paymentMethod === filtroPagamentoAtivo);
-        }
-
-        let totalGanhos = 0;
-        let totalGastos = 0;
-        let totalCaixinha = 0;
-
-        filtered.forEach(t => {
-            if (t.type === 'income') totalGanhos += t.amount;
-            else if (t.type === 'expense') totalGastos += t.amount;
-            else if (t.type === 'saving') totalCaixinha += t.amount;
-            else if (t.type === 'saving_withdrawal') totalCaixinha -= t.amount;
-        });
-
-        const saldoLivre = totalGanhos - totalGastos - totalCaixinha;
-
-        document.getElementById('lblGanhos').innerText = formatCurrency(totalGanhos);
-        document.getElementById('lblGastos').innerText = formatCurrency(totalGastos);
-        document.getElementById('lblCaixinha').innerText = formatCurrency(totalCaixinha);
-        document.getElementById('lblSobrou').innerText = formatCurrency(saldoLivre);
-
-        let faturaCartao = filtered
-            .filter(t => t.paymentMethod === 'cartao' && t.type === 'expense')
-            .reduce((acc, t) => acc + t.amount, 0);
-
-        document.getElementById('dashFaturaCartao').innerText = formatCurrency(faturaCartao);
-        document.getElementById('dashCaixaFutFuture').innerText = formatCurrency(saldoLivre);
-
-        renderHistoryList(filtered);
-        renderCategoryVisualBoxes(monthTrans);
-    }
-
-    function renderScheduledTransactionsForMonth(yearMonthKey) {
-        const container = document.getElementById('historyContainer');
-        container.innerHTML = '';
-
-        const scheduled = agendaItems.filter(i => i.date.startsWith(yearMonthKey));
-
-        if (scheduled.length === 0) {
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:13px;">Nenhuma previsão agendada para este mês. 📭</div>`;
-            return;
-        }
-
-        scheduled.sort((a,b) => parseSafeDate(a.date) - parseSafeDate(b.date));
-
-        scheduled.forEach(item => {
-            let dateFormatted = item.date.split('-').reverse().join('/');
-            let div = document.createElement('div');
-            div.className = 'history-item';
-            
-            let catObj = categories.find(c => c.id === item.categoryId);
-            let catColor = catObj ? (catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)')) : (item.type !== 'expense' ? 'var(--success)' : 'var(--danger)');
-            let catLabel = catObj ? catObj.name : "Geral";
-
-            div.style.borderLeft = `5px solid ${catColor}`;
-
-            const isInc = item.type !== 'expense';
-            let extraText = item.freeDescription ? ` - <span style="font-weight:400; color:var(--text);">${item.freeDescription}</span>` : '';
-
-            div.innerHTML = `
-                <div class="history-info">
-                    <span class="history-desc">⏳ <strong>${item.description}</strong>${extraText}</span>
-                    <span class="history-cat-badge" style="color: ${catColor};">
-                        <span class="history-cat-dot" style="background-color: ${catColor};"></span>
-                        ${catLabel}
-                    </span>
-                    <span class="history-date">📅 Previsão: ${dateFormatted}</span>
-                </div>
-                <div class="history-right">
-                    <span class="history-val" style="color: ${isInc ? 'var(--success)' : 'var(--danger)'}">
-                        ${isInc ? '+' : '-'} ${formatCurrency(item.amount)}
-                    </span>
-                    <button class="btn-notification-action" style="background: ${isInc ? 'var(--success)' : 'var(--danger)'}; color: ${isInc ? '#000' : '#fff'}; margin-left: 6px;" onclick="claimAgendaAmount('${item.id}')">
-                        Baixar
-                    </button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function renderHistoryList(list) {
-        const container = document.getElementById('historyContainer');
-        container.innerHTML = '';
-
-        if (list.length === 0) {
-            container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:30px 0; font-size:13px;">Nenhum lançamento encontrado neste período. 📭</div>`;
-            return;
-        }
-
-        list.forEach(item => {
-            let div = document.createElement('div');
-            div.className = 'history-item';
-            
-            let catObj = categories.find(c => c.id === item.categoryId);
-            let catColor = catObj ? (catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)')) : (item.type === 'income' ? 'var(--success)' : 'var(--danger)');
-            let catLabel = catObj ? catObj.name : "Geral";
-
-            div.style.borderLeft = `5px solid ${catColor}`;
-
-            let dateFormatted = item.date.split('-').reverse().join('/');
-            let isInc = item.type === 'income' || item.type === 'saving_withdrawal';
-            let isSav = item.type === 'saving';
-
-            let valColor = isInc ? 'var(--success)' : (isSav ? 'var(--warning)' : 'var(--danger)');
-            let prefix = isInc ? '+' : '-';
-
-            let payBadge = item.paymentMethod === 'cartao' ? '💳 Cartão' : '💵 Pix/Dinheiro';
-
-            div.onclick = () => startEditTransaction(item.id);
-
-            div.innerHTML = `
-                <div class="history-info">
-                    <span class="history-desc"><strong>${item.description}</strong> ${item.freeDescription ? ` - ${item.freeDescription}` : ''}</span>
-                    <span class="history-cat-badge" style="color: ${catColor};">
-                        <span class="history-cat-dot" style="background-color: ${catColor};"></span>
-                        ${catLabel} • ${payBadge}
-                    </span>
-                    <span class="history-date">📅 ${dateFormatted}</span>
-                </div>
-                <div class="history-right">
-                    <span class="history-val" style="color: ${valColor};">${prefix} ${formatCurrency(item.amount)}</span>
-                    <button class="btn-delete-item" onclick="deleteTransaction('${item.id}', event)">🗑️</button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function renderCategoryVisualBoxes(monthTrans) {
-        const panel = document.getElementById('categoryVisualMonitorBoxes');
-        if (!panel) return;
-        panel.innerHTML = '';
-
-        categories.forEach(cat => {
-            let spent = monthTrans
-                .filter(t => t.categoryId === cat.id && t.type === 'expense')
-                .reduce((acc, t) => acc + t.amount, 0);
-
-            let pct = cat.budget && cat.budget > 0 ? Math.round((spent / cat.budget) * 100) : 0;
-            let isExceeded = cat.budget > 0 && spent > cat.budget;
-
-            let card = document.createElement('div');
-            card.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
-            card.onclick = () => setCategoryExtratoFilter(cat.id);
-
-            card.innerHTML = `
-                <div class="category-box-header">
-                    <span class="category-box-title">${cat.name}</span>
-                    <span class="category-box-dot" style="background-color: ${cat.color || 'var(--primary)'}"></span>
-                </div>
-                <div class="category-box-footer">
-                    <span class="category-box-amount">${formatCurrency(spent)}</span>
-                    ${cat.budget > 0 ? `<span class="category-box-pct">${pct}%</span>` : ''}
-                </div>
-            `;
-            panel.appendChild(card);
-        });
+    function cancelEdit() {
+        editingTransactionId = null;
+        document.getElementById('editBadge').style.display = 'none';
+        document.getElementById('actionButtonsContainer').style.display = 'grid';
+        document.getElementById('editButtonsContainer').style.display = 'none';
+        rawDigits = "0";
+        document.getElementById('tx_free_description').value = '';
+        updateAmountDisplay();
+        loadData();
     }
 
     function deleteTransaction(id, event) {
@@ -3048,182 +2188,536 @@
         }
     }
 
+    function executeSimpleDelete() {
+        if (pendingDeleteId) {
+            if (pendingDeleteSource === 'transactions') {
+                transactions = transactions.filter(t => t.id !== pendingDeleteId);
+            } else {
+                agendaItems = agendaItems.filter(t => t.id !== pendingDeleteId);
+            }
+            safeLocalStorageSave();
+            loadData();
+            renderAgendaList();
+        }
+        closeSimpleDeleteModal();
+    }
+
     function closeSimpleDeleteModal() {
         document.getElementById('deleteSimpleModal').style.display = 'none';
+        pendingDeleteId = null;
+    }
+
+    function executeSmartDelete(mode) {
+        const list = (pendingDeleteSource === 'transactions') ? transactions : agendaItems;
+        const target = list.find(t => t.id === pendingDeleteId);
+        if (!target) return closeSmartDeleteModal();
+
+        if (mode === 'single') {
+            if (pendingDeleteSource === 'transactions') {
+                transactions = transactions.filter(t => t.id !== pendingDeleteId);
+            } else {
+                agendaItems = agendaItems.filter(t => t.id !== pendingDeleteId);
+            }
+        } else if (mode === 'future') {
+            if (pendingDeleteSource === 'transactions') {
+                transactions = transactions.filter(t => {
+                    if (t.groupId === target.groupId && t.date >= target.date) return false;
+                    return true;
+                });
+            } else {
+                agendaItems = agendaItems.filter(t => {
+                    if (t.groupId === target.groupId && t.date >= target.date) return false;
+                    return true;
+                });
+            }
+        } else if (mode === 'all') {
+            if (pendingDeleteSource === 'transactions') {
+                transactions = transactions.filter(t => t.groupId !== target.groupId);
+            } else {
+                agendaItems = agendaItems.filter(t => t.groupId !== target.groupId);
+            }
+        }
+
+        closeSmartDeleteModal();
+        safeLocalStorageSave();
+        loadData();
+        renderAgendaList();
     }
 
     function closeSmartDeleteModal() {
         document.getElementById('deleteParcelamentoModal').style.display = 'none';
+        pendingDeleteId = null;
     }
 
-    function executeSimpleDelete() {
-        closeSimpleDeleteModal();
-        if (pendingDeleteSource === 'transactions') {
-            transactions = transactions.filter(t => t.id !== pendingDeleteId);
-        } else {
-            agendaItems = agendaItems.filter(i => i.id !== pendingDeleteId);
-        }
-        safeLocalStorageSave();
-        loadData();
-        renderAgendaList();
-    }
-
-    function executeSmartDelete(mode) {
-        closeSmartDeleteModal();
+    function checkLiveBudget() {
+        let catId = document.getElementById('sl_category').value;
+        let dateVal = document.getElementById('tx_date').value;
+        let currentAmount = getNumericValue();
         
-        let targetList = pendingDeleteSource === 'transactions' ? transactions : agendaItems;
-        let target = targetList.find(x => x.id === pendingDeleteId);
-        if (!target) return;
-
-        const gId = target.groupId;
-
-        if (mode === 'single') {
-            targetList = targetList.filter(x => x.id !== pendingDeleteId);
-        } else if (mode === 'future') {
-            targetList = targetList.filter(x => {
-                if (x.groupId === gId && x.date >= target.date) return false;
-                return true;
-            });
-        } else if (mode === 'all') {
-            targetList = targetList.filter(x => x.groupId !== gId);
+        if(!catId || !dateVal) {
+            document.getElementById('budgetMonitor').style.display = 'none';
+            return;
         }
 
-        if (pendingDeleteSource === 'transactions') transactions = targetList;
-        else agendaItems = targetList;
+        let targetMonth = dateVal.substring(0, 7);
+        let foundCat = categories.find(c => c.id === catId);
 
-        safeLocalStorageSave();
-        loadData();
-        renderAgendaList();
-    }
+        if(foundCat && foundCat.budget > 0) {
+            let accumulatedSpent = 0;
+            const targetList = transactionIndexedMap.get(targetMonth) || [];
+            
+            targetList.forEach(t => {
+                let isMatch = t.categoryId === foundCat.id;
+                if(foundCat.type === 'income') {
+                    if(t.type === 'income' && isMatch) accumulatedSpent += t.amount;
+                } else {
+                    if((t.type === 'expense_cash' || t.type === 'saving') && isMatch) accumulatedSpent += t.amount;
+                }
+            });
 
-    function startEditTransaction(id) {
-        const item = transactions.find(t => t.id === id);
-        if (!item) return;
+            let totalProjected = accumulatedSpent + currentAmount;
+            let percentage = Math.min((totalProjected / foundCat.budget) * 100, 100);
 
-        editingTransactionId = id;
-        rawDigits = String(Math.round(item.amount * 100));
-        updateAmountDisplay();
-
-        document.getElementById('sl_category').value = item.categoryId;
-        document.getElementById('tx_free_description').value = item.freeDescription || '';
-        document.getElementById('tx_date').value = item.date;
-
-        document.getElementById('actionButtonsContainer').style.display = 'none';
-        document.getElementById('editButtonsContainer').style.display = 'grid';
-        document.getElementById('editBadge').style.display = 'inline-block';
-
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function confirmEdit() {
-        if (!editingTransactionId) return;
-
-        const amount = parseInt(rawDigits, 10) / 100;
-        if (amount <= 0) return triggerVisorError();
-
-        const catId = document.getElementById('sl_category').value;
-        const cat = categories.find(c => c.id === catId);
-        const freeDesc = document.getElementById('tx_free_description').value.trim();
-        const dateVal = document.getElementById('tx_date').value;
-
-        transactions = transactions.map(t => {
-            if (t.id === editingTransactionId) {
-                return {
-                    ...t,
-                    categoryId: catId,
-                    amount: amount,
-                    description: cat ? cat.name : "Geral",
-                    freeDescription: freeDesc,
-                    date: dateVal
-                };
+            document.getElementById('budgetMonitor').style.display = 'block';
+            if(foundCat.type === 'income') {
+                document.getElementById('budgetLabelTarget').innerText = `🎯 Meta de ${foundCat.name}`;
+                let fill = document.getElementById('budgetBarFill');
+                fill.style.width = `${percentage}%`;
+                fill.style.background = totalProjected >= foundCat.budget ? 'var(--success)' : 'var(--warning)';
+            } else {
+                document.getElementById('budgetLabelTarget').innerText = `🎯 Teto de ${foundCat.name}`;
+                let fill = document.getElementById('budgetBarFill');
+                fill.style.width = `${percentage}%`;
+                if(totalProjected > foundCat.budget) fill.style.background = 'var(--danger)';
+                else if (totalProjected > foundCat.budget * 0.8) fill.style.background = 'var(--warning)';
+                else fill.style.background = 'var(--success)';
             }
-            return t;
-        });
-
-        safeLocalStorageSave();
-        cancelEdit();
-        loadData();
-        showSuccessBanner();
+            document.getElementById('budgetLabelValues').innerHTML = `${formatCurrency(totalProjected)} / ${formatCurrency(foundCat.budget)}`;
+        } else {
+            document.getElementById('budgetMonitor').style.display = 'none';
+        }
     }
 
-    function cancelEdit() {
-        editingTransactionId = null;
-        resetInputForm();
-
-        document.getElementById('actionButtonsContainer').style.display = 'grid';
-        document.getElementById('editButtonsContainer').style.display = 'none';
-        document.getElementById('editBadge').style.display = 'none';
+    function triggerAppReset() {
+        const firstConfirmation = confirm("⚠️ ATENÇÃO CRÍTICA: Você está prestes a apagar TODOS os dados do aplicativo de todos os perfis.\n\nDeseja realmente deletar tudo?");
+        if (firstConfirmation) {
+            const safetyCheck = prompt("Esta ação é irreversível. Para confirmar, digite exatamente a palavra: DELETAR");
+            if (safetyCheck === "DELETAR") {
+                localStorage.clear();
+                alert("App resetado com sucesso. Reiniciando...");
+                window.location.reload();
+            } else {
+                alert("Confirmação incorreta. O reset foi cancelado por segurança.");
+            }
+        }
     }
 
-    function renderCategoryManagement() {
-        const container = document.getElementById('categoryListContainer');
+    function renderAnnualBalance() {
+        const tbody = document.getElementById('annualTableBody');
+        const { year: selectedYear } = getSelectedYearMonth();
+        if(document.getElementById('lblAnualHeader')) document.getElementById('lblAnualHeader').innerText = selectedYear;
+        
+        tbody.innerHTML = '';
+        let grandTotalIncome = 0; let grandTotalExpense = 0;
+
+        let annualCategoryAmounts = new Map();
+        categories.forEach(c => annualCategoryAmounts.set(c.id, 0));
+        let grandTotalExpenseAllYear = 0;
+
+        for (let m = 1; m <= 12; m++) {
+            let monthStr = String(m).padStart(2, '0');
+            let targetYearMonth = `${selectedYear}-${monthStr}`;
+            let monthlyIncome = 0; let monthlyExpense = 0;
+
+            const currentMonthList = transactionIndexedMap.get(targetYearMonth) || [];
+            currentMonthList.forEach(t => {
+                if (t.type === 'income' || t.type === 'saving_withdrawal') monthlyIncome += t.amount;
+                if (t.type === 'expense_cash' || t.type === 'saving') {
+                    monthlyExpense += t.amount;
+                    grandTotalExpenseAllYear += t.amount;
+                }
+                if (t.categoryId && annualCategoryAmounts.has(t.categoryId)) {
+                    annualCategoryAmounts.set(t.categoryId, annualCategoryAmounts.get(t.categoryId) + t.amount);
+                }
+            });
+
+            grandTotalIncome += monthlyIncome; grandTotalExpense += monthlyExpense;
+            let monthlyBalance = monthlyIncome - monthlyExpense;
+            let balanceColor = monthlyBalance >= 0 ? 'var(--success)' : 'var(--danger)';
+
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight:500;">📅 ${monthNames[monthStr]}</td>
+                <td style="color: var(--success); font-weight: 600;">${formatCurrency(monthlyIncome)}</td>
+                <td style="color: var(--danger); font-weight: 600;">${formatCurrency(monthlyExpense)}</td>
+                <td style="color: ${balanceColor}; font-weight: bold;">${formatCurrency(monthlyBalance)}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        let yearBalance = grandTotalIncome - grandTotalExpense;
+        let totalBalanceColor = yearBalance >= 0 ? 'var(--success)' : 'var(--danger)';
+
+        let totalTr = document.createElement('tr');
+        totalTr.className = 'total-row';
+        totalTr.innerHTML = `
+            <td>🏁 TOTAL ANO</td>
+            <td style="color: var(--success);">${formatCurrency(grandTotalIncome)}</td>
+            <td style="color: var(--danger);">${formatCurrency(grandTotalExpense)}</td>
+            <td style="color: ${totalBalanceColor}; font-weight: 700;">${formatCurrency(yearBalance)}</td>
+        `;
+        tbody.appendChild(totalTr);
+
+        renderAnnualCategoryBoxes(annualCategoryAmounts, grandTotalExpenseAllYear);
+    }
+
+    function renderAnnualCategoryBoxes(annualAmountsMap, totalExpenseYear) {
+        const container = document.getElementById('annualCategoryBoxes');
         if (!container) return;
         container.innerHTML = '';
 
         categories.forEach(cat => {
+            let spent = annualAmountsMap.get(cat.id) || 0;
+            let pct = 0;
+            if (cat.type === 'income') {
+                let totalIncomeYear = transactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc, 0);
+                pct = totalIncomeYear > 0 ? Math.round((spent / totalIncomeYear) * 100) : 0;
+            } else {
+                pct = totalExpenseYear > 0 ? Math.round((spent / totalExpenseYear) * 100) : 0;
+            }
+
+            let annualBudget = (cat.budget || 0) * 12;
+            let isExceeded = cat.type === 'expense' && annualBudget > 0 && spent > annualBudget;
+
+            let box = document.createElement('div');
+            box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
+            box.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
+            box.style.cursor = 'default'; 
+
+            box.innerHTML = `
+                <div class="category-box-header">
+                    <span class="category-box-title">${cat.name}</span>
+                    <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
+                </div>
+                <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 500;">
+                    ${annualBudget > 0 ? (cat.type === 'income' ? 'Meta Ano: ' : 'Teto Ano: ') + formatCurrency(annualBudget) : 'Sem Fluxo Fixo'}
+                </div>
+                <div class="category-box-footer">
+                    <span class="category-box-amount">${formatCurrency(spent)}</span>
+                    <span class="category-box-pct">${pct}%</span>
+                </div>
+            `;
+            container.appendChild(box);
+        });
+    }
+
+    function filtrarExtratoPorTag(idCat, elementoTag) {
+        const catObj = categories.find(c => c.id === idCat);
+        if (!catObj) return;
+        
+        if (filtroCategoriaAtivo === catObj.id) {
+            clearExtratoFilter();
+        } else {
+            document.querySelectorAll('.tag').forEach(t => t.classList.remove('active-filter'));
+            filtroCategoriaAtivo = catObj.id;
+            if(elementoTag) elementoTag.classList.add('active-filter');
+            if(document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'block';
+            actualizarBotoesFiltroCategoria();
+            loadData();
+        }
+    }
+
+    function setPaymentFilter(type) {
+        filtroPagamentoAtivo = type;
+        actualizarBotoesFiltroPagamento();
+        loadData();
+    }
+
+    function setStatusFilter(status) {
+        filtroStatusAtivo = status;
+        actualizarBotoesFiltroStatus();
+        loadData();
+    }
+
+    function setExtratoCategoryFilter(catId) {
+        filtroCategoriaAtivo = catId;
+        if(catId !== "") {
+            if(document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'block';
+        } else {
+            if(document.getElementById('btnClearFilter') && filtroPagamentoAtivo === "") {
+                document.getElementById('btnClearFilter').style.display = 'none';
+            }
+        }
+        actualizarBotoesFiltroCategoria();
+        loadData();
+    }
+
+    function actualizarBotoesFiltroPagamento() {
+        document.querySelectorAll('.pay-filter-btn').forEach(b => {
+            if(b.id === 'payFilterAll' || b.id === 'payFilterDinheiro' || b.id === 'payFilterCartao') {
+                b.classList.remove('active');
+            }
+        });
+        if(filtroPagamentoAtivo === '') document.getElementById('payFilterAll').classList.add('active');
+        if(filtroPagamentoAtivo === 'dinheiro') document.getElementById('payFilterDinheiro').classList.add('active');
+        if(filtroPagamentoAtivo === 'cartao') document.getElementById('payFilterCartao').classList.add('active');
+    }
+
+    function actualizarBotoesFiltroStatus() {
+        document.getElementById('statusFilterEfetivo').classList.remove('active');
+        document.getElementById('statusFilterAgendado').classList.remove('active');
+        
+        if (filtroStatusAtivo === 'efetuados') {
+            document.getElementById('statusFilterEfetivo').classList.add('active');
+            document.getElementById('extratoLabel').innerText = "🧾 Extrato do Mês (Efetivado)";
+        } else {
+            document.getElementById('statusFilterAgendado').classList.add('active');
+            document.getElementById('extratoLabel').innerText = "📅 Previsões do Mês (Agendado)";
+        }
+    }
+
+    function actualizarBotoesFiltroCategoria() {
+        document.querySelectorAll('#categoryExtratoFilterContainer .pay-filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-cat-id') === filtroCategoriaAtivo) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    function clearExtratoFilter() {
+        filtroCategoriaAtivo = ""; filtroPagamentoAtivo = ""; filtroStatusAtivo = "efetuados";
+        actualizarBotoesFiltroPagamento();
+        actualizarBotoesFiltroStatus();
+        actualizarBotoesFiltroCategoria();
+        if(document.getElementById('btnClearFilter')) document.getElementById('btnClearFilter').style.display = 'none';
+        document.querySelectorAll('.tag').forEach(t => t.classList.remove('active-filter'));
+        loadData();
+    }
+
+    function renderTags() {
+        const container = document.getElementById('tagsContainer');
+        if(!container) return;
+        container.innerHTML = '';
+        categories.forEach(cat => {
+            let tagEl = document.createElement('div');
+            tagEl.className = 'tag';
+            tagEl.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
+            if (filtroCategoriaAtivo === cat.id) tagEl.classList.add('active-filter');
+            tagEl.innerText = cat.name;
+            
+            tagEl.onclick = (e) => { 
+                e.stopPropagation();
+                document.getElementById('sl_category').value = cat.id;
+                checkLiveBudget(); 
+                filtrarExtratoPorTag(cat.id, tagEl);
+            };
+            container.appendChild(tagEl);
+        });
+    }
+
+    function renderExtratoCategoryFilters() {
+        const container = document.getElementById('categoryExtratoFilterContainer');
+        if(!container) return;
+        container.innerHTML = '';
+
+        let btnAll = document.createElement('button');
+        btnAll.className = `pay-filter-btn ${filtroCategoriaAtivo === "" ? 'active' : ''}`;
+        btnAll.innerText = "🔄 Todas Categorias";
+        btnAll.setAttribute('data-cat-id', "");
+        btnAll.onclick = () => setExtratoCategoryFilter("");
+        container.appendChild(btnAll);
+
+        categories.forEach(cat => {
+            let btn = document.createElement('button');
+            btn.className = `pay-filter-btn ${filtroCategoriaAtivo === cat.id ? 'active' : ''}`;
+            btn.innerText = cat.name;
+            btn.setAttribute('data-cat-id', cat.id);
+            btn.onclick = () => setExtratoCategoryFilter(cat.id);
+            container.appendChild(btn);
+        });
+    }
+
+    function renderVisualCategoryBoxes(targetMonthList, totalExpenseMonth) {
+        const container = document.getElementById('categoryVisualMonitorBoxes');
+        if (!container) return;
+        
+        const currentDisplay = container.style.display;
+        container.innerHTML = '';
+
+        let categoryMapAmounts = new Map();
+        categories.forEach(c => categoryMapAmounts.set(c.id, 0));
+
+        targetMonthList.forEach(t => {
+            if (t.categoryId && categoryMapAmounts.has(t.categoryId)) {
+                const matched = categories.find(c => c.id === t.categoryId);
+                if (matched) {
+                    if (matched.type === 'income' && t.type === 'income') {
+                        categoryMapAmounts.set(t.categoryId, categoryMapAmounts.get(t.categoryId) + t.amount);
+                    } else if (matched.type !== 'income' && (t.type === 'expense_cash' || t.type === 'saving')) {
+                        categoryMapAmounts.set(t.categoryId, categoryMapAmounts.get(t.categoryId) + t.amount);
+                    }
+                }
+            }
+        });
+
+        let totalIncomeMonth = targetMonthList.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
+
+        categories.forEach(cat => {
+            let spent = categoryMapAmounts.get(cat.id) || 0;
+            let pct = 0;
+            if(cat.type === 'income') {
+                pct = totalIncomeMonth > 0 ? Math.round((spent / totalIncomeMonth) * 100) : 0;
+            } else {
+                pct = totalExpenseMonth > 0 ? Math.round((spent / totalExpenseMonth) * 100) : 0;
+            }
+
+            let isExceeded = cat.type === 'expense' && cat.budget > 0 && spent > cat.budget;
+
+            let box = document.createElement('div');
+            box.className = `category-box-card ${isExceeded ? 'exceeded' : ''}`;
+            box.style.borderLeft = `4px solid ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')}`;
+            box.onclick = () => {
+                document.getElementById('sl_category').value = cat.id;
+                checkLiveBudget();
+                setExtratoCategoryFilter(cat.id);
+            };
+
+            box.innerHTML = `
+                <div class="category-box-header">
+                    <span class="category-box-title">${cat.name}</span>
+                    <div class="category-box-dot" style="background-color: ${cat.color || (cat.type === 'income' ? 'var(--success)' : 'var(--primary)')};"></div>
+                </div>
+                <div class="category-box-footer">
+                    <span class="category-box-amount">${formatCurrency(spent)}</span>
+                    <span class="category-box-pct">${pct}%</span>
+                </div>
+            `;
+            container.appendChild(box);
+        });
+        
+        container.style.display = currentDisplay || 'none';
+    }
+
+    function renderCategoryManagement() {
+        const container = document.getElementById('categoryListContainer');
+        if(!container) return;
+        container.innerHTML = '';
+        categories.forEach((cat) => {
             let div = document.createElement('div');
             div.className = 'category-item';
+            
+            let isIncome = cat.type === "income";
+            div.style.borderLeft = `4px solid ${cat.color || (isIncome ? 'var(--success)' : 'var(--primary)')}`;
+            
+            let budgetText = cat.budget > 0 ? 
+                `${isIncome ? '🟢 Meta mensal' : '🎯 Teto mensal'}: ${formatCurrency(cat.budget)}` : 
+                "♾️ Sem limite estipulado";
+            let badgeType = isIncome ? "🟢 Entrada / Ganho" : "🔴 Saída / Gasto";
+            
+            div.innerHTML = `
+                <div class="category-main-info">
+                    <strong>${cat.name} <span style="font-size:10px; color:var(--text-muted); padding-left:4px;">(${badgeType})</span></strong>
+                    <div class="category-actions">
+                        <button class="btn-edit-cat" onclick="editCategory('${cat.id}')">✏️ Ajustar</button>
+                        <button class="btn-delete-item" onclick="deleteCategory('${cat.id}')" title="Excluir Categoria">🗑️</button>
+                    </div>
+                </div>
+                <div class="category-budget-info">${budgetText}</div>
+            `;
+            container.appendChild(div);
+        });
+    }
 
-            let isExp = cat.type === 'expense';
-            let limitTxt = cat.budget > 0 ? `Teto Mensal: ${formatCurrency(cat.budget)}` : "Sem limite definido";
-
+    function renderRecurrentManagement() {
+        const container = document.getElementById('recurrentListContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        if (recurrentExpenses.length === 0) {
+            container.innerHTML = `<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px;">Nenhum contrato recorrente fixado.</div>`;
+            return;
+        }
+        recurrentExpenses.forEach(rec => {
+            let div = document.createElement('div');
+            div.className = 'category-item';
+            div.style.borderLeft = "3 solid var(--primary)";
             div.innerHTML = `
                 <div class="category-main-info">
                     <div>
-                        <strong style="color:${cat.color || 'var(--text)'}">${cat.name}</strong>
-                        <div class="category-budget-info">${isExp ? '🔴 Saída' : '🟢 Entrada'} • ${limitTxt}</div>
+                        <strong>${rec.description}</strong>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Valor: ${formatCurrency(rec.amount)} | Todo dia: ${rec.dueDay}</div>
                     </div>
-                    <div class="category-actions">
-                        <button class="btn-edit-cat" onclick="startCategoryEdit('${cat.id}')">✏️</button>
-                        <button class="btn-delete-item" onclick="deleteCategory('${cat.id}')">🗑️</button>
-                    </div>
+                    <button class="btn-edit-cat" style="color:var(--danger);" onclick="deleteRecurrent('${rec.id}')">🗑️ Cancelar</button>
                 </div>
             `;
             container.appendChild(div);
         });
     }
 
-    function addNewCategory() {
-        const name = document.getElementById('new_category_name').value.trim();
-        const budget = parseFloat(document.getElementById('new_category_budget').value) || 0;
-        const type = document.getElementById('new_category_type').value;
-
-        if (!name) return alert("Digite o nome da caixa/categoria.");
-
-        if (editingCategoryId) {
-            categories = categories.map(c => c.id === editingCategoryId ? { ...c, name: name, budget: budget, type: type } : c);
-            editingCategoryId = null;
-        } else {
-            categories.push({
-                id: "cat_" + gerarIDUnico(),
-                name: name,
-                budget: budget,
-                type: type,
-                color: type === 'expense' ? '#ff9f43' : '#00e676'
-            });
+    function deleteRecurrent(id) {
+        if (confirm("Deseja cancelar essa automação recorrente? Meses futuros não serão mais poluídos.")) {
+            recurrentExpenses = recurrentExpenses.filter(r => r.id !== id);
+            transactions = transactions.filter(t => t.recurrentId !== id); 
+            safeLocalStorageSave();
+            renderRecurrentManagement();
+            loadData();
         }
-
-        safeLocalStorageSave();
-        cancelCategoryEdit();
-        populateCategorySelector();
-        renderCategoryManagement();
-        renderTags();
-        renderExtratoCategoryFilters();
-        alert("Caixa salva com sucesso! 📦");
     }
 
-    function startCategoryEdit(id) {
+    function addNewCategory() {
+        let input = document.getElementById('new_category_name');
+        let budgetInput = document.getElementById('new_category_budget');
+        let typeInput = document.getElementById('new_category_type');
+        let name = input.value.trim();
+        let budget = parseFloat(budgetInput.value) || 0;
+        let type = typeInput.value;
+
+        if(!name) return alert('Por favor, digite um nome válido! ⚠️');
+        if(!name.match(/[\u1F000-\u1FFFF]|🛒|🍔|💸|🏭|🚚|🔧|📈|⚡|🍿|🏠|💊|🔹|🚗|⛽|🎁|✈️|⚽/)) { 
+            name = (type === 'income' ? "📈 " : "🔹 ") + name; 
+        }
+        
+        if (editingCategoryId) {
+            categories = categories.map(c => {
+                if (c.id === editingCategoryId) {
+                    return { ...c, name: name, budget: budget, type: type };
+                }
+                return c;
+            });
+            editingCategoryId = null;
+            document.getElementById('categoryFormTitle').innerText = "✨ Nova Caixa ou Editar Existente";
+            document.getElementById('btnCancelCategoryEdit').style.display = "none";
+            setCategoryFormType('expense');
+            safeLocalStorageSave();
+            input.value = ''; budgetInput.value = '0';
+            populateCategorySelector();
+            renderCategoryManagement(); renderTags(); renderExtratoCategoryFilters(); loadData();
+            alert('Configuração actualizada com sucesso! 👍');
+        } else {
+            let newId = "cat_custom_" + gerarIDUnico();
+            let randomColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+            categories.push({ id: newId, name: name, budget: budget, type: type, color: type === 'income' ? '#00e676' : randomColor });
+            safeLocalStorageSave();
+            input.value = ''; budgetInput.value = '0';
+            setCategoryFormType('expense');
+            populateCategorySelector();
+            renderCategoryManagement(); renderTags(); renderExtratoCategoryFilters(); loadData();
+            alert('Nova Caixa cadastrada com sucesso! 🎉');
+        }
+    }
+
+    function editCategory(id) {
         const cat = categories.find(c => c.id === id);
         if (!cat) return;
 
         editingCategoryId = id;
         document.getElementById('new_category_name').value = cat.name;
-        document.getElementById('new_category_budget').value = cat.budget || 0;
-        setCategoryFormType(cat.type || 'expense');
+        document.getElementById('new_category_budget').value = cat.budget;
+        
+        setCategoryFormType(cat.type || "expense");
 
-        document.getElementById('categoryFormTitle').innerText = "✏️ Editar Caixa / Categoria";
-        document.getElementById('btnSaveCategory').innerText = "💾 Confirmar Alteração";
-        document.getElementById('btnCancelCategoryEdit').style.display = 'block';
+        document.getElementById('categoryFormTitle').innerText = "✏️ Configurar Caixa / Categoria";
+        document.getElementById('btnCancelCategoryEdit').style.display = "inline-block";
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -3232,170 +2726,1534 @@
         editingCategoryId = null;
         document.getElementById('new_category_name').value = '';
         document.getElementById('new_category_budget').value = '0';
-        setCategoryFormType('expense');
-
         document.getElementById('categoryFormTitle').innerText = "✨ Nova Caixa ou Editar Existente";
-        document.getElementById('btnSaveCategory').innerText = "💾 Salvar Configuração da Caixa";
-        document.getElementById('btnCancelCategoryEdit').style.display = 'none';
+        document.getElementById('btnCancelCategoryEdit').style.display = "none";
+        setCategoryFormType('expense');
     }
 
     function deleteCategory(id) {
-        if (categories.length <= 1) return alert("Você deve ter pelo menos uma categoria cadastrada.");
-        if (confirm("Deseja apagar esta categoria? Lançamentos associados permanecerão no histórico.")) {
-            categories = categories.filter(c => c.id !== id);
-            safeLocalStorageSave();
-            populateCategorySelector();
-            renderCategoryManagement();
-            renderTags();
-            renderExtratoCategoryFilters();
+        const cat = categories.find(c => c.id === id);
+        if (!cat) return;
+
+        let confirm1 = confirm(`Deseja realmente excluir a categoria "${cat.name}"?`);
+        if (confirm1) {
+            let confirm2 = confirm(`AVISO: Os lançamentos existentes no histórico continuarão salvos, mas a categoria deixará de aparecer para novos registros. Confirmar exclusão?`);
+            if (confirm2) {
+                categories = categories.filter(c => c.id !== id);
+                safeLocalStorageSave();
+                populateCategorySelector();
+                renderCategoryManagement();
+                renderTags();
+                renderExtratoCategoryFilters();
+                loadData();
+            }
         }
     }
 
-    function renderRecurrentManagement() {
-        const container = document.getElementById('recurrentListContainer');
+    function updateAmountDisplay() {
+        let numericValue = parseInt(rawDigits, 10) / 100;
+        if(document.getElementById('amountDisplay')) {
+            document.getElementById('amountDisplay').innerHTML = formatCurrency(numericValue);
+        }
+    }
+
+    function pressKey(key) {
+        triggerHaptic();
+        if (key === 'C') { rawDigits = "0"; } 
+        else if (key === 'back') {
+            rawDigits = rawDigits.slice(0, -1);
+            if (rawDigits === "" || rawDigits === "-") rawDigits = "0";
+        } else {
+            if (rawDigits === "0") { rawDigits = key; } 
+            else if (rawDigits.length < 10) { rawDigits += key; }
+        }
+        updateAmountDisplay(); checkLiveBudget();
+    }
+
+    function dispararErroVisor() {
+        const visor = document.getElementById('amountDisplay');
+        if(visor) {
+            visor.classList.add('visor-erro');
+            setTimeout(() => visor.classList.remove('visor-erro'), 400);
+        }
+    }
+
+    let getNumericValue = () => parseInt(rawDigits, 10) / 100;
+
+    function togglePrivacyMode() {
+        privacyMode = !privacyMode;
+        document.getElementById('btnCortina').innerText = privacyMode ? '🙈' : '👁️';
+        loadData();
+        if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
+    }
+
+    function showBanner() {
+        const banner = document.getElementById('successBanner');
+        if(banner) {
+            banner.classList.add('show');
+            setTimeout(() => banner.classList.remove('show'), 3000);
+        }
+    }
+
+    function formatCurrency(val) {
+        if (privacyMode) return "R$ ***,**";
+        let formatted = val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        let parts = formatted.split(',');
+        if (parts.length > 1) {
+            return `${parts[0]}<small class="decimal-small">,${parts[1]}</small>`;
+        }
+        return formatted;
+    }
+
+    function openExpenseModal() {
+        const val = getNumericValue();
+        if (val <= 0) { 
+            alert("⚠️ Digite um valor primeiro no teclado numérico.");
+            dispararErroVisor(); 
+            return; 
+        }
+        document.getElementById('expenseModal').style.display = 'flex';
+    }
+
+    function closeExpenseModal() { document.getElementById('expenseModal').style.display = 'none'; }
+
+    function executeExpenseSave(method) {
+        closeExpenseModal();
+        saveTransaction('expense_cash', method);
+    }
+
+    function saveTransaction(type, paymentMethod = 'dinheiro') {
+        const val = getNumericValue();
+        if (val <= 0) { 
+            alert("⚠️ Digite um valor maior que zero para registrar.");
+            dispararErroVisor(); 
+            return; 
+        }
+        
+        const catId = document.getElementById('sl_category').value;
+        const freeDesc = document.getElementById('tx_free_description').value.trim();
+        
+        const selectedCatObj = categories.find(c => c.id === catId);
+        const baseDescription = selectedCatObj ? selectedCatObj.name : "Geral";
+        
+        const dateInput = document.getElementById('tx_date').value;
+
+        transactions.push({ 
+            id: gerarIDUnico(), 
+            categoryId: catId, 
+            amount: val, 
+            type: type, 
+            paymentMethod: paymentMethod, 
+            description: baseDescription, 
+            freeDescription: freeDesc,
+            date: dateInput 
+        });
+        saveAndReset();
+    }
+
+    function openCreditModal() {
+        const val = getNumericValue();
+        if (val <= 0) { 
+            alert("⚠️ Digite um valor primeiro no teclado numérico.");
+            dispararErroVisor(); 
+            return; 
+        }
+        document.getElementById('creditModal').style.display = 'flex';
+    }
+
+    function closeCreditModal() {
+        document.getElementById('creditModal').style.display = 'none';
+        document.getElementById('custom_installments').value = '';
+    }
+
+    function saveCustomCredit() {
+        const num = parseInt(document.getElementById('custom_installments').value, 10);
+        if (isNaN(num) || num <= 0) return alert('Insira um número válido ⚠️');
+        saveCreditTransaction(num);
+    }
+
+    function saveCreditTransaction(installments) {
+        const totalVal = getNumericValue();
+        const catId = document.getElementById('sl_category').value;
+        const freeDesc = document.getElementById('tx_free_description').value.trim() || 'Compra Cartão';
+        
+        const selectedCatObj = categories.find(c => c.id === catId);
+        const baseDescription = selectedCatObj ? selectedCatObj.name : "Geral";
+        
+        const dateInput = document.getElementById('tx_date').value;
+        
+        let splitData = dateInput.split('-');
+        let anoCompra = parseInt(splitData[0], 10);
+        let mesCompra = parseInt(splitData[1], 10) - 1; 
+        let diaCompra = parseInt(splitData[2], 10);
+
+        let monthOffset = 0;
+        if (diaCompra >= ccConfig.closeDay) { monthOffset = 1; }
+
+        const baseAmount = Math.floor((totalVal / installments) * 100) / 100;
+        let remainder = Math.round((totalVal - (baseAmount * installments)) * 100) / 100;
+        const groupId = installments > 1 ? gerarIDUnico() : null;
+
+        for (let i = 0; i < installments; i++) {
+            let mesAlvo = mesCompra + i + monthOffset;
+            let dataReferencia = new Date(anoCompra, mesAlvo, 1, 12, 0, 0);
+            let anoCalculated = dataReferencia.getFullYear();
+            let mesCalculated = dataReferencia.getMonth() + 1;
+            let diaVencimento = obterUltimoDiaValido(anoCalculated, mesCalculated, ccConfig.dueDay);
+
+            let currentInstallmentAmount = baseAmount;
+            if (i === installments - 1) {
+                currentInstallmentAmount = Math.round((baseAmount + remainder) * 100) / 100;
+            }
+
+            transactions.push({
+                id: gerarIDUnico(),
+                groupId: groupId,
+                categoryId: catId,
+                amount: currentInstallmentAmount,
+                type: 'expense_cash',
+                paymentMethod: 'cartao', 
+                description: baseDescription,
+                freeDescription: `${freeDesc} (${String(i+1).padStart(2,'0')}/${String(installments).padStart(2,'0')})`,
+                date: formatarDataISO(anoCalculated, mesCalculated, diaVencimento),
+                isCredit: true 
+            });
+        }
+        closeCreditModal();
+        saveAndReset();
+    }
+
+    function saveAndReset() {
+        safeLocalStorageSave();
+        rawDigits = "0";
+        document.getElementById('tx_free_description').value = '';
+        updateAmountDisplay();
+        if(document.getElementById('budgetMonitor')) document.getElementById('budgetMonitor').style.display = 'none';
+        showBanner();
+        processRecurrentEntries();
+        clearExtratoFilter();
+        checkAgendaNotifications(); 
+    }
+
+    function loadData() {
+        const { year: selectedYear, month: selectedMonth } = getSelectedYearMonth();
+        const currentSelectedTarget = `${selectedYear}-${selectedMonth}`;
+        
+        const container = document.getElementById('historyContainer');
+        if(!container) return;
+        container.innerHTML = '';
+        
+        let totalIncome = 0; let totalExpense = 0; let totalSaving = 0;
+        let countItems = 0; let totalFaturaCartao = 0;
+
+        let realTransactions = transactionIndexedMap.get(currentSelectedTarget) || [];
+        let monthAgenda = agendaItems.filter(item => item.date.startsWith(currentSelectedTarget));
+
+        let combinedList = [];
+        if (filtroStatusAtivo === 'efetuados') {
+            combinedList = realTransactions.map(t => ({...t, isScheduled: false}));
+        } else {
+            combinedList = monthAgenda.map(a => ({...a, isScheduled: true}));
+        }
+
+        combinedList.sort((a, b) => parseSafeDate(b.date) - parseSafeDate(a.date));
+
+        let totalExpenseForBoxes = 0;
+        realTransactions.forEach(t => {
+            if (t.type === 'expense_cash' || t.type === 'saving') totalExpenseForBoxes += t.amount;
+        });
+        renderVisualCategoryBoxes(realTransactions, totalExpenseForBoxes);
+
+        const groupsProcessed = new Set();
+
+        combinedList.forEach(t => {
+            let matchesCategory = true; let matchesPayment = true;
+            let catObj = categories.find(c => c.id === t.categoryId);
+
+            if (filtroCategoriaAtivo !== "") {
+                if (t.categoryId !== filtroCategoriaAtivo) matchesCategory = false;
+            }
+
+            if (filtroPagamentoAtivo !== "" && !t.isScheduled) {
+                if (filtroPagamentoAtivo === 'cartao' && t.paymentMethod !== 'cartao') matchesPayment = false;
+                if (filtroPagamentoAtivo === 'dinheiro' && t.paymentMethod === 'cartao') matchesPayment = false;
+            }
+
+            if (!matchesCategory || !matchesPayment) return;
+
+            if (t.groupId && !expandedGroups.has(t.groupId)) {
+                if (groupsProcessed.has(t.groupId)) return;
+                groupsProcessed.add(t.groupId);
+                
+                let totalMonthGroup = 0;
+                if (!t.isScheduled) {
+                    totalMonthGroup = transactions.filter(i => i.groupId === t.groupId && i.date.startsWith(currentSelectedTarget))
+                                                 .reduce((acc, curr) => acc + curr.amount, 0);
+                } else {
+                    totalMonthGroup = agendaItems.filter(i => i.groupId === t.groupId && i.date.startsWith(currentSelectedTarget))
+                                                 .reduce((acc, curr) => acc + curr.amount, 0);
+                }
+
+                let item = document.createElement('div');
+                item.className = 'history-item group-header';
+                item.onclick = () => toggleGroupExpansion(t.groupId);
+                
+                let catColor = catObj ? (catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)')) : 'var(--accent)';
+                item.style.borderLeft = `8px solid ${catColor}`;
+
+                item.innerHTML = `
+                    <div class="history-info">
+                        <span class="history-desc">📦 <strong>${t.description}</strong> <span style="font-size:11px; color:var(--text-muted);">(Parcelado/Grupo)</span></span>
+                        <span class="history-date">Clique para ver as parcelas deste mês</span>
+                    </div>
+                    <div class="history-right">
+                        <span class="history-val" style="color: ${catColor}">${formatCurrency(totalMonthGroup)}</span>
+                        <span style="font-size: 16px; margin-left: 8px;">▼</span>
+                    </div>
+                `;
+                container.appendChild(item);
+                countItems++;
+                return;
+            }
+
+            countItems++;
+
+            let item = document.createElement('div');
+            item.className = 'history-item';
+            
+            if (t.isScheduled) {
+                item.style.opacity = "0.75";
+                item.style.borderStyle = "dashed";
+            } else {
+                item.setAttribute('onclick', `editTransaction('${t.id}', event)`);
+            }
+            
+            let catColor = 'var(--border-color)';
+            let catLabel = 'Sem Categoria 📝';
+            if (catObj) {
+                catColor = catObj.color || (catObj.type === 'income' ? 'var(--success)' : 'var(--primary)');
+                catLabel = catObj.name;
+            }
+            
+            item.style.borderLeft = `5px solid ${catColor}`;
+            
+            let dateFormatted = t.date.split('-').reverse().join('/');
+            let indicatorColor = 'var(--success)'; let prefix = '+';
+            
+            if (t.isScheduled) {
+                indicatorColor = 'var(--text-muted)';
+                prefix = t.type === 'expense' ? '⏳ -' : '⏳ +';
+            } else {
+                if (t.type === 'expense_cash') { 
+                    indicatorColor = catColor; 
+                    prefix = '-'; 
+                } else if (t.type === 'saving') { 
+                    indicatorColor = 'var(--warning)'; 
+                    prefix = '💰'; 
+                } else if (t.type === 'saving_withdrawal') {
+                    indicatorColor = 'var(--success)';
+                    prefix = '📥 +';
+                } else if (t.type === 'income') {
+                    indicatorColor = 'var(--success)';
+                    prefix = '+';
+                }
+            }
+
+            let badgeMetodo = "";
+            if(!t.isScheduled && t.type === 'expense_cash') {
+                badgeMetodo = t.paymentMethod === 'cartao' ? " <span style='color:var(--accent); font-size:10px;'>[💳]</span>" : " <span style='color:var(--success); font-size:10px;'>[💵]</span>";
+            } else if (t.isScheduled) {
+                badgeMetodo = " <span style='color:var(--warning); font-size:9px; font-weight:bold;'>[AGENDADO]</span>";
+            }
+
+            let extraText = t.freeDescription ? ` - <span style="font-weight:400; color:var(--text);">${t.freeDescription}</span>` : '';
+
+            item.innerHTML = `
+                <div class="history-info">
+                    <span class="history-desc"><strong>${t.description}</strong>${extraText}${badgeMetodo}</span>
+                    <span class="history-cat-badge" style="color: ${catColor};">
+                        <span class="history-cat-dot" style="background-color: ${catColor};"></span>
+                        ${catLabel}
+                    </span>
+                    <span class="history-date">📅 ${dateFormatted} ${t.groupId ? `| <span style="color:var(--primary); cursor:pointer;" onclick="event.stopPropagation(); viewFullGroup('${t.groupId}')">Ver Grupo</span>` : ''}</span>
+                </div>
+                <div class="history-right">
+                    <span class="history-val" style="color: ${indicatorColor}">${prefix} ${formatCurrency(t.amount)}</span>
+                    ${t.isScheduled ? 
+                        `<button class="btn-notification-action" onclick="claimAgendaAmount('${t.id}')" style="font-size:9px; padding:2px 6px;">BAIXAR</button>` : 
+                        `<button class="btn-delete-item" onclick="deleteTransaction('${t.id}', event)">🗑️</button>`
+                    }
+                </div>
+            `;
+            container.appendChild(item);
+        });
+
+        realTransactions.forEach(t => {
+            if (t.type === 'income') totalIncome += t.amount;
+            if (t.type === 'expense_cash') totalExpense += t.amount;
+            if (t.type === 'saving') totalSaving += t.amount;
+            if (t.type === 'saving_withdrawal') totalSaving -= t.amount;
+            if (t.paymentMethod === 'cartao' || t.isCredit || (t.freeDescription && t.freeDescription.includes('('))) {
+                totalFaturaCartao += t.amount;
+            }
+        });
+
+        if (countItems === 0) {
+            let msgEmpty = filtroStatusAtivo === 'efetuados' ? "Parece que você ainda não tem registros efetuados neste mês." : "Nenhuma conta ou recebimento agendado para este mês.";
+            container.innerHTML = `
+                <div class="empty-state-guide">
+                    <h4>🚀 ${filtroStatusAtivo === 'efetuados' ? 'Comece sua jornada!' : 'Agenda Vazia'}</h4>
+                    <p>${msgEmpty}</p>
+                </div>`;
+        }
+
+        let totalWithdrawals = realTransactions.filter(t => t.type === 'saving_withdrawal').reduce((acc, curr) => acc + curr.amount, 0);
+        let totalSavingsDeposited = realTransactions.filter(t => t.type === 'saving').reduce((acc, curr) => acc + curr.amount, 0);
+        let sobrou = totalIncome - totalExpense - totalSavingsDeposited + totalWithdrawals;
+        
+        document.getElementById('lblGanhos').innerHTML = formatCurrency(totalIncome);
+        document.getElementById('lblGastos').innerHTML = formatCurrency(totalExpense);
+        document.getElementById('lblCaixinha').innerHTML = formatCurrency(totalSaving);
+        document.getElementById('lblSobrou').innerHTML = formatCurrency(sobrou);
+        document.getElementById('dashFaturaCartao').innerHTML = formatCurrency(totalFaturaCartao);
+
+        let macroBudgetLimit = categories.filter(c => c.type !== 'income').reduce((acc, curr) => acc + (curr.budget || 0), 0);
+        if (macroBudgetLimit > 0) {
+            document.getElementById('macroBudgetCard').style.display = 'block';
+            document.getElementById('macroBudgetValues').innerHTML = `${formatCurrency(totalExpense)} / ${formatCurrency(macroBudgetLimit)}`;
+            let macroPct = Math.min((totalExpense / macroBudgetLimit) * 100, 100);
+            let macroBar = document.getElementById('macroBudgetBarFill');
+            macroBar.style.width = `${macroPct}%`;
+            if(totalExpense > macroBudgetLimit) macroBar.style.background = 'var(--danger)';
+            else if (totalExpense > macroBudgetLimit * 0.8) macroBar.style.background = 'var(--warning)';
+            else macroBar.style.background = 'var(--success)';
+        } else {
+            document.getElementById('macroBudgetCard').style.display = 'none';
+        }
+
+        let saldoFuturoAno = 0;
+        transactions.forEach(t => {
+            if(t.date.startsWith(selectedYear)) {
+                if(t.type === 'income' || t.type === 'saving_withdrawal') saldoFuturoAno += t.amount;
+                else saldoFuturoAno -= t.amount;
+            }
+        });
+        document.getElementById('dashCaixaFutFuture').innerHTML = formatCurrency(saldoFuturoAno);
+
+        const summaryCard = document.getElementById('summaryCard');
+        const lblSobrou = document.getElementById('lblSobrou');
+        
+        if (summaryCard && lblSobrou) {
+            if (sobrou >= 0) {
+                lblSobrou.style.color = currentProfile === 'pessoal' ? 'var(--primary)' : '#00e5ff';
+                summaryCard.classList.remove('alert-blink');
+            } else {
+                lblSobrou.style.color = 'var(--danger)';
+                summaryCard.classList.add('alert-blink');
+            }
+        }
+        
+        if(document.getElementById('page-anual').classList.contains('active')) renderAnnualBalance();
+        checkAgendaNotifications(); 
+    }
+
+    /* =========================================================================
+       MÓDULO: MOTOR DE PROCESSAMENTO E APRENDIZADO DE EXTRATO BANCÁRIO
+       ========================================================================= */
+
+    function openExtratoModal() {
+        loadExtratoTitularConfig();
+        document.getElementById('tx_extrato_pasted').value = '';
+        document.getElementById('extratoFileInput').value = '';
+        document.getElementById('extratoModal').style.display = 'flex';
+    }
+
+    function closeExtratoModal() {
+        document.getElementById('extratoModal').style.display = 'none';
+    }
+
+    function closeExtratoReviewModal() {
+        document.getElementById('extratoReviewModal').style.display = 'none';
+    }
+
+    function normalizarTexto(txt) {
+        if (!txt) return "";
+        return String(txt).toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function normalizarDocumento(txt) {
+        if (!txt) return "";
+        return String(txt).replace(/\D/g, "");
+    }
+
+    function escaparHtml(txt) {
+        return String(txt ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function getExtratoTitularConfig() {
+        const saved = JSON.parse(localStorage.getItem(`extrato_titular_${currentProfile}`) || "{}");
+        return {
+            name: saved.name || "",
+            document: saved.document || ""
+        };
+    }
+
+    function loadExtratoTitularConfig() {
+        const config = getExtratoTitularConfig();
+        const nameInput = document.getElementById('extrato_titular_name');
+        const docInput = document.getElementById('extrato_titular_document');
+        if (nameInput) nameInput.value = config.name;
+        if (docInput) docInput.value = config.document;
+    }
+
+    function saveExtratoTitularConfig() {
+        const nameInput = document.getElementById('extrato_titular_name');
+        const docInput = document.getElementById('extrato_titular_document');
+
+        const config = {
+            name: nameInput ? nameInput.value.trim() : "",
+            document: docInput ? docInput.value.trim() : ""
+        };
+
+        localStorage.setItem(`extrato_titular_${currentProfile}`, JSON.stringify(config));
+    }
+
+    function getTitularNames() {
+        const config = getExtratoTitularConfig();
+        const names = [];
+
+        if (config.name) names.push(config.name);
+
+        ignoreEntities.forEach(entity => {
+            if (entity && !names.some(n => normalizarTexto(n) === normalizarTexto(entity))) {
+                names.push(entity);
+            }
+        });
+
+        return names.filter(Boolean);
+    }
+
+    function renderIgnoreEntities() {
+        const container = document.getElementById('ignoreEntitiesListContainer');
         if (!container) return;
         container.innerHTML = '';
 
-        if (recurrentExpenses.length === 0) {
-            container.innerHTML = `<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px;">Nenhuma conta fixa cadastrada.</div>`;
+        if (ignoreEntities.length === 0) {
+            container.innerHTML = '<div style="font-size:12px; color:var(--text-muted);">Nenhum nome adicional cadastrado para ignorar.</div>';
             return;
         }
 
-        recurrentExpenses.forEach(rec => {
-            let cat = categories.find(c => c.id === rec.categoryId);
-            let div = document.createElement('div');
-            div.className = 'history-item';
-            div.style.cursor = 'default';
+        ignoreEntities.forEach((name, idx) => {
+            const span = document.createElement('span');
+            span.className = 'tag-ignore-pill';
+            span.innerHTML = `🚫 ${escaparHtml(name)} <button onclick="removeIgnoreEntity(${idx})" title="Remover">✕</button>`;
+            container.appendChild(span);
+        });
+    }
+
+    function addIgnoreEntity() {
+        const input = document.getElementById('tx_ignore_entity_name');
+        const val = input.value.trim();
+
+        if (!val) return alert("Digite um nome ou razão social para ignorar!");
+
+        const normalizedNew = normalizarTexto(val);
+        const exists = ignoreEntities.some(entity => normalizarTexto(entity) === normalizedNew);
+
+        if (!exists) {
+            ignoreEntities.push(val);
+            safeLocalStorageSave();
+            renderIgnoreEntities();
+            input.value = '';
+            alert(`"${val}" cadastrado! Transferências contendo esse nome não serão contabilizadas.`);
+        }
+    }
+
+    function removeIgnoreEntity(index) {
+        ignoreEntities.splice(index, 1);
+        safeLocalStorageSave();
+        renderIgnoreEntities();
+    }
+
+    function renderLearningRulesList() {
+        const container = document.getElementById('learningRulesListContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const keys = Object.keys(extratoLearningRules);
+        if (keys.length === 0) {
+            container.innerHTML = '<div style="font-size:12px; color:var(--text-muted);">Nenhuma regra aprendida ainda. Conforme você categoriza itens do extrato, elas aparecerão aqui! 💡</div>';
+            return;
+        }
+
+        keys.sort().forEach(key => {
+            const catId = extratoLearningRules[key];
+            const catObj = categories.find(c => c.id === catId);
+            const catName = catObj ? catObj.name : "Categoria Excluída";
+
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.justifyContent = 'space-between';
+            div.style.alignItems = 'center';
+            div.style.padding = '6px 10px';
+            div.style.background = 'var(--bg-input)';
+            div.style.borderRadius = '8px';
+            div.style.marginBottom = '4px';
+            div.style.fontSize = '12px';
 
             div.innerHTML = `
-                <div class="history-info">
-                    <span class="history-desc">🔄 <strong>${rec.description}</strong></span>
-                    <span class="history-date">Dia ${rec.dueDay} • ${cat ? cat.name : 'Geral'}</span>
-                </div>
-                <div class="history-right">
-                    <span class="history-val">${formatCurrency(rec.amount)}</span>
-                    <button class="btn-delete-item" onclick="deleteRecurrent('${rec.id}')">🗑️</button>
-                </div>
+                <span><strong>"${escaparHtml(key.toUpperCase())}"</strong> ➔ ${escaparHtml(catName)}</span>
+                <button class="btn-delete-item" onclick="deleteLearningRule('${String(key).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')" title="Excluir regra">🗑️</button>
             `;
             container.appendChild(div);
         });
     }
 
-    function deleteRecurrent(id) {
-        if (confirm("Deseja apagar esta conta recorrente? Ela deixará de ser gerada nos meses futuros.")) {
-            recurrentExpenses = recurrentExpenses.filter(r => r.id !== id);
+    function deleteLearningRule(key) {
+        delete extratoLearningRules[key];
+        safeLocalStorageSave();
+        renderLearningRulesList();
+    }
+
+    function clearAllLearningRules() {
+        if (confirm("Deseja realmente apagar todas as regras de aprendizado automático salvas neste perfil?")) {
+            extratoLearningRules = {};
             safeLocalStorageSave();
-            renderRecurrentManagement();
+            renderLearningRulesList();
+            alert("Regras de aprendizado resetadas com sucesso!");
         }
     }
 
-    function renderAnnualBalance() {
-        const tbody = document.getElementById('annualTableBody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
+    async function handleExtratoFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
 
-        const { year } = getSelectedYearMonth();
-        document.getElementById('lblAnualHeader').innerText = year;
+        const ext = file.name.split('.').pop().toLowerCase();
 
-        let totalAnoGanhos = 0;
-        let totalAnoSaidas = 0;
+        if (ext === 'pdf') {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const text = await extractTextFromPDF(arrayBuffer);
 
-        for (let m = 1; m <= 12; m++) {
-            let mStr = String(m).padStart(2, '0');
-            let key = `${year}-${mStr}`;
-            let mTrans = transactionIndexedMap.get(key) || [];
+                if (!text.trim()) {
+                    return alert("⚠️ O PDF não contém texto legível (pode ser uma imagem escaneada).");
+                }
 
-            let mGanhos = 0;
-            let mSaidas = 0;
+                processExtratoRawText(text);
+            } catch (err) {
+                alert("Erro ao ler o arquivo PDF: " + err.message);
+            }
+        } else {
+            const reader = new FileReader();
 
-            mTrans.forEach(t => {
-                if (t.type === 'income' || t.type === 'saving_withdrawal') mGanhos += t.amount;
-                else if (t.type === 'expense' || t.type === 'saving') mSaidas += t.amount;
+            reader.onload = (e) => {
+                processExtratoRawText(e.target.result);
+            };
+
+            reader.onerror = () => {
+                alert("❌ Não foi possível ler o arquivo selecionado.");
+            };
+
+            reader.readAsText(file);
+        }
+    }
+
+    async function extractTextFromPDF(arrayBuffer) {
+        if (!window.pdfjsLib) {
+            throw new Error("Biblioteca de leitura de PDF indisponível.");
+        }
+
+        const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        const pageTexts = [];
+
+        /*
+         * IMPORTANTE:
+         * PDF.js entrega o conteúdo visual do PDF como pequenos fragmentos
+         * posicionados por X/Y. Em extratos em tabela, concatenar tudo apenas
+         * pela ordem de leitura pode misturar colunas (Valor x Saldo) e linhas.
+         *
+         * Para preservar a estrutura, cada linha visual é reconstruída com
+         * separadores de coluna quando existe um espaço horizontal relevante.
+         * O parser posterior não depende desses separadores para achar o valor:
+         * ele trabalha com todos os tokens monetários e escolhe o PRIMEIRO R$.
+         */
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+            const page = await pdf.getPage(pageNumber);
+            const textContent = await page.getTextContent();
+
+            const items = textContent.items
+                .filter(item => item && typeof item.str === 'string' && item.str.trim())
+                .map(item => {
+                    const transform = item.transform || [];
+                    return {
+                        text: item.str.trim(),
+                        x: Number(transform[4]) || 0,
+                        y: Number(transform[5]) || 0,
+                        width: Number(item.width) || 0
+                    };
+                });
+
+            const lines = [];
+            const Y_TOLERANCE = 2.5;
+
+            items.sort((a, b) => {
+                if (Math.abs(a.y - b.y) > Y_TOLERANCE) return b.y - a.y;
+                return a.x - b.x;
             });
 
-            totalAnoGanhos += mGanhos;
-            totalAnoSaidas += mSaidas;
+            for (const item of items) {
+                let target = null;
 
-            let mSobra = mGanhos - mSaidas;
+                for (const line of lines) {
+                    if (Math.abs(line.y - item.y) <= Y_TOLERANCE) {
+                        target = line;
+                        break;
+                    }
+                }
 
-            let tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${monthNames[mStr]}</strong></td>
-                <td style="color:var(--success)">${formatCurrency(mGanhos)}</td>
-                <td style="color:var(--danger)">${formatCurrency(mSaidas)}</td>
-                <td style="color:${mSobra >= 0 ? 'var(--primary)' : 'var(--danger)'}">${formatCurrency(mSobra)}</td>
-            `;
-            tbody.appendChild(tr);
+                if (!target) {
+                    target = { y: item.y, items: [] };
+                    lines.push(target);
+                }
+
+                target.items.push(item);
+            }
+
+            lines.sort((a, b) => b.y - a.y);
+
+            const pageLines = lines.map(line => {
+                line.items.sort((a, b) => a.x - b.x);
+
+                let result = "";
+                let previous = null;
+
+                for (const item of line.items) {
+                    if (!result) {
+                        result = item.text;
+                        previous = item;
+                        continue;
+                    }
+
+                    const previousRight = previous.x + previous.width;
+                    const gap = item.x - previousRight;
+
+                    /*
+                     * Gap pequeno = mesma palavra/coluna.
+                     * Gap maior = preserva uma separação inequívoca entre
+                     * colunas sem destruir o texto da descrição.
+                     */
+                    result += (gap > 6 ? " | " : " ") + item.text;
+                    previous = item;
+                }
+
+                return result.trim();
+            }).filter(Boolean);
+
+            pageTexts.push(pageLines.join("\n"));
         }
 
-        let totalSobraAno = totalAnoGanhos - totalAnoSaidas;
-
-        let trTotal = document.createElement('tr');
-        trTotal.className = 'total-row';
-        trTotal.innerHTML = `
-            <td>ACUMULADO</td>
-            <td style="color:var(--success)">${formatCurrency(totalAnoGanhos)}</td>
-            <td style="color:var(--danger)">${formatCurrency(totalAnoSaidas)}</td>
-            <td style="color:${totalSobraAno >= 0 ? 'var(--primary)' : 'var(--danger)'}">${formatCurrency(totalSobraAno)}</td>
-        `;
-        tbody.appendChild(trTotal);
-
-        renderAnnualCategoryBoxes(year);
+        return pageTexts.join("\n");
     }
 
-    function renderAnnualCategoryBoxes(year) {
-        const container = document.getElementById('annualCategoryBoxes');
-        if (!container) return;
-        container.innerHTML = '';
+    function processExtratoTextManual() {
+        const text = document.getElementById('tx_extrato_pasted').value.trim();
 
-        let yearTrans = [];
-        for (let m = 1; m <= 12; m++) {
-            let key = `${year}-${String(m).padStart(2, '0')}`;
-            let list = transactionIndexedMap.get(key) || [];
-            yearTrans.push(...list);
+        if (!text) {
+            return alert("Por favor, cole o texto do extrato ou selecione um arquivo.");
         }
 
-        categories.forEach(cat => {
-            let spent = yearTrans
-                .filter(t => t.categoryId === cat.id && t.type === 'expense')
-                .reduce((acc, t) => acc + t.amount, 0);
-
-            let card = document.createElement('div');
-            card.className = 'category-box-card';
-            card.style.cursor = 'default';
-
-            card.innerHTML = `
-                <div class="category-box-header">
-                    <span class="category-box-title">${cat.name}</span>
-                    <span class="category-box-dot" style="background-color: ${cat.color || 'var(--primary)'}"></span>
-                </div>
-                <div class="category-box-footer" style="margin-top:12px;">
-                    <span class="category-box-amount" style="font-size:14px;">${formatCurrency(spent)}</span>
-                </div>
-            `;
-            container.appendChild(card);
-        });
+        processExtratoRawText(text);
     }
 
-    function togglePrivacyMode() {
-        privacyMode = !privacyMode;
-        document.body.style.filter = privacyMode ? 'blur(6px)' : 'none';
-        document.getElementById('btnCortina').innerText = privacyMode ? '🙈' : '👁️';
+    function isValidExtratoDateLine(line) {
+        if (!line) return null;
+
+        /*
+         * DELIMITADOR OFICIAL DE LANÇAMENTO:
+         * Mercado Pago inicia cada transação com DD-MM-AAAA ou DD/MM/AAAA.
+         * Aqui NÃO aceitamos datas sem ano, pontos ou dia/mês de 1 dígito.
+         */
+        const match = String(line).match(/^\s*(\d{2})[\/-](\d{2})[\/-](\d{4})(?=\s|$|\|)/);
+
+        if (!match) return null;
+
+        const day = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10);
+        const year = parseInt(match[3], 10);
+
+        if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > 2100) {
+            return null;
+        }
+
+        return {
+            day,
+            month,
+            year,
+            raw: match[0],
+            date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+        };
     }
 
-    function triggerAppReset() {
-        let c1 = confirm("⚠️ ATENÇÃO! Você irá apagar TODOS OS DADOS de TODOS os perfis (Lançamentos, Caixas, Recorrentes e Ajustes).");
-        if (c1) {
-            let c2 = confirm("🚨 ÚLTIMA CHANCE! Esta ação NÃO PODERÁ ser desfeita. Deseja redefinir o aplicativo para as configurações de fábrica?");
-            if (c2) {
-                localStorage.clear();
-                alert("App resetado com sucesso!");
-                window.location.reload();
+    function normalizeExtratoLine(line) {
+        return String(line || "")
+            .replace(/\u00a0/g, " ")
+            .replace(/\t+/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function isExtratoHeaderFooterLine(line) {
+        const normalized = normalizarTexto(line);
+
+        if (!normalized) return true;
+
+        const exactIgnored = new Set([
+            "sicoob",
+            "extrato conta corrente",
+            "historico de movimentacao",
+            "historico movimentacao",
+            "ouvidoria",
+            "sac",
+            "saldo do dia",
+            "saldo anterior",
+            "saldo bloq",
+            "saldo bloqueado"
+        ]);
+
+        if (exactIgnored.has(normalized)) return true;
+
+        const patterns = [
+            /\bsaldo\s+do\s+dia\b/i,
+            /\bsaldo\s+anterior\b/i,
+            /\bsaldo\s+bloq(?:ueado)?\b/i,
+            /\bextrato\s+conta\s+corrente\b/i,
+            /\bhistorico\s+de\s+movimentacao\b/i,
+            /^\s*(sicoob|sac|ouvidoria)\b/i
+        ];
+
+        return patterns.some(pattern => pattern.test(line));
+    }
+
+    function isResumoStartLine(line) {
+        const normalized = normalizarTexto(line);
+
+        return /\b(resumo|saldo em conta|cheque especial contratado|saldo disponivel|encargos|taxa cheque especial)\b/i.test(normalized);
+    }
+
+    function isResumoLine(line) {
+        const normalized = normalizarTexto(line);
+
+        return /\b(saldo em conta|cheque especial contratado|saldo disponivel|encargos|taxa cheque especial|limite disponivel|limite de credito|juros|tarifa)\b/i.test(normalized);
+    }
+
+    function isMercadoPagoTableRow(line) {
+        if (!line) return false;
+
+        const normalized = normalizeExtratoLine(line);
+        if (!isValidExtratoDateLine(normalized)) return false;
+
+        /*
+         * Mercado Pago normalmente apresenta:
+         * DATA | DESCRIÇÃO | ID DA OPERAÇÃO | VALOR | SALDO
+         * O teste abaixo exige pelo menos um R$ e uma data no início.
+         */
+        return /\bR\$\s*-?\s*\d{1,3}(?:\.\d{3})*,\d{2}\b/i.test(normalized);
+    }
+
+    function removeExtratoOperationIds(text) {
+        return String(text || "")
+            /* IDs puros com mais de 10 dígitos: nunca fazem parte da descrição. */
+            .replace(/(?<!\d)\d{11,}(?!\d)/g, " ")
+            /* Também cobre ID separado por espaços/pipe pelo PDF. */
+            .replace(/(?<!\d)(?:\d[\s|]){10,}\d(?!\d)/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function buildExtratoBlocks(rawText) {
+        /*
+         * ================================================================
+         * SPLIT ESTRITO POR DATA — REGRA PRINCIPAL DO PARSER
+         * ================================================================
+         *
+         * O PDF pode devolver uma ou várias transações na mesma linha visual.
+         * Por isso NÃO podemos depender somente de `split("\n")`.
+         *
+         * Primeiro inserimos uma quebra REAL antes de TODA ocorrência de uma
+         * data no formato DD-MM-AAAA ou DD/MM/AAAA. Assim, mesmo que o PDF
+         * entregue algo como:
+         *
+         * 19-08-2026 ... R$-10,00 ... 20-08-2026 ... R$ 200,00 ...
+         *
+         * o texto vira dois lançamentos independentes antes da extração de
+         * valor/descrição. Cada data fecha o lançamento anterior e abre outro.
+         */
+        const normalizedRawText = String(rawText || "")
+            .replace(/\r\n?/g, "\n")
+            .replace(/(?<!^)(?<![\n])(?<!\d)(\d{2}[\/-]\d{2}[\/-]\d{4})(?=\s|$|\|)/g, "\n$1");
+
+        const sourceLines = normalizedRawText
+            .split(/\n+/)
+            .map(normalizeExtratoLine)
+            .filter(Boolean);
+
+        const blocks = [];
+        let current = null;
+        let resumoStarted = false;
+
+        for (const originalLine of sourceLines) {
+            const line = normalizeExtratoLine(originalLine);
+            if (!line) continue;
+
+            /*
+             * REGRA ABSOLUTA:
+             * toda nova DATA inicia um NOVO objeto. Nunca reutilizamos o bloco
+             * anterior, mesmo que o PDF tenha colocado duas transações na mesma
+             * linha ou tenha omitido uma quebra visual entre elas.
+             */
+            const dateInfo = isValidExtratoDateLine(line);
+
+            if (dateInfo) {
+                if (current) {
+                    blocks.push(current);
+                }
+
+                current = {
+                    date: dateInfo.date,
+                    lines: [line],
+                    isTableRow: isMercadoPagoTableRow(line)
+                };
+
+                /* Uma nova data sempre reabre o parser, inclusive depois de
+                   cabeçalhos/resumos encontrados no fim de uma página. */
+                resumoStarted = false;
+                continue;
+            }
+
+            if (!current) continue;
+
+            /* Linhas de resumo/saldo nunca podem contaminar o lançamento. */
+            if (isResumoStartLine(line) || isExtratoSaldoLine(line)) {
+                if (isResumoStartLine(line)) {
+                    resumoStarted = true;
+                    blocks.push(current);
+                    current = null;
+                }
+                continue;
+            }
+
+            if (resumoStarted) continue;
+
+            current.lines.push(line);
+        }
+
+        if (current) blocks.push(current);
+
+        return blocks;
+    }
+
+    // Remove documentos e IDs antes de procurar qualquer valor monetário.
+    // Isso impede que CPF/CNPJ/ID de operação apareçam na descrição ou sejam
+    // confundidos com valores.
+    function sanitizeExtratoTextForMoney(text) {
+        return removeExtratoOperationIds(String(text || "")
+            // CNPJ: 11.425.393/0001-00 ou 11.425.393 0001-00
+            .replace(/\b\d{2}\.\d{3}\.\d{3}\s*\/\s*\d{4}-\d{2}\b/g, " ")
+            .replace(/\b\d{2}\.\d{3}\.\d{3}\s+\d{4}-\d{2}\b/g, " ")
+            // CPF: 465.900.128-81
+            .replace(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/g, " ")
+            .replace(/\u00a0/g, " "))
+            .replace(/\s*\|\s*/g, " | ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function isExtratoSaldoLine(line) {
+        const normalized = normalizarTexto(line);
+
+        if (!normalized) return true;
+
+        return /\bsaldo\s+do\s+dia\b/i.test(normalized) ||
+               /\bsaldo\s+anterior\b/i.test(normalized) ||
+               /\bsaldo\s+bloq(?:ueado)?\b/i.test(normalized);
+    }
+
+    function findMoneyMatches(text) {
+        const cleanedText = String(text || "");
+        const matches = [];
+
+        /*
+         * REGRA MERCADO PAGO:
+         * Capturamos SOMENTE valores precedidos por R$.
+         * Assim, números soltos jamais viram dinheiro.
+         * Aceitamos R$-3,18, R$ -3,18, R$3,18 e R$ 3,18.
+         */
+        const regex = /R\$\s*(-)?\s*((?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})/gi;
+        let match;
+
+        while ((match = regex.exec(cleanedText)) !== null) {
+            const valorTexto = match[2];
+            const valorFloat = parseFloat(valorTexto.replace(/\./g, '').replace(',', '.'));
+            const isNegative = Boolean(match[1]);
+
+            if (!Number.isFinite(valorFloat) || valorFloat <= 0) continue;
+
+            matches.push({
+                index: match.index,
+                raw: match[0],
+                valueText: valorTexto,
+                amount: valorFloat,
+                suffix: isNegative ? 'D' : 'C',
+                isNegative,
+                isCredit: !isNegative,
+                isDebit: isNegative
+            });
+        }
+
+        return matches;
+    }
+
+    function extractMercadoPagoAmountFromTableLine(blockText) {
+        const text = String(blockText || "");
+        const matches = findMoneyMatches(text);
+
+        if (matches.length === 0) return null;
+
+        /*
+         * A tabela é [Data | Descrição | ID | Valor | Saldo].
+         * O PRIMEIRO R$ é obrigatoriamente o valor da transação.
+         * O ÚLTIMO R$ é o saldo da conta e é sempre descartado.
+         * Se houver apenas um R$, ele é o valor da transação; não há saldo
+         * textual disponível naquele bloco.
+         */
+        const selected = matches[0];
+
+        return {
+            ...selected,
+            sourceText: text,
+            ignoredRightColumnValues: matches.slice(1),
+            isMercadoPagoTable: true
+        };
+    }
+
+    function extractExtratoAmountFromBlock(blockText) {
+        const cleanedBlock = sanitizeExtratoTextForMoney(blockText);
+
+        /*
+         * Primeiro tenta o formato de tabela R$ do Mercado Pago.
+         * Isso precisa ocorrer ANTES do parser bancário C/D para evitar que
+         * a coluna Saldo seja selecionada como se fosse a transação.
+         */
+        const mercadoPagoAmount = extractMercadoPagoAmountFromTableLine(cleanedBlock);
+        if (mercadoPagoAmount) return mercadoPagoAmount;
+
+        /*
+         * Compatibilidade com os extratos bancários já suportados pelo app:
+         * valor terminado em C/D. Mantemos a regra antiga somente quando não
+         * existe um valor R$ na linha.
+         */
+        const matches = findLegacyBankMoneyMatches(cleanedBlock);
+        if (matches.length === 0) return null;
+
+        const selected = matches[0];
+
+        return {
+            ...selected,
+            sourceText: cleanedBlock,
+            ignoredRightColumnValues: matches.slice(1),
+            isMercadoPagoTable: false
+        };
+    }
+
+    function findLegacyBankMoneyMatches(text) {
+        const cleanedText = sanitizeExtratoTextForMoney(text);
+        const regex = /(\d{1,3}(?:\.\d{3})*,\d{2})\s*([CD])(?=\s|$|\||[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ])/gi;
+        const matches = [];
+        let match;
+
+        while ((match = regex.exec(cleanedText)) !== null) {
+            const valorTexto = match[1];
+            const valorFloat = parseFloat(valorTexto.replace(/\./g, '').replace(',', '.'));
+            const sufixo = match[2].toUpperCase();
+
+            if (!Number.isFinite(valorFloat) || valorFloat <= 0) continue;
+
+            matches.push({
+                index: match.index,
+                raw: match[0],
+                valueText: valorTexto,
+                amount: valorFloat,
+                suffix: sufixo,
+                isNegative: sufixo === 'D',
+                isCredit: sufixo === 'C',
+                isDebit: sufixo === 'D'
+            });
+        }
+
+        return matches;
+    }
+
+    function removeMoneyValuesFromDescription(text) {
+        let cleaned = sanitizeExtratoTextForMoney(text);
+
+        /* Remove qualquer valor R$ da descrição, inclusive o saldo final. */
+        cleaned = cleaned.replace(/R\$\s*-?\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}/gi, " ");
+
+        /* Compatibilidade com o formato bancário C/D. */
+        cleaned = cleaned.replace(/\b\d{1,3}(?:\.\d{3})*,\d{2}\s*[CD]\b/gi, " ");
+
+        /* ID da operação nunca pode sobreviver na descrição. */
+        cleaned = removeExtratoOperationIds(cleaned);
+
+        return cleaned
+            .replace(/\s*\|\s*/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    function extractExtratoDescription(blockLines, amountMatch) {
+        const firstLine = blockLines[0] || "";
+        const dateInfo = isValidExtratoDateLine(firstLine);
+
+        const usableLines = blockLines.filter(line => !isExtratoSaldoLine(line));
+        let combined = usableLines.join(" ");
+
+        if (dateInfo) {
+            combined = combined.replace(dateInfo.raw, " ");
+        }
+
+        /*
+         * A descrição deve conter apenas o histórico textual.
+         * Removemos todos os R$, todos os saldos, todos os IDs >10 dígitos
+         * e documentos antes de devolver o texto para a tela/pergunta.
+         */
+        combined = removeMoneyValuesFromDescription(combined);
+
+        combined = combined
+            .replace(/\b(?:saldo\s+do\s+dia|saldo\s+anterior|saldo\s+bloq(?:ueado)?)\b/gi, " ")
+            .replace(/\s*\|\s*/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        return combined || "Movimentação Bancária";
+    }
+
+    function getOwnTransferMatch(blockText) {
+        const normalizedBlock = normalizarTexto(blockText);
+        const titularConfig = getExtratoTitularConfig();
+
+        const titularName = normalizarTexto(titularConfig.name);
+        const titularDocument = normalizarDocumento(titularConfig.document);
+
+        let matchedEntity = "";
+
+        const namesToCheck = getTitularNames();
+
+        for (const entity of namesToCheck) {
+            const normalizedEntity = normalizarTexto(entity);
+
+            if (normalizedEntity && normalizedBlock.includes(normalizedEntity)) {
+                matchedEntity = entity;
+                break;
             }
         }
-    }
-</script>
 
-</body>
-</html>
+        let documentMatched = false;
+
+        if (titularDocument.length >= 8) {
+            const blockDigits = normalizarDocumento(blockText);
+            documentMatched = blockDigits.includes(titularDocument);
+        }
+
+        const ownTransferMarkers = [
+            "msm tit",
+            "c msm tit int",
+            "c msm tit",
+            "outra if mt",
+            "mesmo titular",
+            "mesm titular",
+            "transferencia propria"
+        ];
+
+        const hasOwnTransferMarker = ownTransferMarkers.some(marker =>
+            normalizedBlock.includes(normalizarTexto(marker))
+        );
+
+        /*
+         * Nome/CPF/CNPJ por si só identifica uma transferência própria.
+         * Marcador de mesma titularidade exige também correspondência do
+         * nome do titular, conforme a regra solicitada.
+         */
+        const markerWithTitularName =
+            hasOwnTransferMarker &&
+            titularName &&
+            normalizedBlock.includes(titularName);
+
+        if (matchedEntity || documentMatched || markerWithTitularName) {
+            return {
+                isOwnTransfer: true,
+                matchedEntity: matchedEntity || (documentMatched ? "CPF/CNPJ do titular" : titularConfig.name || "Titular")
+            };
+        }
+
+        return {
+            isOwnTransfer: false,
+            matchedEntity: ""
+        };
+    }
+
+    function isIrrelevantExtratoBlock(blockText) {
+        const normalized = normalizarTexto(blockText);
+
+        if (!normalized) return true;
+
+        const irrelevantPatterns = [
+            /\bsaldo do dia\b/,
+            /\bsaldo anterior\b/,
+            /\bsaldo bloq/,
+            /\bsaldo bloqueado\b/,
+            /\bsaldo em conta\b/,
+            /\bcheque especial contratado\b/,
+            /\bsaldo disponivel\b/,
+            /\bencargos\b/,
+            /\btaxa cheque especial\b/,
+            /\blimite disponivel\b/,
+            /\blimite de credito\b/,
+            /\bhistorico de movimentacao\b/,
+            /\bextrato conta corrente\b/,
+            /\bouvidoria\b/,
+            /\bsac\b/
+        ];
+
+        return irrelevantPatterns.some(pattern => pattern.test(normalized));
+    }
+
+    function findLearnedCategory(normalizedDescription) {
+        let matchedCatId = null;
+        let isLearned = false;
+        let matchedRule = "";
+
+        const rules = Object.keys(extratoLearningRules)
+            .filter(Boolean)
+            .sort((a, b) => b.length - a.length);
+
+        for (const term of rules) {
+            const normalizedTerm = normalizarTexto(term);
+
+            if (normalizedTerm && normalizedDescription.includes(normalizedTerm)) {
+                const candidate = categories.find(c => c.id === extratoLearningRules[term]);
+
+                if (candidate) {
+                    matchedCatId = candidate.id;
+                    isLearned = true;
+                    matchedRule = term;
+                    break;
+                }
+            }
+        }
+
+        return { matchedCatId, isLearned, matchedRule };
+    }
+
+    function processExtratoRawText(rawText) {
+        const blocks = buildExtratoBlocks(rawText);
+        const parsed = [];
+
+        for (const block of blocks) {
+            const meaningfulLines = block.lines.filter(line =>
+                !isExtratoHeaderFooterLine(line) && !isExtratoSaldoLine(line)
+            );
+
+            if (meaningfulLines.length === 0) continue;
+
+            // Documentos são removidos antes de qualquer tentativa de capturar dinheiro.
+            const blockText = sanitizeExtratoTextForMoney(meaningfulLines.join(" "));
+            const amountMatch = extractExtratoAmountFromBlock(blockText);
+            if (!amountMatch) continue;
+
+            const desc = extractExtratoDescription(meaningfulLines, amountMatch);
+            const normalizedBlock = normalizarTexto(blockText);
+            const normDesc = normalizarTexto(desc);
+
+            if (!normDesc || normDesc === "movimentacao bancaria") {
+                /*
+                 * Ainda aceitamos a movimentação quando o bloco contém uma
+                 * descrição bancária válida em alguma linha.
+                 */
+            }
+
+            const ownTransfer = getOwnTransferMatch(blockText);
+
+            // Mercado Pago: R$- = saída/despesa; R$ positivo = entrada/receita.
+            // Extratos bancários legados: D = saída; C = entrada.
+            if (amountMatch.isMercadoPagoTable) {
+                const tipoFluxo = amountMatch.isNegative ? 'expense' : 'income';
+                const valorTransacao = amountMatch.amount;
+
+                if (!Number.isFinite(valorTransacao) || valorTransacao <= 0) continue;
+
+                const learned = findLearnedCategory(normDesc);
+                let matchedCatId = learned.matchedCatId;
+
+                if (!matchedCatId) {
+                    const defaultCat = categories.find(c => c.type === tipoFluxo);
+                    matchedCatId = defaultCat
+                        ? defaultCat.id
+                        : (categories[0] ? categories[0].id : "");
+                }
+
+                parsed.push({
+                    id: gerarIDUnico(),
+                    date: block.date,
+                    rawDescription: desc,
+                    fullBlockText: blockText,
+                    normalizedDescription: normDesc,
+                    normalizedBlockText: normalizedBlock,
+                    amount: valorTransacao,
+                    flowType: tipoFluxo,
+                    bankSuffix: amountMatch.isNegative ? 'D' : 'C',
+                    transactionValueText: amountMatch.valueText,
+                    categoryId: matchedCatId,
+                    isOwnTransfer: ownTransfer.isOwnTransfer,
+                    matchedEntity: ownTransfer.matchedEntity,
+                    isLearned: learned.isLearned,
+                    matchedRule: learned.matchedRule,
+                    ignored: ownTransfer.isOwnTransfer
+                });
+
+                continue;
+            }
+
+            // Compatibilidade com extratos bancários tradicionais.
+            if (amountMatch.suffix !== 'D' && amountMatch.suffix !== 'C') continue;
+            const tipoFluxo = amountMatch.suffix === 'D' ? 'expense' : 'income';
+            const valorTransacao = amountMatch.amount;
+            if (!Number.isFinite(valorTransacao) || valorTransacao <= 0) continue;
+
+            const learned = findLearnedCategory(normDesc);
+
+            let matchedCatId = learned.matchedCatId;
+
+            if (!matchedCatId) {
+                const defaultCat = categories.find(c =>
+                    c.type === (tipoFluxo === 'income' ? 'income' : 'expense')
+                );
+
+                matchedCatId = defaultCat
+                    ? defaultCat.id
+                    : (categories[0] ? categories[0].id : "");
+            }
+
+            parsed.push({
+                id: gerarIDUnico(),
+                date: block.date,
+                rawDescription: desc,
+                fullBlockText: blockText,
+                normalizedDescription: normDesc,
+                normalizedBlockText: normalizedBlock,
+                amount: valorTransacao,
+                flowType: tipoFluxo,
+                bankSuffix: amountMatch.suffix,
+                transactionValueText: amountMatch.valueText,
+                categoryId: matchedCatId,
+                isOwnTransfer: ownTransfer.isOwnTransfer,
+                matchedEntity: ownTransfer.matchedEntity,
+                isLearned: learned.isLearned,
+                matchedRule: learned.matchedRule,
+                ignored: ownTransfer.isOwnTransfer
+            });
+        }
+
+        if (parsed.length === 0) {
+            return alert("⚠️ Não foi possível identificar transações válidas no texto. Verifique se o extrato possui datas e valores.");
+        }
+
+        parsedExtratoItems = parsed;
+        closeExtratoModal();
+        renderExtratoReviewModal();
+    }
+
+    function renderExtratoReviewModal() {
+        const summary = document.getElementById('extratoReviewSummary');
+        const container = document.getElementById('extratoReviewList');
+
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        const totalItems = parsedExtratoItems.length;
+        const transferCount = parsedExtratoItems.filter(i => i.isOwnTransfer).length;
+        const learnedCount = parsedExtratoItems.filter(i => i.isLearned && !i.isOwnTransfer).length;
+        const unknownCount = parsedExtratoItems.filter(i => !i.isOwnTransfer && !i.isLearned).length;
+
+        summary.innerHTML = `
+            Encontrados <strong>${totalItems}</strong> lançamentos válidos.<br>
+            <span style="color:var(--success);">✓ ${learnedCount} já conhecidos</span> |
+            <span style="color:var(--accent);">🚫 ${transferCount} transf. próprias</span> |
+            <span style="color:var(--warning);">❓ ${unknownCount} para classificar</span>
+        `;
+
+        parsedExtratoItems.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = `extrato-item-card ${item.ignored ? 'ignored' : ''}`;
+            card.id = `extrato-item-${index}`;
+
+            const dateFmt = item.date.split('-').reverse().join('/');
+            const isInc = item.flowType === 'income';
+            const colorVal = isInc ? 'var(--success)' : 'var(--danger)';
+            const signVal = isInc ? '+' : '-';
+
+            let badgeHtml = '';
+
+            if (item.isOwnTransfer) {
+                badgeHtml = `<span class="extrato-badge-transfer">🚫 Transferência própria${item.matchedEntity ? ` (${escaparHtml(item.matchedEntity)})` : ''}</span>`;
+            } else if (item.isLearned) {
+                badgeHtml = `<span class="extrato-badge-learned">✓ Categoria Memorizada</span>`;
+            } else {
+                badgeHtml = `<span class="extrato-badge-unknown">❓ Para qual setor deve ir?</span>`;
+            }
+
+            const selectOptions = categories.map(c => `
+                <option value="${escaparHtml(c.id)}" ${c.id === item.categoryId ? 'selected' : ''}>
+                    ${escaparHtml(c.name)} (${c.type === 'income' ? 'Entrada' : 'Saída'})
+                </option>
+            `).join('');
+
+            const questionHtml = !item.isOwnTransfer && !item.isLearned
+                ? `<div style="font-size:11px; color:var(--warning); margin:5px 0 7px 0; line-height:1.35;">
+                        Para qual setor deve ir o lançamento "${escaparHtml(item.rawDescription)}"?
+                   </div>`
+                : '';
+
+            card.innerHTML = `
+                <div class="extrato-item-row">
+                    <div style="flex:1; min-width:0;">
+                        <strong style="font-size:13px; word-break:break-word;">${escaparHtml(item.rawDescription)}</strong>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+                            📅 ${dateFmt} | ${badgeHtml}
+                        </div>
+                    </div>
+                    <div style="text-align:right; flex-shrink:0;">
+                        <span style="font-weight:700; font-size:14px; color:${colorVal};">${signVal} ${formatCurrency(item.amount)}</span>
+                        <div style="margin-top:4px;">
+                            <label style="font-size:11px; cursor:pointer; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;">
+                                <input type="checkbox" ${!item.ignored ? 'checked' : ''} ${item.isOwnTransfer ? 'disabled' : ''} onchange="toggleIgnoreExtratoItem(${index}, this.checked)">
+                                Lançar
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:${item.ignored ? 'none' : 'block'}; margin-top:4px;" id="extrato-cat-selector-${index}">
+                    ${questionHtml}
+                    <label style="font-size:10px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">
+                        Setor / Caixa de Destino:
+                    </label>
+                    <select class="select-input" style="padding:8px 10px; font-size:12px; margin-top:3px;" onchange="updateExtratoItemCategory(${index}, this.value)">
+                        ${selectOptions}
+                    </select>
+                </div>
+            `;
+
+            container.appendChild(card);
+        });
+
+        document.getElementById('extratoReviewModal').style.display = 'flex';
+    }
+
+    function toggleIgnoreExtratoItem(index, isChecked) {
+        if (!parsedExtratoItems[index]) return;
+
+        if (parsedExtratoItems[index].isOwnTransfer) {
+            parsedExtratoItems[index].ignored = true;
+            return;
+        }
+
+        parsedExtratoItems[index].ignored = !isChecked;
+
+        const card = document.getElementById(`extrato-item-${index}`);
+        const selectorDiv = document.getElementById(`extrato-cat-selector-${index}`);
+
+        if (card) {
+            if (!isChecked) card.classList.add('ignored');
+            else card.classList.remove('ignored');
+        }
+
+        if (selectorDiv) {
+            selectorDiv.style.display = isChecked ? 'block' : 'none';
+        }
+    }
+
+    function updateExtratoItemCategory(index, catId) {
+        if (!parsedExtratoItems[index]) return;
+
+        parsedExtratoItems[index].categoryId = catId;
+        parsedExtratoItems[index].isLearned = false;
+    }
+
+    function buildLearningTerm(normalizedDescription) {
+        return normalizedDescription
+            .replace(/\b(pix|ted|doc|compra|debito|credito|pagamento|pagto|transferencia|transf|recebida|recebido|enviada|enviado|banco|saque|fav|beneficiario|favorecido)\b/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function confirmExtratoImport() {
+        const itemsToImport = parsedExtratoItems.filter(i => !i.ignored && !i.isOwnTransfer);
+
+        if (itemsToImport.length === 0) {
+            return alert("Nenhum item selecionado para lançamento.");
+        }
+
+        let newRulesLearnedCount = 0;
+
+        itemsToImport.forEach(item => {
+            const catObj = categories.find(c => c.id === item.categoryId);
+
+            if (!catObj) return;
+
+            const isInc = item.flowType === 'income';
+
+            transactions.push({
+                id: gerarIDUnico(),
+                categoryId: item.categoryId,
+                amount: item.amount,
+                type: isInc ? 'income' : 'expense_cash',
+                paymentMethod: 'dinheiro',
+                description: catObj.name,
+                freeDescription: item.rawDescription,
+                date: item.date,
+                source: 'extrato',
+                extratoBlock: item.fullBlockText
+            });
+
+            const cleanTerm = buildLearningTerm(item.normalizedDescription);
+
+            if (cleanTerm.length >= 3 && extratoLearningRules[cleanTerm] !== item.categoryId) {
+                extratoLearningRules[cleanTerm] = item.categoryId;
+                newRulesLearnedCount++;
+            }
+        });
+
+        safeLocalStorageSave();
+        closeExtratoReviewModal();
+        loadData();
+        renderLearningRulesList();
+        showBanner();
+
+        alert(`🎉 Sucesso! ${itemsToImport.length} lançamentos adicionados nas caixas correspondentes.${newRulesLearnedCount > 0 ? ` O sistema memorizou ${newRulesLearnedCount} novo(s) estabelecimento(s) para os próximos extratos.` : ''}`);
+    }
+
+</script>
+    </html>
 
