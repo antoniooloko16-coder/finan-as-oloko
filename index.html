@@ -3848,6 +3848,128 @@
         return combined || "Movimentação Bancária";
     }
 
+    function deduplicateExtratoDescription(text) {
+        let cleaned = String(text || "")
+            .replace(/[\r\n]+/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        if (!cleaned) return "";
+
+        // Remove repetições consecutivas de uma mesma palavra.
+        cleaned = cleaned.replace(/\b([A-Za-zÀ-ÿ0-9]{2,})\b(?:\s+\1\b)+/gi, "$1");
+
+        // Remove frases consecutivas duplicadas, inclusive quando o PDF
+        // repete uma coluna: "Dinheiro reservado Casa Dinheiro reservado Casa".
+        const words = cleaned.split(/\s+/);
+        for (let size = Math.min(10, Math.floor(words.length / 2)); size >= 1; size--) {
+            let changed = true;
+            while (changed && words.length >= size * 2) {
+                changed = false;
+                const a = words.slice(words.length - size * 2, words.length - size)
+                    .map(normalizarTexto).join(" ");
+                const b = words.slice(words.length - size)
+                    .map(normalizarTexto).join(" ");
+                if (a && a === b) {
+                    words.splice(words.length - size, size);
+                    changed = true;
+                }
+            }
+        }
+
+        return words.join(" ").replace(/\s+/g, " ").trim();
+    }
+
+    function getExtratoFlowKeywords() {
+        return {
+            income: [
+                "pix recebido", "recebido", "recebida", "credito", "crédito",
+                "estorno", "resgate", "deposito", "depósito", "entrada", "recebimento"
+            ],
+            expense: [
+                "pix enviado", "enviado", "enviada", "pago", "pagamento", "compra",
+                "saque", "tarifa", "debito", "débito", "saida", "saída", "transferencia enviada"
+            ]
+        };
+    }
+
+    function classifyExtratoFlow(amountMatch, blockText, description) {
+        const normalized = normalizarTexto(`${blockText} ${description || ""}`);
+        const hasPixReceived = normalized.includes("pix recebido");
+
+        // REGRA DE MAIOR PRIORIDADE: PIX recebido nunca pode virar saída.
+        if (hasPixReceived) {
+            return {
+                type: "income",
+                reason: "Regra prioritária: 'PIX recebido' identifica entrada."
+            };
+        }
+
+        const keywords = getExtratoFlowKeywords();
+        const hasIncomeKeyword = keywords.income.some(k => normalized.includes(normalizarTexto(k)));
+        const hasExpenseKeyword = keywords.expense.some(k => normalized.includes(normalizarTexto(k)));
+
+        if (hasIncomeKeyword && !hasExpenseKeyword) {
+            return { type: "income", reason: "Termo de entrada/recebimento identificado no histórico." };
+        }
+
+        if (hasExpenseKeyword && !hasIncomeKeyword) {
+            return { type: "expense", reason: "Termo de saída/pagamento identificado no histórico." };
+        }
+
+        if (amountMatch?.isMercadoPagoTable) {
+            return {
+                type: amountMatch.isNegative ? "expense" : "income",
+                reason: amountMatch.isNegative ? "Valor R$ com sinal negativo." : "Valor R$ positivo."
+            };
+        }
+
+        if (amountMatch?.suffix === "D" || amountMatch?.isDebit) {
+            return { type: "expense", reason: "Sufixo bancário D identifica débito/saída." };
+        }
+
+        if (amountMatch?.suffix === "C" || amountMatch?.isCredit) {
+            return { type: "income", reason: "Sufixo bancário C identifica crédito/entrada." };
+        }
+
+        return { type: "expense", reason: "Fluxo não identificado; mantido como saída por segurança do importador." };
+    }
+
+    function getCompatibleCategories(flowType) {
+        const wantedType = flowType === "income" ? "income" : "expense";
+        return categories.filter(c => c && c.type === wantedType);
+    }
+
+    function findLearnedCategoryForFlow(normalizedDescription, flowType) {
+        const compatible = new Set(getCompatibleCategories(flowType).map(c => c.id));
+        if (!compatible.size) return { matchedCatId: null, isLearned: false, matchedRule: "" };
+
+        const rules = Object.keys(extratoLearningRules)
+            .filter(Boolean)
+            .sort((a, b) => b.length - a.length);
+
+        for (const term of rules) {
+            const normalizedTerm = normalizarTexto(term);
+            const candidateId = extratoLearningRules[term];
+            if (!normalizedTerm || !compatible.has(candidateId)) continue;
+
+            if (normalizedDescription.includes(normalizedTerm)) {
+                return {
+                    matchedCatId: candidateId,
+                    isLearned: true,
+                    matchedRule: term
+                };
+            }
+        }
+
+        return { matchedCatId: null, isLearned: false, matchedRule: "" };
+    }
+
+    function getDefaultCompatibleCategory(flowType) {
+        const compatible = getCompatibleCategories(flowType);
+        return compatible[0] || null;
+    }
+
     function getOwnTransferMatch(blockText) {
         const normalizedBlock = normalizarTexto(blockText);
         const titularConfig = getExtratoTitularConfig();
@@ -3976,101 +4098,64 @@
 
             if (meaningfulLines.length === 0) continue;
 
-            // Documentos são removidos antes de qualquer tentativa de capturar dinheiro.
-            const blockText = sanitizeExtratoTextForMoney(meaningfulLines.join(" "));
+            // Mantém o bloco original para auditoria, mas remove documentos
+            // antes de procurar dinheiro para evitar falsos positivos.
+            const rawBlockText = meaningfulLines.join(" ").replace(/\s+/g, " ").trim();
+            const blockText = sanitizeExtratoTextForMoney(rawBlockText);
             const amountMatch = extractExtratoAmountFromBlock(blockText);
             if (!amountMatch) continue;
 
-            const desc = extractExtratoDescription(meaningfulLines, amountMatch);
+            const extractedDescription = extractExtratoDescription(meaningfulLines, amountMatch);
+            const cleanDescription = deduplicateExtratoDescription(extractedDescription);
             const normalizedBlock = normalizarTexto(blockText);
-            const normDesc = normalizarTexto(desc);
+            const normDesc = normalizarTexto(cleanDescription);
 
-            if (!normDesc || normDesc === "movimentacao bancaria") {
-                /*
-                 * Ainda aceitamos a movimentação quando o bloco contém uma
-                 * descrição bancária válida em alguma linha.
-                 */
-            }
+            if (!normDesc || normDesc === "movimentacao bancaria") continue;
 
             const ownTransfer = getOwnTransferMatch(blockText);
+            const flow = classifyExtratoFlow(amountMatch, blockText, cleanDescription);
+            const tipoFluxo = flow.type;
+            const valorTransacao = Math.abs(Number(amountMatch.amount));
 
-            // Mercado Pago: R$- = saída/despesa; R$ positivo = entrada/receita.
-            // Extratos bancários legados: D = saída; C = entrada.
-            if (amountMatch.isMercadoPagoTable) {
-                const tipoFluxo = amountMatch.isNegative ? 'expense' : 'income';
-                const valorTransacao = amountMatch.amount;
-
-                if (!Number.isFinite(valorTransacao) || valorTransacao <= 0) continue;
-
-                const learned = findLearnedCategory(normDesc);
-                let matchedCatId = learned.matchedCatId;
-
-                if (!matchedCatId) {
-                    const defaultCat = categories.find(c => c.type === tipoFluxo);
-                    matchedCatId = defaultCat
-                        ? defaultCat.id
-                        : (categories[0] ? categories[0].id : "");
-                }
-
-                parsed.push({
-                    id: gerarIDUnico(),
-                    date: block.date,
-                    rawDescription: desc,
-                    fullBlockText: blockText,
-                    normalizedDescription: normDesc,
-                    normalizedBlockText: normalizedBlock,
-                    amount: valorTransacao,
-                    flowType: tipoFluxo,
-                    bankSuffix: amountMatch.isNegative ? 'D' : 'C',
-                    transactionValueText: amountMatch.valueText,
-                    categoryId: matchedCatId,
-                    isOwnTransfer: ownTransfer.isOwnTransfer,
-                    matchedEntity: ownTransfer.matchedEntity,
-                    isLearned: learned.isLearned,
-                    matchedRule: learned.matchedRule,
-                    ignored: ownTransfer.isOwnTransfer
-                });
-
-                continue;
-            }
-
-            // Compatibilidade com extratos bancários tradicionais.
-            if (amountMatch.suffix !== 'D' && amountMatch.suffix !== 'C') continue;
-            const tipoFluxo = amountMatch.suffix === 'D' ? 'expense' : 'income';
-            const valorTransacao = amountMatch.amount;
             if (!Number.isFinite(valorTransacao) || valorTransacao <= 0) continue;
 
-            const learned = findLearnedCategory(normDesc);
+            // A regra de aprendizado NUNCA pode sugerir uma categoria do fluxo
+            // oposto. Isso impede receita indo para "Despesa" e vice-versa.
+            const learned = findLearnedCategoryForFlow(normDesc, tipoFluxo);
+            const defaultCat = getDefaultCompatibleCategory(tipoFluxo);
+            const matchedCatId = learned.matchedCatId || (defaultCat ? defaultCat.id : null);
 
-            let matchedCatId = learned.matchedCatId;
-
-            if (!matchedCatId) {
-                const defaultCat = categories.find(c =>
-                    c.type === (tipoFluxo === 'income' ? 'income' : 'expense')
-                );
-
-                matchedCatId = defaultCat
-                    ? defaultCat.id
-                    : (categories[0] ? categories[0].id : "");
-            }
+            // Transferência própria é apenas marcada para conferência manual;
+            // nunca deve entrar automaticamente no caixa.
+            const isSelfTransfer = !!ownTransfer.isOwnTransfer;
+            const autoCheck = !isSelfTransfer;
 
             parsed.push({
                 id: gerarIDUnico(),
                 date: block.date,
-                rawDescription: desc,
-                fullBlockText: blockText,
+                // Contrato do interpretador: texto original completo + texto limpo.
+                rawDescription: rawBlockText,
+                cleanDescription,
+                displayDescription: cleanDescription,
+                fullBlockText: rawBlockText,
                 normalizedDescription: normDesc,
                 normalizedBlockText: normalizedBlock,
                 amount: valorTransacao,
                 flowType: tipoFluxo,
-                bankSuffix: amountMatch.suffix,
+                type: tipoFluxo,
+                bankSuffix: amountMatch.isMercadoPagoTable
+                    ? (amountMatch.isNegative ? 'D' : 'C')
+                    : amountMatch.suffix,
                 transactionValueText: amountMatch.valueText,
                 categoryId: matchedCatId,
-                isOwnTransfer: ownTransfer.isOwnTransfer,
+                suggestedCategoryId: matchedCatId,
+                isOwnTransfer: isSelfTransfer,
+                isSelfTransfer,
+                autoCheck,
                 matchedEntity: ownTransfer.matchedEntity,
                 isLearned: learned.isLearned,
-                matchedRule: learned.matchedRule,
-                ignored: ownTransfer.isOwnTransfer
+                matchedRule: flow.reason + (learned.matchedRule ? ` Regra de categoria: ${learned.matchedRule}.` : ""),
+                ignored: isSelfTransfer
             });
         }
 
@@ -4123,7 +4208,8 @@
                 badgeHtml = `<span class="extrato-badge-unknown">❓ Para qual setor deve ir?</span>`;
             }
 
-            const selectOptions = categories.map(c => `
+            const compatibleCategories = getCompatibleCategories(item.flowType);
+            const selectOptions = compatibleCategories.map(c => `
                 <option value="${escaparHtml(c.id)}" ${c.id === item.categoryId ? 'selected' : ''}>
                     ${escaparHtml(c.name)} (${c.type === 'income' ? 'Entrada' : 'Saída'})
                 </option>
@@ -4131,14 +4217,14 @@
 
             const questionHtml = !item.isOwnTransfer && !item.isLearned
                 ? `<div style="font-size:11px; color:var(--warning); margin:5px 0 7px 0; line-height:1.35;">
-                        Para qual setor deve ir o lançamento "${escaparHtml(item.rawDescription)}"?
+                        Para qual setor deve ir o lançamento "${escaparHtml(item.cleanDescription || item.rawDescription)}"?
                    </div>`
                 : '';
 
             card.innerHTML = `
                 <div class="extrato-item-row">
                     <div style="flex:1; min-width:0;">
-                        <strong style="font-size:13px; word-break:break-word;">${escaparHtml(item.rawDescription)}</strong>
+                        <strong style="font-size:13px; word-break:break-word;">${escaparHtml(item.cleanDescription || item.rawDescription)}</strong>
                         <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
                             📅 ${dateFmt} | ${badgeHtml}
                         </div>
@@ -4256,4 +4342,3 @@
 
 </script>
     </html>
-
