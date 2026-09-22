@@ -3376,17 +3376,6 @@
         const pdf = await loadingTask.promise;
         const pageTexts = [];
 
-        /*
-         * IMPORTANTE:
-         * PDF.js entrega o conteúdo visual do PDF como pequenos fragmentos
-         * posicionados por X/Y. Em extratos em tabela, concatenar tudo apenas
-         * pela ordem de leitura pode misturar colunas (Valor x Saldo) e linhas.
-         *
-         * Para preservar a estrutura, cada linha visual é reconstruída com
-         * separadores de coluna quando existe um espaço horizontal relevante.
-         * O parser posterior não depende desses separadores para achar o valor:
-         * ele trabalha com todos os tokens monetários e escolhe o PRIMEIRO R$.
-         */
         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
             const page = await pdf.getPage(pageNumber);
             const textContent = await page.getTextContent();
@@ -3404,18 +3393,17 @@
                 });
 
             const lines = [];
-            const Y_TOLERANCE = 2.5;
 
             items.sort((a, b) => {
-                if (Math.abs(a.y - b.y) > Y_TOLERANCE) return b.y - a.y;
+                if (Math.abs(a.y - b.y) > 2.5) return b.y - a.y;
                 return a.x - b.x;
             });
 
-            for (const item of items) {
+            items.forEach(item => {
                 let target = null;
 
                 for (const line of lines) {
-                    if (Math.abs(line.y - item.y) <= Y_TOLERANCE) {
+                    if (Math.abs(line.y - item.y) <= 2.5) {
                         target = line;
                         break;
                     }
@@ -3427,7 +3415,7 @@
                 }
 
                 target.items.push(item);
-            }
+            });
 
             lines.sort((a, b) => b.y - a.y);
 
@@ -3435,26 +3423,16 @@
                 line.items.sort((a, b) => a.x - b.x);
 
                 let result = "";
-                let previous = null;
-
-                for (const item of line.items) {
+                line.items.forEach(item => {
                     if (!result) {
                         result = item.text;
-                        previous = item;
-                        continue;
+                        return;
                     }
 
-                    const previousRight = previous.x + previous.width;
-                    const gap = item.x - previousRight;
-
-                    /*
-                     * Gap pequeno = mesma palavra/coluna.
-                     * Gap maior = preserva uma separação inequívoca entre
-                     * colunas sem destruir o texto da descrição.
-                     */
-                    result += (gap > 6 ? " | " : " ") + item.text;
-                    previous = item;
-                }
+                    const previous = line.items[line.items.indexOf(item) - 1];
+                    const gap = item.x - (previous.x + previous.width);
+                    result += (gap > 2 ? " " : "") + item.text;
+                });
 
                 return result.trim();
             }).filter(Boolean);
@@ -3478,22 +3456,20 @@
     function isValidExtratoDateLine(line) {
         if (!line) return null;
 
-        /*
-         * DELIMITADOR OFICIAL DE LANÇAMENTO:
-         * Mercado Pago inicia cada transação com DD-MM-AAAA ou DD/MM/AAAA.
-         * Aqui NÃO aceitamos datas sem ano, pontos ou dia/mês de 1 dígito.
-         */
-        const match = String(line).match(/^\s*(\d{2})[\/-](\d{2})[\/-](\d{4})(?=\s|$|\|)/);
+        const match = String(line).match(/^\s*(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?(?=\s|$|\|)/);
 
         if (!match) return null;
 
         const day = parseInt(match[1], 10);
         const month = parseInt(match[2], 10);
-        const year = parseInt(match[3], 10);
 
-        if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > 2100) {
-            return null;
-        }
+        if (day < 1 || day > 31 || month < 1 || month > 12) return null;
+
+        let year = match[3]
+            ? parseInt(match[3], 10)
+            : parseInt(getSelectedYearMonth().year, 10);
+
+        if (year < 100) year += 2000;
 
         return {
             day,
@@ -3556,53 +3532,9 @@
         return /\b(saldo em conta|cheque especial contratado|saldo disponivel|encargos|taxa cheque especial|limite disponivel|limite de credito|juros|tarifa)\b/i.test(normalized);
     }
 
-    function isMercadoPagoTableRow(line) {
-        if (!line) return false;
-
-        const normalized = normalizeExtratoLine(line);
-        if (!isValidExtratoDateLine(normalized)) return false;
-
-        /*
-         * Mercado Pago normalmente apresenta:
-         * DATA | DESCRIÇÃO | ID DA OPERAÇÃO | VALOR | SALDO
-         * O teste abaixo exige pelo menos um R$ e uma data no início.
-         */
-        return /\bR\$\s*-?\s*\d{1,3}(?:\.\d{3})*,\d{2}\b/i.test(normalized);
-    }
-
-    function removeExtratoOperationIds(text) {
-        return String(text || "")
-            /* IDs puros com mais de 10 dígitos: nunca fazem parte da descrição. */
-            .replace(/(?<!\d)\d{11,}(?!\d)/g, " ")
-            /* Também cobre ID separado por espaços/pipe pelo PDF. */
-            .replace(/(?<!\d)(?:\d[\s|]){10,}\d(?!\d)/g, " ")
-            .replace(/\s+/g, " ")
-            .trim();
-    }
-
     function buildExtratoBlocks(rawText) {
-        /*
-         * ================================================================
-         * SPLIT ESTRITO POR DATA — REGRA PRINCIPAL DO PARSER
-         * ================================================================
-         *
-         * O PDF pode devolver uma ou várias transações na mesma linha visual.
-         * Por isso NÃO podemos depender somente de `split("\n")`.
-         *
-         * Primeiro inserimos uma quebra REAL antes de TODA ocorrência de uma
-         * data no formato DD-MM-AAAA ou DD/MM/AAAA. Assim, mesmo que o PDF
-         * entregue algo como:
-         *
-         * 19-08-2026 ... R$-10,00 ... 20-08-2026 ... R$ 200,00 ...
-         *
-         * o texto vira dois lançamentos independentes antes da extração de
-         * valor/descrição. Cada data fecha o lançamento anterior e abre outro.
-         */
-        const normalizedRawText = String(rawText || "")
-            .replace(/\r\n?/g, "\n")
-            .replace(/(?<!^)(?<![\n])(?<!\d)(\d{2}[\/-]\d{2}[\/-]\d{4})(?=\s|$|\|)/g, "\n$1");
-
-        const sourceLines = normalizedRawText
+        const sourceLines = String(rawText || "")
+            .replace(/\r/g, "\n")
             .split(/\n+/)
             .map(normalizeExtratoLine)
             .filter(Boolean);
@@ -3615,46 +3547,34 @@
             const line = normalizeExtratoLine(originalLine);
             if (!line) continue;
 
-            /*
-             * REGRA ABSOLUTA:
-             * toda nova DATA inicia um NOVO objeto. Nunca reutilizamos o bloco
-             * anterior, mesmo que o PDF tenha colocado duas transações na mesma
-             * linha ou tenha omitido uma quebra visual entre elas.
-             */
-            const dateInfo = isValidExtratoDateLine(line);
+            // Linhas de saldo nunca entram no bloco e nunca geram lançamento.
+            if (isExtratoSaldoLine(line)) continue;
 
-            if (dateInfo) {
+            if (isResumoStartLine(line)) {
+                resumoStarted = true;
                 if (current) {
-                    blocks.push(current);
-                }
-
-                current = {
-                    date: dateInfo.date,
-                    lines: [line],
-                    isTableRow: isMercadoPagoTableRow(line)
-                };
-
-                /* Uma nova data sempre reabre o parser, inclusive depois de
-                   cabeçalhos/resumos encontrados no fim de uma página. */
-                resumoStarted = false;
-                continue;
-            }
-
-            if (!current) continue;
-
-            /* Linhas de resumo/saldo nunca podem contaminar o lançamento. */
-            if (isResumoStartLine(line) || isExtratoSaldoLine(line)) {
-                if (isResumoStartLine(line)) {
-                    resumoStarted = true;
                     blocks.push(current);
                     current = null;
                 }
                 continue;
             }
 
-            if (resumoStarted) continue;
+            if (resumoStarted) {
+                continue;
+            }
 
-            current.lines.push(line);
+            const dateInfo = isValidExtratoDateLine(line);
+
+            if (dateInfo) {
+                if (current) blocks.push(current);
+
+                current = {
+                    date: dateInfo.date,
+                    lines: [line]
+                };
+            } else if (current) {
+                current.lines.push(line);
+            }
         }
 
         if (current) blocks.push(current);
@@ -3662,18 +3582,16 @@
         return blocks;
     }
 
-    // Remove documentos e IDs antes de procurar qualquer valor monetário.
-    // Isso impede que CPF/CNPJ/ID de operação apareçam na descrição ou sejam
-    // confundidos com valores.
+    // Remove documentos e linhas de saldo ANTES de procurar qualquer valor monetário.
+    // Isso impede que CPF/CNPJ seja interpretado como dinheiro.
     function sanitizeExtratoTextForMoney(text) {
-        return removeExtratoOperationIds(String(text || "")
+        return String(text || "")
             // CNPJ: 11.425.393/0001-00 ou 11.425.393 0001-00
             .replace(/\b\d{2}\.\d{3}\.\d{3}\s*\/\s*\d{4}-\d{2}\b/g, " ")
             .replace(/\b\d{2}\.\d{3}\.\d{3}\s+\d{4}-\d{2}\b/g, " ")
             // CPF: 465.900.128-81
             .replace(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/g, " ")
-            .replace(/\u00a0/g, " "))
-            .replace(/\s*\|\s*/g, " | ")
+            .replace(/\u00a0/g, " ")
             .replace(/\s+/g, " ")
             .trim();
     }
@@ -3689,100 +3607,20 @@
     }
 
     function findMoneyMatches(text) {
-        const cleanedText = String(text || "");
-        const matches = [];
-
-        /*
-         * REGRA MERCADO PAGO:
-         * Capturamos SOMENTE valores precedidos por R$.
-         * Assim, números soltos jamais viram dinheiro.
-         * Aceitamos R$-3,18, R$ -3,18, R$3,18 e R$ 3,18.
-         */
-        const regex = /R\$\s*(-)?\s*((?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})/gi;
-        let match;
-
-        while ((match = regex.exec(cleanedText)) !== null) {
-            const valorTexto = match[2];
-            const valorFloat = parseFloat(valorTexto.replace(/\./g, '').replace(',', '.'));
-            const isNegative = Boolean(match[1]);
-
-            if (!Number.isFinite(valorFloat) || valorFloat <= 0) continue;
-
-            matches.push({
-                index: match.index,
-                raw: match[0],
-                valueText: valorTexto,
-                amount: valorFloat,
-                suffix: isNegative ? 'D' : 'C',
-                isNegative,
-                isCredit: !isNegative,
-                isDebit: isNegative
-            });
-        }
-
-        return matches;
-    }
-
-    function extractMercadoPagoAmountFromTableLine(blockText) {
-        const text = String(blockText || "");
-        const matches = findMoneyMatches(text);
-
-        if (matches.length === 0) return null;
-
-        /*
-         * A tabela é [Data | Descrição | ID | Valor | Saldo].
-         * O PRIMEIRO R$ é obrigatoriamente o valor da transação.
-         * O ÚLTIMO R$ é o saldo da conta e é sempre descartado.
-         * Se houver apenas um R$, ele é o valor da transação; não há saldo
-         * textual disponível naquele bloco.
-         */
-        const selected = matches[0];
-
-        return {
-            ...selected,
-            sourceText: text,
-            ignoredRightColumnValues: matches.slice(1),
-            isMercadoPagoTable: true
-        };
-    }
-
-    function extractExtratoAmountFromBlock(blockText) {
-        const cleanedBlock = sanitizeExtratoTextForMoney(blockText);
-
-        /*
-         * Primeiro tenta o formato de tabela R$ do Mercado Pago.
-         * Isso precisa ocorrer ANTES do parser bancário C/D para evitar que
-         * a coluna Saldo seja selecionada como se fosse a transação.
-         */
-        const mercadoPagoAmount = extractMercadoPagoAmountFromTableLine(cleanedBlock);
-        if (mercadoPagoAmount) return mercadoPagoAmount;
-
-        /*
-         * Compatibilidade com os extratos bancários já suportados pelo app:
-         * valor terminado em C/D. Mantemos a regra antiga somente quando não
-         * existe um valor R$ na linha.
-         */
-        const matches = findLegacyBankMoneyMatches(cleanedBlock);
-        if (matches.length === 0) return null;
-
-        const selected = matches[0];
-
-        return {
-            ...selected,
-            sourceText: cleanedBlock,
-            ignoredRightColumnValues: matches.slice(1),
-            isMercadoPagoTable: false
-        };
-    }
-
-    function findLegacyBankMoneyMatches(text) {
         const cleanedText = sanitizeExtratoTextForMoney(text);
+
+        // REGRA ESTRITA: valor bancário do extrato precisa terminar em C ou D.
+        // Não aceitamos valor sem sufixo para evitar que datas, documentos,
+        // números de conta ou outros números sejam interpretados como dinheiro.
         const regex = /(\d{1,3}(?:\.\d{3})*,\d{2})\s*([CD])(?=\s|$|\||[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ])/gi;
         const matches = [];
         let match;
 
         while ((match = regex.exec(cleanedText)) !== null) {
             const valorTexto = match[1];
+
+            // Conversão bancária EXATA solicitada:
+            // 1.161,62 -> 1161.62
             const valorFloat = parseFloat(valorTexto.replace(/\./g, '').replace(',', '.'));
             const sufixo = match[2].toUpperCase();
 
@@ -3803,21 +3641,37 @@
         return matches;
     }
 
+    function extractExtratoAmountFromBlock(blockText) {
+        // A limpeza de documentos ocorre ANTES da captura de qualquer valor.
+        const cleanedBlock = sanitizeExtratoTextForMoney(blockText);
+        const matches = findMoneyMatches(cleanedBlock);
+
+        if (matches.length === 0) return null;
+
+        // REGRA SICOOB/BANCÁRIA ESTRITA:
+        // quando existem dois ou mais valores C/D na mesma linha/bloco,
+        // o PRIMEIRO é o valor da transação; os seguintes são saldo acumulado,
+        // saldo do dia ou valores de colunas à direita e devem ser ignorados.
+        const selected = matches[0];
+
+        return {
+            ...selected,
+            sourceText: cleanedBlock,
+            ignoredRightColumnValues: matches.slice(1)
+        };
+    }
+
     function removeMoneyValuesFromDescription(text) {
         let cleaned = sanitizeExtratoTextForMoney(text);
 
-        /* Remove qualquer valor R$ da descrição, inclusive o saldo final. */
-        cleaned = cleaned.replace(/R\$\s*-?\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}/gi, " ");
-
-        /* Compatibilidade com o formato bancário C/D. */
+        // Remove valores bancários completos, incluindo obrigatoriamente C/D.
+        // Isso elimina tanto o valor da transação quanto o saldo da direita
+        // da descrição, sem deixar os centavos grudados no histórico.
         cleaned = cleaned.replace(/\b\d{1,3}(?:\.\d{3})*,\d{2}\s*[CD]\b/gi, " ");
 
-        /* ID da operação nunca pode sobreviver na descrição. */
-        cleaned = removeExtratoOperationIds(cleaned);
-
         return cleaned
-            .replace(/\s*\|\s*/g, " ")
             .replace(/\s+/g, " ")
+            .replace(/[|]+/g, " ")
             .trim();
     }
 
@@ -3825,6 +3679,7 @@
         const firstLine = blockLines[0] || "";
         const dateInfo = isValidExtratoDateLine(firstLine);
 
+        // Nunca usamos uma linha de saldo na descrição.
         const usableLines = blockLines.filter(line => !isExtratoSaldoLine(line));
         let combined = usableLines.join(" ");
 
@@ -3832,142 +3687,19 @@
             combined = combined.replace(dateInfo.raw, " ");
         }
 
-        /*
-         * A descrição deve conter apenas o histórico textual.
-         * Removemos todos os R$, todos os saldos, todos os IDs >10 dígitos
-         * e documentos antes de devolver o texto para a tela/pergunta.
-         */
+        // Remove CPF/CNPJ antes de limpar o histórico.
+        combined = sanitizeExtratoTextForMoney(combined);
+
+        // Remove TODOS os valores monetários encontrados no bloco, não apenas
+        // o valor selecionado, evitando que 21,50D fique na descrição.
         combined = removeMoneyValuesFromDescription(combined);
 
         combined = combined
             .replace(/\b(?:saldo\s+do\s+dia|saldo\s+anterior|saldo\s+bloq(?:ueado)?)\b/gi, " ")
-            .replace(/\s*\|\s*/g, " ")
             .replace(/\s+/g, " ")
             .trim();
 
         return combined || "Movimentação Bancária";
-    }
-
-    function deduplicateExtratoDescription(text) {
-        let cleaned = String(text || "")
-            .replace(/[\r\n]+/g, " ")
-            .replace(/\s+/g, " ")
-            .trim();
-
-        if (!cleaned) return "";
-
-        // Remove repetições consecutivas de uma mesma palavra.
-        cleaned = cleaned.replace(/\b([A-Za-zÀ-ÿ0-9]{2,})\b(?:\s+\1\b)+/gi, "$1");
-
-        // Remove frases consecutivas duplicadas, inclusive quando o PDF
-        // repete uma coluna: "Dinheiro reservado Casa Dinheiro reservado Casa".
-        const words = cleaned.split(/\s+/);
-        for (let size = Math.min(10, Math.floor(words.length / 2)); size >= 1; size--) {
-            let changed = true;
-            while (changed && words.length >= size * 2) {
-                changed = false;
-                const a = words.slice(words.length - size * 2, words.length - size)
-                    .map(normalizarTexto).join(" ");
-                const b = words.slice(words.length - size)
-                    .map(normalizarTexto).join(" ");
-                if (a && a === b) {
-                    words.splice(words.length - size, size);
-                    changed = true;
-                }
-            }
-        }
-
-        return words.join(" ").replace(/\s+/g, " ").trim();
-    }
-
-    function getExtratoFlowKeywords() {
-        return {
-            income: [
-                "pix recebido", "recebido", "recebida", "credito", "crédito",
-                "estorno", "resgate", "deposito", "depósito", "entrada", "recebimento"
-            ],
-            expense: [
-                "pix enviado", "enviado", "enviada", "pago", "pagamento", "compra",
-                "saque", "tarifa", "debito", "débito", "saida", "saída", "transferencia enviada"
-            ]
-        };
-    }
-
-    function classifyExtratoFlow(amountMatch, blockText, description) {
-        const normalized = normalizarTexto(`${blockText} ${description || ""}`);
-        const hasPixReceived = normalized.includes("pix recebido");
-
-        // REGRA DE MAIOR PRIORIDADE: PIX recebido nunca pode virar saída.
-        if (hasPixReceived) {
-            return {
-                type: "income",
-                reason: "Regra prioritária: 'PIX recebido' identifica entrada."
-            };
-        }
-
-        const keywords = getExtratoFlowKeywords();
-        const hasIncomeKeyword = keywords.income.some(k => normalized.includes(normalizarTexto(k)));
-        const hasExpenseKeyword = keywords.expense.some(k => normalized.includes(normalizarTexto(k)));
-
-        if (hasIncomeKeyword && !hasExpenseKeyword) {
-            return { type: "income", reason: "Termo de entrada/recebimento identificado no histórico." };
-        }
-
-        if (hasExpenseKeyword && !hasIncomeKeyword) {
-            return { type: "expense", reason: "Termo de saída/pagamento identificado no histórico." };
-        }
-
-        if (amountMatch?.isMercadoPagoTable) {
-            return {
-                type: amountMatch.isNegative ? "expense" : "income",
-                reason: amountMatch.isNegative ? "Valor R$ com sinal negativo." : "Valor R$ positivo."
-            };
-        }
-
-        if (amountMatch?.suffix === "D" || amountMatch?.isDebit) {
-            return { type: "expense", reason: "Sufixo bancário D identifica débito/saída." };
-        }
-
-        if (amountMatch?.suffix === "C" || amountMatch?.isCredit) {
-            return { type: "income", reason: "Sufixo bancário C identifica crédito/entrada." };
-        }
-
-        return { type: "expense", reason: "Fluxo não identificado; mantido como saída por segurança do importador." };
-    }
-
-    function getCompatibleCategories(flowType) {
-        const wantedType = flowType === "income" ? "income" : "expense";
-        return categories.filter(c => c && c.type === wantedType);
-    }
-
-    function findLearnedCategoryForFlow(normalizedDescription, flowType) {
-        const compatible = new Set(getCompatibleCategories(flowType).map(c => c.id));
-        if (!compatible.size) return { matchedCatId: null, isLearned: false, matchedRule: "" };
-
-        const rules = Object.keys(extratoLearningRules)
-            .filter(Boolean)
-            .sort((a, b) => b.length - a.length);
-
-        for (const term of rules) {
-            const normalizedTerm = normalizarTexto(term);
-            const candidateId = extratoLearningRules[term];
-            if (!normalizedTerm || !compatible.has(candidateId)) continue;
-
-            if (normalizedDescription.includes(normalizedTerm)) {
-                return {
-                    matchedCatId: candidateId,
-                    isLearned: true,
-                    matchedRule: term
-                };
-            }
-        }
-
-        return { matchedCatId: null, isLearned: false, matchedRule: "" };
-    }
-
-    function getDefaultCompatibleCategory(flowType) {
-        const compatible = getCompatibleCategories(flowType);
-        return compatible[0] || null;
     }
 
     function getOwnTransferMatch(blockText) {
@@ -4098,64 +3830,63 @@
 
             if (meaningfulLines.length === 0) continue;
 
-            // Mantém o bloco original para auditoria, mas remove documentos
-            // antes de procurar dinheiro para evitar falsos positivos.
-            const rawBlockText = meaningfulLines.join(" ").replace(/\s+/g, " ").trim();
-            const blockText = sanitizeExtratoTextForMoney(rawBlockText);
+            // Documentos são removidos antes de qualquer tentativa de capturar dinheiro.
+            const blockText = sanitizeExtratoTextForMoney(meaningfulLines.join(" "));
             const amountMatch = extractExtratoAmountFromBlock(blockText);
             if (!amountMatch) continue;
 
-            const extractedDescription = extractExtratoDescription(meaningfulLines, amountMatch);
-            const cleanDescription = deduplicateExtratoDescription(extractedDescription);
+            const desc = extractExtratoDescription(meaningfulLines, amountMatch);
             const normalizedBlock = normalizarTexto(blockText);
-            const normDesc = normalizarTexto(cleanDescription);
+            const normDesc = normalizarTexto(desc);
 
-            if (!normDesc || normDesc === "movimentacao bancaria") continue;
+            if (!normDesc || normDesc === "movimentacao bancaria") {
+                /*
+                 * Ainda aceitamos a movimentação quando o bloco contém uma
+                 * descrição bancária válida em alguma linha.
+                 */
+            }
 
             const ownTransfer = getOwnTransferMatch(blockText);
-            const flow = classifyExtratoFlow(amountMatch, blockText, cleanDescription);
-            const tipoFluxo = flow.type;
-            const valorTransacao = Math.abs(Number(amountMatch.amount));
 
+            // Tipo financeiro é determinado EXCLUSIVAMENTE pelo sufixo bancário.
+            // D = débito/saída; C = crédito/entrada. Nunca inferimos o tipo
+            // pela descrição, posição do número ou sinal visual.
+            if (amountMatch.suffix !== 'D' && amountMatch.suffix !== 'C') continue;
+            const tipoFluxo = amountMatch.suffix === 'D' ? 'expense' : 'income';
+            const valorTransacao = amountMatch.amount;
             if (!Number.isFinite(valorTransacao) || valorTransacao <= 0) continue;
 
-            // A regra de aprendizado NUNCA pode sugerir uma categoria do fluxo
-            // oposto. Isso impede receita indo para "Despesa" e vice-versa.
-            const learned = findLearnedCategoryForFlow(normDesc, tipoFluxo);
-            const defaultCat = getDefaultCompatibleCategory(tipoFluxo);
-            const matchedCatId = learned.matchedCatId || (defaultCat ? defaultCat.id : null);
+            const learned = findLearnedCategory(normDesc);
 
-            // Transferência própria é apenas marcada para conferência manual;
-            // nunca deve entrar automaticamente no caixa.
-            const isSelfTransfer = !!ownTransfer.isOwnTransfer;
-            const autoCheck = !isSelfTransfer;
+            let matchedCatId = learned.matchedCatId;
+
+            if (!matchedCatId) {
+                const defaultCat = categories.find(c =>
+                    c.type === (tipoFluxo === 'income' ? 'income' : 'expense')
+                );
+
+                matchedCatId = defaultCat
+                    ? defaultCat.id
+                    : (categories[0] ? categories[0].id : "");
+            }
 
             parsed.push({
                 id: gerarIDUnico(),
                 date: block.date,
-                // Contrato do interpretador: texto original completo + texto limpo.
-                rawDescription: rawBlockText,
-                cleanDescription,
-                displayDescription: cleanDescription,
-                fullBlockText: rawBlockText,
+                rawDescription: desc,
+                fullBlockText: blockText,
                 normalizedDescription: normDesc,
                 normalizedBlockText: normalizedBlock,
                 amount: valorTransacao,
                 flowType: tipoFluxo,
-                type: tipoFluxo,
-                bankSuffix: amountMatch.isMercadoPagoTable
-                    ? (amountMatch.isNegative ? 'D' : 'C')
-                    : amountMatch.suffix,
+                bankSuffix: amountMatch.suffix,
                 transactionValueText: amountMatch.valueText,
                 categoryId: matchedCatId,
-                suggestedCategoryId: matchedCatId,
-                isOwnTransfer: isSelfTransfer,
-                isSelfTransfer,
-                autoCheck,
+                isOwnTransfer: ownTransfer.isOwnTransfer,
                 matchedEntity: ownTransfer.matchedEntity,
                 isLearned: learned.isLearned,
-                matchedRule: flow.reason + (learned.matchedRule ? ` Regra de categoria: ${learned.matchedRule}.` : ""),
-                ignored: isSelfTransfer
+                matchedRule: learned.matchedRule,
+                ignored: ownTransfer.isOwnTransfer
             });
         }
 
@@ -4208,8 +3939,7 @@
                 badgeHtml = `<span class="extrato-badge-unknown">❓ Para qual setor deve ir?</span>`;
             }
 
-            const compatibleCategories = getCompatibleCategories(item.flowType);
-            const selectOptions = compatibleCategories.map(c => `
+            const selectOptions = categories.map(c => `
                 <option value="${escaparHtml(c.id)}" ${c.id === item.categoryId ? 'selected' : ''}>
                     ${escaparHtml(c.name)} (${c.type === 'income' ? 'Entrada' : 'Saída'})
                 </option>
@@ -4217,14 +3947,14 @@
 
             const questionHtml = !item.isOwnTransfer && !item.isLearned
                 ? `<div style="font-size:11px; color:var(--warning); margin:5px 0 7px 0; line-height:1.35;">
-                        Para qual setor deve ir o lançamento "${escaparHtml(item.cleanDescription || item.rawDescription)}"?
+                        Para qual setor deve ir o lançamento "${escaparHtml(item.rawDescription)}"?
                    </div>`
                 : '';
 
             card.innerHTML = `
                 <div class="extrato-item-row">
                     <div style="flex:1; min-width:0;">
-                        <strong style="font-size:13px; word-break:break-word;">${escaparHtml(item.cleanDescription || item.rawDescription)}</strong>
+                        <strong style="font-size:13px; word-break:break-word;">${escaparHtml(item.rawDescription)}</strong>
                         <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
                             📅 ${dateFmt} | ${badgeHtml}
                         </div>
@@ -4342,3 +4072,4 @@
 
 </script>
     </html>
+
