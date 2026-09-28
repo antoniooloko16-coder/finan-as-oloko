@@ -778,6 +778,14 @@
         border-radius: 4px;
         font-weight: 700;
     }
+    .extrato-badge-duplicate {
+        background: rgba(255, 152, 0, 0.15);
+        color: #ff9800;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 700;
+    }
     .tag-ignore-pill {
         background: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -1162,6 +1170,26 @@
             <input type="file" id="extratoFileInput" style="display:none;" accept=".pdf,.txt,.csv,.ofx" onchange="handleExtratoFileUpload(event)">
         </div>
 
+
+        <div class="input-group" style="margin-bottom:10px;">
+            <label>🤖 IA para análise do extrato</label>
+            <input type="password" id="extrato_ia_api_key" class="text-input" placeholder="Cole sua chave da API Gemini" autocomplete="off">
+            <div style="font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.35;">
+                A chave fica somente neste navegador. Para produção/publicação, prefira um endpoint backend/proxy para não expor a chave.
+            </div>
+        </div>
+        <div class="grid-2col" style="margin-bottom:10px;">
+            <div class="input-group" style="margin-bottom:0;">
+                <label>🧠 Modelo Gemini</label>
+                <input type="text" id="extrato_ia_model" class="text-input" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
+            </div>
+            <div class="input-group" style="margin-bottom:0;">
+                <label>⚙️ Modo</label>
+                <div style="background:var(--bg-input);border:1px solid var(--border-color);border-radius:12px;padding:13px;font-size:12px;color:var(--success);font-weight:700;">
+                    JSON + Memória + Antiduplicidade
+                </div>
+            </div>
+        </div>
         <div class="input-group">
             <label style="display: flex; justify-content: space-between;">
                 <span>✍️ Ou Cole o Texto do Extrato</span>
@@ -3163,6 +3191,7 @@
 
     function openExtratoModal() {
         loadExtratoTitularConfig();
+        loadExtratoIAConfig();
         document.getElementById('tx_extrato_pasted').value = '';
         document.getElementById('extratoFileInput').value = '';
         document.getElementById('extratoModal').style.display = 'flex';
@@ -3819,7 +3848,7 @@
         return { matchedCatId, isLearned, matchedRule };
     }
 
-    function processExtratoRawText(rawText) {
+    function processExtratoRawTextLocalFallback(rawText) {
         const blocks = buildExtratoBlocks(rawText);
         const parsed = [];
 
@@ -3899,6 +3928,564 @@
         renderExtratoReviewModal();
     }
 
+
+    /* =========================================================================
+       IA GEMINI + MEMÓRIA + ANTIDUPLICIDADE
+       ========================================================================= */
+
+    function getExtratoIAConfig() {
+        const saved = JSON.parse(localStorage.getItem(`extrato_ia_config_${currentProfile}`) || "{}");
+        return {
+            apiKey: saved.apiKey || "",
+            model: saved.model || "gemini-2.5-flash"
+        };
+    }
+
+    function loadExtratoIAConfig() {
+        const config = getExtratoIAConfig();
+        const keyInput = document.getElementById("extrato_ia_api_key");
+        const modelInput = document.getElementById("extrato_ia_model");
+        if (keyInput) keyInput.value = config.apiKey;
+        if (modelInput) modelInput.value = config.model;
+    }
+
+    function saveExtratoIAConfig() {
+        const keyInput = document.getElementById("extrato_ia_api_key");
+        const modelInput = document.getElementById("extrato_ia_model");
+
+        localStorage.setItem(`extrato_ia_config_${currentProfile}`, JSON.stringify({
+            apiKey: keyInput ? keyInput.value.trim() : "",
+            model: modelInput && modelInput.value.trim() ? modelInput.value.trim() : "gemini-2.5-flash"
+        }));
+    }
+
+    function getMapaMemoriaIA() {
+        let mapa = {};
+        try {
+            mapa = JSON.parse(localStorage.getItem("mapa_memoria_ia") || "{}");
+        } catch (_) {
+            mapa = {};
+        }
+
+        if (!mapa || typeof mapa !== "object" || Array.isArray(mapa)) mapa = {};
+
+        if (!mapa[currentProfile] || typeof mapa[currentProfile] !== "object") {
+            mapa[currentProfile] = {};
+        }
+
+        // Migração da memória antiga do app para a nova estrutura.
+        Object.keys(extratoLearningRules || {}).forEach(term => {
+            if (!mapa[currentProfile][term]) {
+                mapa[currentProfile][term] = extratoLearningRules[term];
+            }
+        });
+
+        return mapa[currentProfile];
+    }
+
+    function salvarMapaMemoriaIA(mapaPerfil) {
+        let mapa = {};
+        try {
+            mapa = JSON.parse(localStorage.getItem("mapa_memoria_ia") || "{}");
+        } catch (_) {
+            mapa = {};
+        }
+
+        if (!mapa || typeof mapa !== "object" || Array.isArray(mapa)) mapa = {};
+        mapa[currentProfile] = mapaPerfil || {};
+
+        localStorage.setItem("mapa_memoria_ia", JSON.stringify(mapa));
+
+        // Mantém compatibilidade com a estrutura já usada pelo app.
+        extratoLearningRules = { ...(mapa[currentProfile] || {}) };
+        localStorage.setItem(`extrato_rules_${currentProfile}`, JSON.stringify(extratoLearningRules));
+    }
+
+    function salvarAprendizadoIA(descricao, categoryId) {
+        if (!descricao || !categoryId) return;
+
+        const termo = buildLearningTerm(normalizarTexto(descricao));
+        if (!termo || termo.length < 3) return;
+
+        const mapa = getMapaMemoriaIA();
+        mapa[termo] = categoryId;
+        salvarMapaMemoriaIA(mapa);
+    }
+
+    function atualizarMemoriaComItemExtrato(item) {
+        if (!item || item.ignored || item.isOwnTransfer || item.duplicado) return;
+        salvarAprendizadoIA(item.rawDescription || item.descricaoLimpa, item.categoryId);
+    }
+
+    function limparJsonDeRespostaIA(texto) {
+        let textoLimpo = String(texto || "").trim();
+
+        textoLimpo = textoLimpo
+            .replace(/^```json\s*/i, "")
+            .replace(/^```\s*/i, "")
+            .replace(/\s*```$/i, "")
+            .trim();
+
+        const inicio = textoLimpo.indexOf("[");
+        const fim = textoLimpo.lastIndexOf("]");
+
+        if (inicio >= 0 && fim > inicio) {
+            textoLimpo = textoLimpo.slice(inicio, fim + 1);
+        }
+
+        return textoLimpo;
+    }
+
+    function normalizarDataIA(data) {
+        if (!data) return "";
+
+        const valor = String(data).trim();
+
+        let m = valor.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m) return valor;
+
+        m = valor.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+        if (m) {
+            let ano = parseInt(m[3], 10);
+            if (ano < 100) ano += 2000;
+
+            const dia = parseInt(m[1], 10);
+            const mes = parseInt(m[2], 10);
+
+            if (dia >= 1 && dia <= 31 && mes >= 1 && mes <= 12) {
+                return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+            }
+        }
+
+        return "";
+    }
+
+    function normalizarValorIA(valor) {
+        if (typeof valor === "number") return Number(valor);
+
+        if (valor === null || valor === undefined) return NaN;
+
+        let texto = String(valor).trim()
+            .replace(/[R$\s]/gi, "");
+
+        if (texto.includes(",") && texto.includes(".")) {
+            texto = texto.replace(/\./g, "").replace(",", ".");
+        } else if (texto.includes(",")) {
+            texto = texto.replace(",", ".");
+        }
+
+        texto = texto.replace(/[^\d.-]/g, "");
+        return Number(texto);
+    }
+
+    function similaridadeDescricaoIA(a, b) {
+        const x = normalizarTexto(a);
+        const y = normalizarTexto(b);
+
+        if (!x || !y) return 0;
+        if (x === y) return 1;
+        if (x.includes(y) || y.includes(x)) return 0.93;
+
+        const ax = x.split(" ").filter(Boolean);
+        const by = new Set(y.split(" ").filter(Boolean));
+        const inter = ax.filter(t => by.has(t)).length;
+        const uniao = new Set([...ax, ...by]).size;
+        const jaccard = uniao ? inter / uniao : 0;
+
+        const m = x.length;
+        const n = y.length;
+        const row = Array.from({ length: n + 1 }, (_, i) => i);
+
+        for (let i = 1; i <= m; i++) {
+            let prev = row[0];
+            row[0] = i;
+
+            for (let j = 1; j <= n; j++) {
+                const atual = row[j];
+                row[j] = x[i - 1] === y[j - 1]
+                    ? prev
+                    : Math.min(prev + 1, row[j] + 1, row[j - 1] + 1);
+                prev = atual;
+            }
+        }
+
+        const maxLen = Math.max(m, n) || 1;
+        const levenshteinSimilarity = 1 - row[n] / maxLen;
+
+        return Math.max(jaccard, levenshteinSimilarity);
+    }
+
+    function descricaoTransacaoExistente(t) {
+        return t?.freeDescription || t?.descricaoLimpa || t?.description || "";
+    }
+
+    function checarDuplicadosExtrato(itensIA, transacoesAtuais = transactions) {
+        const listaExistente = Array.isArray(transacoesAtuais) ? transacoesAtuais : [];
+
+        return itensIA.map(item => {
+            const data = normalizarDataIA(item.date || item.data);
+            const valor = normalizarValorIA(item.amount ?? item.valor);
+            const descricao = item.rawDescription || item.descricaoLimpa || "";
+
+            let melhor = null;
+
+            for (const existente of listaExistente) {
+                const dataExistente = normalizarDataIA(existente.date || existente.data);
+                const valorExistente = normalizarValorIA(existente.amount ?? existente.valor);
+
+                if (!data || !dataExistente || data !== dataExistente) continue;
+                if (!Number.isFinite(valor) || !Number.isFinite(valorExistente)) continue;
+                if (Math.abs(valor - valorExistente) > 0.009) continue;
+
+                const sim = similaridadeDescricaoIA(
+                    descricao,
+                    descricaoTransacaoExistente(existente)
+                );
+
+                if (sim >= 0.78 && (!melhor || sim > melhor.score)) {
+                    melhor = {
+                        id: existente.id || "",
+                        score: sim
+                    };
+                }
+            }
+
+            if (melhor) {
+                return {
+                    ...item,
+                    duplicado: true,
+                    duplicateOfId: melhor.id,
+                    duplicateScore: Number(melhor.score.toFixed(3)),
+                    ignored: true
+                };
+            }
+
+            return {
+                ...item,
+                duplicado: false,
+                duplicateOfId: "",
+                duplicateScore: 0
+            };
+        });
+    }
+
+    function aplicarMemoriaLocalAntesDaIA(itens) {
+        const mapa = getMapaMemoriaIA();
+
+        return itens.map(item => {
+            const desc = normalizarTexto(item.rawDescription || item.descricaoLimpa || "");
+            let melhorTermo = "";
+            let melhorCategoria = "";
+
+            Object.keys(mapa)
+                .sort((a, b) => b.length - a.length)
+                .some(termo => {
+                    const termoNorm = normalizarTexto(termo);
+                    if (termoNorm && desc.includes(termoNorm)) {
+                        const cat = categories.find(c => c.id === mapa[termo]);
+                        if (cat) {
+                            melhorTermo = termo;
+                            melhorCategoria = cat.id;
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+
+            if (!melhorCategoria) return item;
+
+            return {
+                ...item,
+                categoryId: melhorCategoria,
+                isLearned: true,
+                matchedRule: melhorTermo
+            };
+        });
+    }
+
+    function construirPromptExtratoIA(rawText) {
+        const titular = getExtratoTitularConfig();
+        const mapa = getMapaMemoriaIA();
+
+        const categoriasPrompt = categories.map(c => ({
+            id: c.id,
+            nome: c.name,
+            tipo: c.type
+        }));
+
+        const memoriaPrompt = Object.entries(mapa)
+            .map(([termo, categoryId]) => ({
+                termo,
+                categoryId
+            }));
+
+        return `
+Você é um motor de conciliação financeira especializado em extratos bancários brasileiros.
+
+OBJETIVO:
+Ler o texto bruto de um extrato e retornar SOMENTE um JSON ARRAY válido, sem Markdown, sem comentários e sem texto antes/depois.
+
+CAMPOS OBRIGATÓRIOS DE CADA ITEM:
+{
+  "data": "YYYY-MM-DD",
+  "descricaoLimpa": "nome curto do estabelecimento, pessoa ou origem",
+  "valor": 0.00,
+  "tipo": "expense",
+  "isTransfer": false,
+  "ignored": false,
+  "categoryId": "ID_DA_CATEGORIA"
+}
+
+REGRAS CRÍTICAS:
+1. Cada lançamento deve virar exatamente um item.
+2. Nunca invente lançamento, valor, data ou categoria.
+3. "valor" é SEMPRE positivo. O campo "tipo" define o fluxo:
+   - "expense" = saída/débito
+   - "income" = entrada/crédito
+4. Preserve centavos exatamente. Não arredonde para inteiro.
+5. Datas devem ser YYYY-MM-DD. Se o texto trouxer DD/MM ou DD-MM sem ano, use o ano coerente com o extrato/contexto; não invente um ano incompatível.
+6. Ignore linhas de saldo, saldo do dia, saldo anterior, limites, cabeçalhos, rodapés e totais que não sejam lançamentos.
+7. Não transforme número de documento, ID da operação, CPF/CNPJ ou código bancário em valor.
+8. Limpe a descrição: retire códigos, identificadores, agência/conta, textos bancários repetitivos e marcadores técnicos. Preserve o nome real da pessoa/empresa quando ele estiver disponível.
+9. Não confunda saldo final da conta com valor da transação.
+10. Transferência própria:
+    - Se o lançamento for entre contas do mesmo titular, marque "isTransfer": true e "ignored": true.
+    - Considere nomes/documentos cadastrados e marcadores como "mesmo titular", "mesm tit", "c msm tit", "transferência própria".
+    - Não marque como própria apenas por semelhança fraca.
+11. Categoria:
+    - Use SOMENTE um categoryId existente na lista fornecida.
+    - Para despesas, escolha categoria de tipo "expense".
+    - Para receitas, escolha categoria de tipo "income" quando houver uma adequada.
+    - A memória de mapeamento tem prioridade quando houver correspondência clara.
+12. Se não houver categoria realmente adequada, use a categoria do mesmo tipo mais genérica disponível, sem criar ID.
+13. "ignored" deve ser true para transferência própria.
+14. Não crie duplicados artificiais quando uma mesma operação estiver quebrada em várias linhas.
+15. Se houver coluna "Saldo", ela NÃO é o valor da transação.
+
+DADOS DO TITULAR:
+Nome: ${JSON.stringify(titular.name || "")}
+Documento: ${JSON.stringify(titular.document || "")}
+Outros nomes/entidades cadastrados para ignorar: ${JSON.stringify(getTitularNames())}
+
+CATEGORIAS DISPONÍVEIS:
+${JSON.stringify(categoriasPrompt)}
+
+MEMÓRIA DE MAPEAMENTO:
+${JSON.stringify(memoriaPrompt)}
+
+TEXTO BRUTO DO EXTRATO:
+${rawText}
+        `.trim();
+    }
+
+    async function chamarIAExtrato(rawText) {
+        const config = getExtratoIAConfig();
+        const apiKey = config.apiKey;
+        const model = (config.model || "gemini-2.5-flash").replace(/^models\//, "").trim();
+
+        if (!apiKey) {
+            throw new Error("Chave da API Gemini não configurada.");
+        }
+
+        if (!rawText || !String(rawText).trim()) {
+            throw new Error("O texto do extrato está vazio.");
+        }
+
+        saveExtratoIAConfig();
+
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+        const payload = {
+            contents: [{
+                role: "user",
+                parts: [{
+                    text: construirPromptExtratoIA(String(rawText))
+                }]
+            }],
+            generationConfig: {
+                temperature: 0.05,
+                responseMimeType: "application/json"
+            }
+        };
+
+        const response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            const mensagem = data?.error?.message || `HTTP ${response.status}`;
+            throw new Error(`Gemini: ${mensagem}`);
+        }
+
+        const respostaTexto = data?.candidates?.[0]?.content?.parts
+            ?.map(part => part?.text || "")
+            .join("")
+            .trim();
+
+        if (!respostaTexto) {
+            throw new Error("A IA não retornou conteúdo.");
+        }
+
+        let itens;
+        try {
+            itens = JSON.parse(limparJsonDeRespostaIA(respostaTexto));
+        } catch (err) {
+            throw new Error("A IA retornou um JSON inválido.");
+        }
+
+        if (!Array.isArray(itens)) {
+            throw new Error("A IA não retornou uma lista de lançamentos.");
+        }
+
+        return itens;
+    }
+
+    function normalizarItensIA(itensIA, rawText) {
+        const mapa = getMapaMemoriaIA();
+        const categoriasValidas = new Set(categories.map(c => c.id));
+
+        const resultado = [];
+
+        itensIA.forEach((item, index) => {
+            if (!item || typeof item !== "object") return;
+
+            const data = normalizarDataIA(item.data);
+            const descricaoLimpa = String(item.descricaoLimpa || "").trim();
+            const valor = normalizarValorIA(item.valor);
+
+            if (!data || !descricaoLimpa || !Number.isFinite(valor) || valor <= 0) return;
+
+            let tipo = String(item.tipo || "").toLowerCase().trim();
+            if (tipo !== "income" && tipo !== "expense") return;
+
+            const isTransfer = item.isTransfer === true;
+            const categoryMemory = Object.keys(mapa)
+                .sort((a, b) => b.length - a.length)
+                .find(termo => normalizarTexto(descricaoLimpa).includes(normalizarTexto(termo)));
+
+            let categoryId = categoriasValidas.has(item.categoryId)
+                ? item.categoryId
+                : "";
+
+            if (categoryMemory && categoriasValidas.has(mapa[categoryMemory])) {
+                categoryId = mapa[categoryMemory];
+            }
+
+            const categoria = categories.find(c => c.id === categoryId);
+            if (!categoria || (tipo === "expense" && categoria.type === "income")) {
+                const fallback = categories.find(c =>
+                    c.type === tipo
+                ) || categories.find(c => c.type === "expense");
+
+                categoryId = fallback ? fallback.id : "";
+            }
+
+            resultado.push({
+                id: gerarIDUnico(),
+                date: data,
+                rawDescription: descricaoLimpa,
+                descricaoLimpa,
+                fullBlockText: "",
+                normalizedDescription: normalizarTexto(descricaoLimpa),
+                normalizedBlockText: normalizarTexto(descricaoLimpa),
+                amount: Number(valor.toFixed(2)),
+                flowType: tipo,
+                bankSuffix: "",
+                transactionValueText: String(valor),
+                categoryId,
+                isOwnTransfer: isTransfer,
+                isTransfer,
+                ignored: isTransfer || item.ignored === true,
+                matchedEntity: isTransfer ? "Transferência própria identificada pela IA" : "",
+                isLearned: Boolean(categoryMemory),
+                matchedRule: categoryMemory || "",
+                duplicado: false,
+                duplicateOfId: "",
+                duplicateScore: 0,
+                aiSource: true
+            });
+        });
+
+        return aplicarMemoriaLocalAntesDaIA(resultado);
+    }
+
+    async function processExtratoRawText(rawText) {
+        const texto = String(rawText || "").trim();
+
+        if (!texto) {
+            return alert("⚠️ O texto do extrato está vazio.");
+        }
+
+        try {
+            const config = getExtratoIAConfig();
+
+            if (!config.apiKey) {
+                const usarLocal = confirm(
+                    "A chave da API Gemini ainda não foi configurada.\n\n" +
+                    "OK = usar o leitor local atual do aplicativo.\n" +
+                    "Cancelar = voltar para configurar a chave."
+                );
+
+                if (usarLocal) {
+                    processExtratoRawTextLocalFallback(texto);
+                }
+                return;
+            }
+
+            const botao = document.querySelector('#extratoModal button[onclick="processExtratoTextManual()"]');
+            const textoOriginalBotao = botao ? botao.innerText : "";
+
+            if (botao) {
+                botao.disabled = true;
+                botao.innerText = "🤖 IA analisando extrato...";
+            }
+
+            const respostaIA = await chamarIAExtrato(texto);
+            let parsed = normalizarItensIA(respostaIA, texto);
+
+            if (!parsed.length) {
+                throw new Error("A IA não identificou lançamentos válidos.");
+            }
+
+            parsed = checarDuplicadosExtrato(parsed, transactions);
+
+            // Transferências próprias e duplicados entram no modal já desmarcados.
+            parsed.forEach(item => {
+                if (item.isOwnTransfer || item.isTransfer || item.duplicado) {
+                    item.ignored = true;
+                }
+            });
+
+            parsedExtratoItems = parsed;
+            closeExtratoModal();
+            renderExtratoReviewModal();
+        } catch (err) {
+            console.error("Erro na análise IA do extrato:", err);
+
+            const fallback = confirm(
+                `⚠️ Não foi possível concluir a análise pela IA.\n\n${err.message}\n\n` +
+                "OK = usar o leitor local existente como fallback.\n" +
+                "Cancelar = voltar sem importar."
+            );
+
+            if (fallback) {
+                processExtratoRawTextLocalFallback(texto);
+            }
+        } finally {
+            const botao = document.querySelector('#extratoModal button[onclick="processExtratoTextManual()"]');
+            if (botao) {
+                botao.disabled = false;
+                botao.innerText = "🔍 Analisar e Mapear Lançamentos";
+            }
+        }
+    }
+
     function renderExtratoReviewModal() {
         const summary = document.getElementById('extratoReviewSummary');
         const container = document.getElementById('extratoReviewList');
@@ -3908,14 +4495,16 @@
         container.innerHTML = '';
 
         const totalItems = parsedExtratoItems.length;
-        const transferCount = parsedExtratoItems.filter(i => i.isOwnTransfer).length;
-        const learnedCount = parsedExtratoItems.filter(i => i.isLearned && !i.isOwnTransfer).length;
-        const unknownCount = parsedExtratoItems.filter(i => !i.isOwnTransfer && !i.isLearned).length;
+        const transferCount = parsedExtratoItems.filter(i => i.isOwnTransfer || i.isTransfer).length;
+        const duplicateCount = parsedExtratoItems.filter(i => i.duplicado).length;
+        const learnedCount = parsedExtratoItems.filter(i => i.isLearned && !i.isOwnTransfer && !i.duplicado).length;
+        const unknownCount = parsedExtratoItems.filter(i => !i.isOwnTransfer && !i.isTransfer && !i.isLearned && !i.duplicado).length;
 
         summary.innerHTML = `
             Encontrados <strong>${totalItems}</strong> lançamentos válidos.<br>
-            <span style="color:var(--success);">✓ ${learnedCount} já conhecidos</span> |
+            <span style="color:var(--success);">✓ ${learnedCount} memorizados</span> |
             <span style="color:var(--accent);">🚫 ${transferCount} transf. próprias</span> |
+            <span style="color:#ff9800;">🟠 ${duplicateCount} duplicados</span> |
             <span style="color:var(--warning);">❓ ${unknownCount} para classificar</span>
         `;
 
@@ -3931,7 +4520,9 @@
 
             let badgeHtml = '';
 
-            if (item.isOwnTransfer) {
+            if (item.duplicado) {
+                badgeHtml = `<span class="extrato-badge-duplicate">🟠 Duplicado${item.duplicateScore ? ` (${Math.round(item.duplicateScore * 100)}%)` : ''}</span>`;
+            } else if (item.isOwnTransfer || item.isTransfer) {
                 badgeHtml = `<span class="extrato-badge-transfer">🚫 Transferência própria${item.matchedEntity ? ` (${escaparHtml(item.matchedEntity)})` : ''}</span>`;
             } else if (item.isLearned) {
                 badgeHtml = `<span class="extrato-badge-learned">✓ Categoria Memorizada</span>`;
@@ -3963,7 +4554,7 @@
                         <span style="font-weight:700; font-size:14px; color:${colorVal};">${signVal} ${formatCurrency(item.amount)}</span>
                         <div style="margin-top:4px;">
                             <label style="font-size:11px; cursor:pointer; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;">
-                                <input type="checkbox" ${!item.ignored ? 'checked' : ''} ${item.isOwnTransfer ? 'disabled' : ''} onchange="toggleIgnoreExtratoItem(${index}, this.checked)">
+                                <input type="checkbox" ${!item.ignored ? 'checked' : ''} ${item.isOwnTransfer || item.isTransfer || item.duplicado ? 'disabled' : ''} onchange="toggleIgnoreExtratoItem(${index}, this.checked)">
                                 Lançar
                             </label>
                         </div>
@@ -3990,7 +4581,7 @@
     function toggleIgnoreExtratoItem(index, isChecked) {
         if (!parsedExtratoItems[index]) return;
 
-        if (parsedExtratoItems[index].isOwnTransfer) {
+        if (parsedExtratoItems[index].isOwnTransfer || parsedExtratoItems[index].isTransfer || parsedExtratoItems[index].duplicado) {
             parsedExtratoItems[index].ignored = true;
             return;
         }
@@ -4015,6 +4606,7 @@
 
         parsedExtratoItems[index].categoryId = catId;
         parsedExtratoItems[index].isLearned = false;
+        parsedExtratoItems[index].matchedRule = "";
     }
 
     function buildLearningTerm(normalizedDescription) {
@@ -4025,17 +4617,22 @@
     }
 
     function confirmExtratoImport() {
-        const itemsToImport = parsedExtratoItems.filter(i => !i.ignored && !i.isOwnTransfer);
+        const itemsToImport = parsedExtratoItems.filter(i =>
+            !i.ignored &&
+            !i.isOwnTransfer &&
+            !i.isTransfer &&
+            !i.duplicado
+        );
 
         if (itemsToImport.length === 0) {
-            return alert("Nenhum item selecionado para lançamento.");
+            return alert("Nenhum item novo selecionado para lançamento.");
         }
 
         let newRulesLearnedCount = 0;
+        let importedCount = 0;
 
         itemsToImport.forEach(item => {
             const catObj = categories.find(c => c.id === item.categoryId);
-
             if (!catObj) return;
 
             const isInc = item.flowType === 'income';
@@ -4043,23 +4640,31 @@
             transactions.push({
                 id: gerarIDUnico(),
                 categoryId: item.categoryId,
-                amount: item.amount,
+                amount: Number(item.amount),
                 type: isInc ? 'income' : 'expense_cash',
                 paymentMethod: 'dinheiro',
                 description: catObj.name,
                 freeDescription: item.rawDescription,
                 date: item.date,
                 source: 'extrato',
-                extratoBlock: item.fullBlockText
+                extratoBlock: item.fullBlockText || item.rawDescription,
+                isTransfer: false,
+                ignored: false
             });
 
-            const cleanTerm = buildLearningTerm(item.normalizedDescription);
+            const antes = getMapaMemoriaIA();
+            const termo = buildLearningTerm(item.normalizedDescription || item.rawDescription);
 
-            if (cleanTerm.length >= 3 && extratoLearningRules[cleanTerm] !== item.categoryId) {
-                extratoLearningRules[cleanTerm] = item.categoryId;
+            if (termo.length >= 3 && antes[termo] !== item.categoryId) {
+                salvarAprendizadoIA(item.rawDescription, item.categoryId);
                 newRulesLearnedCount++;
             }
+
+            importedCount++;
         });
+
+        // Também registra explicitamente correções feitas pelo usuário no modal.
+        itemsToImport.forEach(atualizarMemoriaComItemExtrato);
 
         safeLocalStorageSave();
         closeExtratoReviewModal();
@@ -4067,9 +4672,17 @@
         renderLearningRulesList();
         showBanner();
 
-        alert(`🎉 Sucesso! ${itemsToImport.length} lançamentos adicionados nas caixas correspondentes.${newRulesLearnedCount > 0 ? ` O sistema memorizou ${newRulesLearnedCount} novo(s) estabelecimento(s) para os próximos extratos.` : ''}`);
+        const duplicados = parsedExtratoItems.filter(i => i.duplicado).length;
+        const transferencias = parsedExtratoItems.filter(i => i.isOwnTransfer || i.isTransfer).length;
+
+        alert(
+            `🎉 ${importedCount} lançamento(s) importado(s).` +
+            (newRulesLearnedCount > 0 ? `\n🧠 ${newRulesLearnedCount} novo(s) padrão(ões) memorizado(s).` : "") +
+            (duplicados > 0 ? `\n🟠 ${duplicados} duplicado(s) ficaram fora da importação.` : "") +
+            (transferencias > 0 ? `\n🔄 ${transferencias} transferência(s) própria(s) foram ignoradas.` : "")
+        );
     }
+
 
 </script>
     </html>
-
