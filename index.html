@@ -4203,6 +4203,30 @@
         });
     }
 
+    function prepararTextoExtratoParaIA(rawText) {
+        const texto = String(rawText || "");
+        const linhas = texto.split(/\r?\n/);
+        const moneyRe = /(?:R\$\s*)?[-+]?\d{1,3}(?:\.\d{3})*,\d{2}(?:\s*[CD])?|(?:R\$\s*)?[-+]?\d+,\d{2}(?:\s*[CD])?/gi;
+
+        return linhas.map(linha => {
+            const original = String(linha || "");
+            const matches = original.match(moneyRe) || [];
+
+            // Em tabelas bancárias, quando a mesma linha contém Valor e Saldo,
+            // o primeiro valor monetário é o LANÇAMENTO e o segundo é o SALDO.
+            // Criamos marcadores explícitos para a IA não precisar adivinhar a coluna.
+            if (matches.length >= 2 && !/saldo(?:\s+do\s+dia|\s+final|\s+anterior)?/i.test(original)) {
+                return original + " [REGRA_COLUNA: PRIMEIRO_VALOR=VALOR_DA_TRANSACAO; SEGUNDO_VALOR=SALDO; IGNORAR_SALDO]";
+            }
+
+            if (/^\s*(?:saldo(?:\s+do\s+dia|\s+final|\s+anterior)?|saldo)\b/i.test(original)) {
+                return "[LINHA_SALDO_IGNORAR] " + original;
+            }
+
+            return original;
+        }).join("\n");
+    }
+
     function construirPromptExtratoIA(rawText) {
         const titular = getExtratoTitularConfig();
         const mapa = getMapaMemoriaIA();
@@ -4218,6 +4242,8 @@
                 termo,
                 categoryId
             }));
+
+        const textoPreparado = prepararTextoExtratoParaIA(rawText);
 
         return `
 Você é um motor de conciliação financeira especializado em extratos bancários brasileiros.
@@ -4261,6 +4287,16 @@ REGRAS CRÍTICAS:
 13. "ignored" deve ser true para transferência própria.
 14. Não crie duplicados artificiais quando uma mesma operação estiver quebrada em várias linhas.
 15. Se houver coluna "Saldo", ela NÃO é o valor da transação.
+16. REGRA ABSOLUTA PARA TABELAS COM COLUNAS "Valor" E "Saldo":
+    - O campo "valor" deve vir EXCLUSIVAMENTE da coluna "Valor".
+    - A coluna "Saldo" é somente o saldo acumulado depois do lançamento e DEVE ser ignorada.
+    - NUNCA copie o saldo para o campo "valor", mesmo que ele seja o último número da linha.
+    - Quando uma linha tiver dois valores monetários, o PRIMEIRO pertence à coluna "Valor" e o SEGUNDO pertence à coluna "Saldo", salvo se o texto identificar explicitamente outra estrutura.
+    - Exemplo: "R$ -86,26 | R$ 300,00" => valor=86.26, tipo=expense. O 300,00 é SALDO e deve ser descartado.
+    - Exemplo: "R$ 0,12 | R$ 300,12" => valor=0.12, tipo=income. O 300,12 é SALDO e deve ser descartado.
+    - Exemplo: "R$ -129,00 | R$ 171,12" => valor=129.00, tipo=expense. O 171,12 é SALDO e deve ser descartado.
+    - Exemplo: "R$ 750,00 | R$ 921,12" => valor=750.00, tipo=income. O 921,12 é SALDO e deve ser descartado.
+17. Marcadores [REGRA_COLUNA...] e [LINHA_SALDO_IGNORAR] são instruções técnicas do sistema, não fazem parte da descrição.
 
 DADOS DO TITULAR:
 Nome: ${JSON.stringify(titular.name || "")}
@@ -4273,8 +4309,8 @@ ${JSON.stringify(categoriasPrompt)}
 MEMÓRIA DE MAPEAMENTO:
 ${JSON.stringify(memoriaPrompt)}
 
-TEXTO BRUTO DO EXTRATO:
-${rawText}
+TEXTO DO EXTRATO COM MARCADORES DE COLUNA:
+${textoPreparado}
         `.trim();
     }
 
