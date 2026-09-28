@@ -1288,6 +1288,34 @@
     <div class="modal-content">
         <div class="modal-title">👥 Gerenciar Perfis</div>
         <div id="profileListAdmin" class="history-list" style="margin-bottom: 15px;"></div>
+
+        <!-- CONFIGURAÇÃO DA IA GEMINI -->
+        <div class="card" style="margin: 0 0 15px 0; padding: 14px; border: 1px solid rgba(163,112,247,.35);">
+            <div style="font-size: 14px; font-weight: 800; color: var(--primary); margin-bottom: 5px;">🤖 Inteligência Artificial — Gemini</div>
+            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px;">
+                Configure a chave usada para analisar extratos. A chave fica salva somente neste navegador e separada por perfil.
+            </div>
+
+            <div class="input-group" style="margin-bottom: 9px;">
+                <label for="profile_extrato_ia_api_key">🔑 Chave da API</label>
+                <input type="password" id="profile_extrato_ia_api_key" class="text-input" placeholder="Cole sua chave Gemini" autocomplete="off">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 9px;">
+                <label for="profile_extrato_ia_model">🧠 Modelo Gemini</label>
+                <input type="text" id="profile_extrato_ia_model" class="text-input" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
+            </div>
+
+            <button class="btn-action" style="background: var(--primary); width:100%; font-size:13px; padding:11px 0;" onclick="saveAndTestExtratoIAAPI()">
+                🧪 Salvar e Testar API
+            </button>
+            <div id="extratoIAApiStatus" style="margin-top:9px; display:none; padding:9px 10px; border-radius:10px; font-size:11px; line-height:1.4;"></div>
+
+            <div style="font-size:9px; color:var(--text-muted); margin-top:9px; line-height:1.35;">
+                ⚠️ Para publicar o app, o ideal é usar um backend/proxy. Não exponha uma chave permanente em um HTML público.
+            </div>
+        </div>
+
         <div class="input-group" style="border-top: 1px solid var(--border-color); padding-top:15px;">
             <label>🆕 Criar Novo / Renomear</label>
             <input type="text" id="new_profile_name" class="text-input" placeholder="Ex: Holding, Investimentos...">
@@ -1379,6 +1407,18 @@
     }
 
     function openProfileModal() {
+        // Carrega a configuração da IA diretamente na engrenagem do app.
+        const iaConfig = getExtratoIAConfig();
+        const iaKeyInput = document.getElementById('profile_extrato_ia_api_key');
+        const iaModelInput = document.getElementById('profile_extrato_ia_model');
+        const iaStatus = document.getElementById('extratoIAApiStatus');
+        if (iaKeyInput) iaKeyInput.value = iaConfig.apiKey || '';
+        if (iaModelInput) iaModelInput.value = iaConfig.model || 'gemini-2.5-flash';
+        if (iaStatus) {
+            iaStatus.style.display = 'none';
+            iaStatus.innerHTML = '';
+        }
+
         const list = document.getElementById('profileListAdmin');
         list.innerHTML = '';
         allProfiles.forEach(p => {
@@ -1398,6 +1438,98 @@
             list.appendChild(div);
         });
         document.getElementById('profileManagementModal').style.display = 'flex';
+    }
+
+    async function saveAndTestExtratoIAAPI() {
+        const keyInput = document.getElementById('profile_extrato_ia_api_key');
+        const modelInput = document.getElementById('profile_extrato_ia_model');
+        const status = document.getElementById('extratoIAApiStatus');
+
+        const apiKey = keyInput ? keyInput.value.trim() : '';
+        const model = modelInput && modelInput.value.trim() ? modelInput.value.trim() : 'gemini-2.5-flash';
+
+        const mostrarStatus = (tipo, html) => {
+            if (!status) return;
+            status.style.display = 'block';
+            status.innerHTML = html;
+            if (tipo === 'ok') {
+                status.style.background = 'rgba(0,230,118,.10)';
+                status.style.border = '1px solid rgba(0,230,118,.35)';
+                status.style.color = 'var(--success)';
+            } else {
+                status.style.background = 'rgba(255,23,68,.10)';
+                status.style.border = '1px solid rgba(255,23,68,.35)';
+                status.style.color = 'var(--danger)';
+            }
+        };
+
+        if (!apiKey) {
+            mostrarStatus('erro', '❌ <strong>Informe uma chave API.</strong><br>Depois toque novamente em “Salvar e Testar API”.');
+            return;
+        }
+
+        if (status) {
+            status.style.display = 'block';
+            status.style.background = 'var(--bg-input)';
+            status.style.border = '1px solid var(--border-color)';
+            status.style.color = 'var(--text-muted)';
+            status.innerHTML = '⏳ Testando conexão com a Gemini...';
+        }
+
+        // Salva a mesma configuração usada pelo leitor de extratos.
+        localStorage.setItem(`extrato_ia_config_${currentProfile}`, JSON.stringify({ apiKey, model }));
+
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const inicio = performance.now();
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        role: 'user',
+                        parts: [{ text: 'Responda somente com: OK' }]
+                    }],
+                    generationConfig: {
+                        temperature: 0,
+                        maxOutputTokens: 10
+                    }
+                })
+            });
+
+            let data = {};
+            try { data = await response.json(); } catch (_) {}
+
+            const ms = Math.round(performance.now() - inicio);
+
+            if (!response.ok) {
+                const apiMessage = data?.error?.message || `HTTP ${response.status}`;
+                let explicacao = apiMessage;
+                if (response.status === 400) explicacao += '<br>Verifique o modelo e o formato da chave.';
+                if (response.status === 401 || response.status === 403) explicacao += '<br>A chave não foi autorizada ou está inválida/restrita.';
+                if (response.status === 404) explicacao += '<br>O modelo informado não está disponível para esta API/chave.';
+                if (response.status === 429) explicacao += '<br>A quota/limite da API foi atingida.';
+                mostrarStatus('erro', `❌ <strong>API não funcionou.</strong><br>${escaparHtml(explicacao)}<br><span style="opacity:.75;">HTTP ${response.status} · ${ms} ms</span>`);
+                return;
+            }
+
+            const texto = (data?.candidates || [])
+                .flatMap(c => c?.content?.parts || [])
+                .map(p => p?.text || '')
+                .join(' ')
+                .trim();
+
+            if (!texto) {
+                mostrarStatus('erro', `⚠️ <strong>A API respondeu, mas não retornou texto.</strong><br>HTTP ${response.status} · ${ms} ms`);
+                return;
+            }
+
+            mostrarStatus('ok', `✅ <strong>API funcionando!</strong><br>Modelo: <strong>${escaparHtml(model)}</strong><br>Resposta recebida em ${ms} ms.`);
+        } catch (error) {
+            const mensagem = error?.message || String(error);
+            mostrarStatus('erro', `❌ <strong>Não foi possível conectar à API.</strong><br>${escaparHtml(mensagem)}<br><span style="opacity:.75;">Verifique sua internet, a chave e possíveis bloqueios do navegador.</span>`);
+        }
     }
 
     function closeProfileModal() {
@@ -3953,10 +4085,18 @@
         const keyInput = document.getElementById("extrato_ia_api_key");
         const modelInput = document.getElementById("extrato_ia_model");
 
-        localStorage.setItem(`extrato_ia_config_${currentProfile}`, JSON.stringify({
+        const config = {
             apiKey: keyInput ? keyInput.value.trim() : "",
             model: modelInput && modelInput.value.trim() ? modelInput.value.trim() : "gemini-2.5-flash"
-        }));
+        };
+
+        localStorage.setItem(`extrato_ia_config_${currentProfile}`, JSON.stringify(config));
+
+        // Mantém a tela da engrenagem sincronizada, caso esteja aberta.
+        const profileKeyInput = document.getElementById("profile_extrato_ia_api_key");
+        const profileModelInput = document.getElementById("profile_extrato_ia_model");
+        if (profileKeyInput) profileKeyInput.value = config.apiKey;
+        if (profileModelInput) profileModelInput.value = config.model;
     }
 
     function getMapaMemoriaIA() {
