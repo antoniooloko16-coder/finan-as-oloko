@@ -778,14 +778,6 @@
         border-radius: 4px;
         font-weight: 700;
     }
-    .extrato-badge-duplicate {
-        background: rgba(255, 152, 0, 0.15);
-        color: #ff9800;
-        font-size: 10px;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: 700;
-    }
     .tag-ignore-pill {
         background: var(--bg-card);
         border: 1px solid var(--border-color);
@@ -1170,26 +1162,6 @@
             <input type="file" id="extratoFileInput" style="display:none;" accept=".pdf,.txt,.csv,.ofx" onchange="handleExtratoFileUpload(event)">
         </div>
 
-
-        <div class="input-group" style="margin-bottom:10px;">
-            <label>🤖 IA para análise do extrato</label>
-            <input type="password" id="extrato_ia_api_key" class="text-input" placeholder="Cole sua chave da API Gemini" autocomplete="off">
-            <div style="font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.35;">
-                A chave fica somente neste navegador. Para produção/publicação, prefira um endpoint backend/proxy para não expor a chave.
-            </div>
-        </div>
-        <div class="grid-2col" style="margin-bottom:10px;">
-            <div class="input-group" style="margin-bottom:0;">
-                <label>🧠 Modelo Gemini</label>
-                <input type="text" id="extrato_ia_model" class="text-input" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
-            </div>
-            <div class="input-group" style="margin-bottom:0;">
-                <label>⚙️ Modo</label>
-                <div style="background:var(--bg-input);border:1px solid var(--border-color);border-radius:12px;padding:13px;font-size:12px;color:var(--success);font-weight:700;">
-                    JSON + Memória + Antiduplicidade
-                </div>
-            </div>
-        </div>
         <div class="input-group">
             <label style="display: flex; justify-content: space-between;">
                 <span>✍️ Ou Cole o Texto do Extrato</span>
@@ -1288,34 +1260,6 @@
     <div class="modal-content">
         <div class="modal-title">👥 Gerenciar Perfis</div>
         <div id="profileListAdmin" class="history-list" style="margin-bottom: 15px;"></div>
-
-        <!-- CONFIGURAÇÃO DA IA GEMINI -->
-        <div class="card" style="margin: 0 0 15px 0; padding: 14px; border: 1px solid rgba(163,112,247,.35);">
-            <div style="font-size: 14px; font-weight: 800; color: var(--primary); margin-bottom: 5px;">🤖 Inteligência Artificial — Gemini</div>
-            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px;">
-                Configure a chave usada para analisar extratos. A chave fica salva somente neste navegador e separada por perfil.
-            </div>
-
-            <div class="input-group" style="margin-bottom: 9px;">
-                <label for="profile_extrato_ia_api_key">🔑 Chave da API</label>
-                <input type="password" id="profile_extrato_ia_api_key" class="text-input" placeholder="Cole sua chave Gemini" autocomplete="off">
-            </div>
-
-            <div class="input-group" style="margin-bottom: 9px;">
-                <label for="profile_extrato_ia_model">🧠 Modelo Gemini</label>
-                <input type="text" id="profile_extrato_ia_model" class="text-input" value="gemini-2.5-flash" placeholder="gemini-2.5-flash">
-            </div>
-
-            <button class="btn-action" style="background: var(--primary); width:100%; font-size:13px; padding:11px 0;" onclick="saveAndTestExtratoIAAPI()">
-                🧪 Salvar e Testar API
-            </button>
-            <div id="extratoIAApiStatus" style="margin-top:9px; display:none; padding:9px 10px; border-radius:10px; font-size:11px; line-height:1.4;"></div>
-
-            <div style="font-size:9px; color:var(--text-muted); margin-top:9px; line-height:1.35;">
-                ⚠️ Para publicar o app, o ideal é usar um backend/proxy. Não exponha uma chave permanente em um HTML público.
-            </div>
-        </div>
-
         <div class="input-group" style="border-top: 1px solid var(--border-color); padding-top:15px;">
             <label>🆕 Criar Novo / Renomear</label>
             <input type="text" id="new_profile_name" class="text-input" placeholder="Ex: Holding, Investimentos...">
@@ -1407,18 +1351,6 @@
     }
 
     function openProfileModal() {
-        // Carrega a configuração da IA diretamente na engrenagem do app.
-        const iaConfig = getExtratoIAConfig();
-        const iaKeyInput = document.getElementById('profile_extrato_ia_api_key');
-        const iaModelInput = document.getElementById('profile_extrato_ia_model');
-        const iaStatus = document.getElementById('extratoIAApiStatus');
-        if (iaKeyInput) iaKeyInput.value = iaConfig.apiKey || '';
-        if (iaModelInput) iaModelInput.value = iaConfig.model || 'gemini-2.5-flash';
-        if (iaStatus) {
-            iaStatus.style.display = 'none';
-            iaStatus.innerHTML = '';
-        }
-
         const list = document.getElementById('profileListAdmin');
         list.innerHTML = '';
         allProfiles.forEach(p => {
@@ -1438,98 +1370,6 @@
             list.appendChild(div);
         });
         document.getElementById('profileManagementModal').style.display = 'flex';
-    }
-
-    async function saveAndTestExtratoIAAPI() {
-        const keyInput = document.getElementById('profile_extrato_ia_api_key');
-        const modelInput = document.getElementById('profile_extrato_ia_model');
-        const status = document.getElementById('extratoIAApiStatus');
-
-        const apiKey = keyInput ? keyInput.value.trim() : '';
-        const model = modelInput && modelInput.value.trim() ? modelInput.value.trim() : 'gemini-2.5-flash';
-
-        const mostrarStatus = (tipo, html) => {
-            if (!status) return;
-            status.style.display = 'block';
-            status.innerHTML = html;
-            if (tipo === 'ok') {
-                status.style.background = 'rgba(0,230,118,.10)';
-                status.style.border = '1px solid rgba(0,230,118,.35)';
-                status.style.color = 'var(--success)';
-            } else {
-                status.style.background = 'rgba(255,23,68,.10)';
-                status.style.border = '1px solid rgba(255,23,68,.35)';
-                status.style.color = 'var(--danger)';
-            }
-        };
-
-        if (!apiKey) {
-            mostrarStatus('erro', '❌ <strong>Informe uma chave API.</strong><br>Depois toque novamente em “Salvar e Testar API”.');
-            return;
-        }
-
-        if (status) {
-            status.style.display = 'block';
-            status.style.background = 'var(--bg-input)';
-            status.style.border = '1px solid var(--border-color)';
-            status.style.color = 'var(--text-muted)';
-            status.innerHTML = '⏳ Testando conexão com a Gemini...';
-        }
-
-        // Salva a mesma configuração usada pelo leitor de extratos.
-        localStorage.setItem(`extrato_ia_config_${currentProfile}`, JSON.stringify({ apiKey, model }));
-
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-        const inicio = performance.now();
-
-        try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        role: 'user',
-                        parts: [{ text: 'Responda somente com: OK' }]
-                    }],
-                    generationConfig: {
-                        temperature: 0,
-                        maxOutputTokens: 10
-                    }
-                })
-            });
-
-            let data = {};
-            try { data = await response.json(); } catch (_) {}
-
-            const ms = Math.round(performance.now() - inicio);
-
-            if (!response.ok) {
-                const apiMessage = data?.error?.message || `HTTP ${response.status}`;
-                let explicacao = apiMessage;
-                if (response.status === 400) explicacao += '<br>Verifique o modelo e o formato da chave.';
-                if (response.status === 401 || response.status === 403) explicacao += '<br>A chave não foi autorizada ou está inválida/restrita.';
-                if (response.status === 404) explicacao += '<br>O modelo informado não está disponível para esta API/chave.';
-                if (response.status === 429) explicacao += '<br>A quota/limite da API foi atingida.';
-                mostrarStatus('erro', `❌ <strong>API não funcionou.</strong><br>${escaparHtml(explicacao)}<br><span style="opacity:.75;">HTTP ${response.status} · ${ms} ms</span>`);
-                return;
-            }
-
-            const texto = (data?.candidates || [])
-                .flatMap(c => c?.content?.parts || [])
-                .map(p => p?.text || '')
-                .join(' ')
-                .trim();
-
-            if (!texto) {
-                mostrarStatus('erro', `⚠️ <strong>A API respondeu, mas não retornou texto.</strong><br>HTTP ${response.status} · ${ms} ms`);
-                return;
-            }
-
-            mostrarStatus('ok', `✅ <strong>API funcionando!</strong><br>Modelo: <strong>${escaparHtml(model)}</strong><br>Resposta recebida em ${ms} ms.`);
-        } catch (error) {
-            const mensagem = error?.message || String(error);
-            mostrarStatus('erro', `❌ <strong>Não foi possível conectar à API.</strong><br>${escaparHtml(mensagem)}<br><span style="opacity:.75;">Verifique sua internet, a chave e possíveis bloqueios do navegador.</span>`);
-        }
     }
 
     function closeProfileModal() {
@@ -3323,7 +3163,6 @@
 
     function openExtratoModal() {
         loadExtratoTitularConfig();
-        loadExtratoIAConfig();
         document.getElementById('tx_extrato_pasted').value = '';
         document.getElementById('extratoFileInput').value = '';
         document.getElementById('extratoModal').style.display = 'flex';
@@ -3980,7 +3819,7 @@
         return { matchedCatId, isLearned, matchedRule };
     }
 
-    function processExtratoRawTextLocalFallback(rawText) {
+    function processExtratoRawText(rawText) {
         const blocks = buildExtratoBlocks(rawText);
         const parsed = [];
 
@@ -4060,608 +3899,6 @@
         renderExtratoReviewModal();
     }
 
-
-    /* =========================================================================
-       IA GEMINI + MEMÓRIA + ANTIDUPLICIDADE
-       ========================================================================= */
-
-    function getExtratoIAConfig() {
-        const saved = JSON.parse(localStorage.getItem(`extrato_ia_config_${currentProfile}`) || "{}");
-        return {
-            apiKey: saved.apiKey || "",
-            model: saved.model || "gemini-2.5-flash"
-        };
-    }
-
-    function loadExtratoIAConfig() {
-        const config = getExtratoIAConfig();
-        const keyInput = document.getElementById("extrato_ia_api_key");
-        const modelInput = document.getElementById("extrato_ia_model");
-        if (keyInput) keyInput.value = config.apiKey;
-        if (modelInput) modelInput.value = config.model;
-    }
-
-    function saveExtratoIAConfig() {
-        const keyInput = document.getElementById("extrato_ia_api_key");
-        const modelInput = document.getElementById("extrato_ia_model");
-
-        const config = {
-            apiKey: keyInput ? keyInput.value.trim() : "",
-            model: modelInput && modelInput.value.trim() ? modelInput.value.trim() : "gemini-2.5-flash"
-        };
-
-        localStorage.setItem(`extrato_ia_config_${currentProfile}`, JSON.stringify(config));
-
-        // Mantém a tela da engrenagem sincronizada, caso esteja aberta.
-        const profileKeyInput = document.getElementById("profile_extrato_ia_api_key");
-        const profileModelInput = document.getElementById("profile_extrato_ia_model");
-        if (profileKeyInput) profileKeyInput.value = config.apiKey;
-        if (profileModelInput) profileModelInput.value = config.model;
-    }
-
-    function getMapaMemoriaIA() {
-        let mapa = {};
-        try {
-            mapa = JSON.parse(localStorage.getItem("mapa_memoria_ia") || "{}");
-        } catch (_) {
-            mapa = {};
-        }
-
-        if (!mapa || typeof mapa !== "object" || Array.isArray(mapa)) mapa = {};
-
-        if (!mapa[currentProfile] || typeof mapa[currentProfile] !== "object") {
-            mapa[currentProfile] = {};
-        }
-
-        // Migração da memória antiga do app para a nova estrutura.
-        Object.keys(extratoLearningRules || {}).forEach(term => {
-            if (!mapa[currentProfile][term]) {
-                mapa[currentProfile][term] = extratoLearningRules[term];
-            }
-        });
-
-        return mapa[currentProfile];
-    }
-
-    function salvarMapaMemoriaIA(mapaPerfil) {
-        let mapa = {};
-        try {
-            mapa = JSON.parse(localStorage.getItem("mapa_memoria_ia") || "{}");
-        } catch (_) {
-            mapa = {};
-        }
-
-        if (!mapa || typeof mapa !== "object" || Array.isArray(mapa)) mapa = {};
-        mapa[currentProfile] = mapaPerfil || {};
-
-        localStorage.setItem("mapa_memoria_ia", JSON.stringify(mapa));
-
-        // Mantém compatibilidade com a estrutura já usada pelo app.
-        extratoLearningRules = { ...(mapa[currentProfile] || {}) };
-        localStorage.setItem(`extrato_rules_${currentProfile}`, JSON.stringify(extratoLearningRules));
-    }
-
-    function salvarAprendizadoIA(descricao, categoryId) {
-        if (!descricao || !categoryId) return;
-
-        const termo = buildLearningTerm(normalizarTexto(descricao));
-        if (!termo || termo.length < 3) return;
-
-        const mapa = getMapaMemoriaIA();
-        mapa[termo] = categoryId;
-        salvarMapaMemoriaIA(mapa);
-    }
-
-    function atualizarMemoriaComItemExtrato(item) {
-        if (!item || item.ignored || item.isOwnTransfer || item.duplicado) return;
-        salvarAprendizadoIA(item.rawDescription || item.descricaoLimpa, item.categoryId);
-    }
-
-    function limparJsonDeRespostaIA(texto) {
-        let textoLimpo = String(texto || "").trim();
-
-        textoLimpo = textoLimpo
-            .replace(/^```json\s*/i, "")
-            .replace(/^```\s*/i, "")
-            .replace(/\s*```$/i, "")
-            .trim();
-
-        const inicio = textoLimpo.indexOf("[");
-        const fim = textoLimpo.lastIndexOf("]");
-
-        if (inicio >= 0 && fim > inicio) {
-            textoLimpo = textoLimpo.slice(inicio, fim + 1);
-        }
-
-        return textoLimpo;
-    }
-
-    function normalizarDataIA(data) {
-        if (!data) return "";
-
-        const valor = String(data).trim();
-
-        let m = valor.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (m) return valor;
-
-        m = valor.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
-        if (m) {
-            let ano = parseInt(m[3], 10);
-            if (ano < 100) ano += 2000;
-
-            const dia = parseInt(m[1], 10);
-            const mes = parseInt(m[2], 10);
-
-            if (dia >= 1 && dia <= 31 && mes >= 1 && mes <= 12) {
-                return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
-            }
-        }
-
-        return "";
-    }
-
-    function normalizarValorIA(valor) {
-        if (typeof valor === "number") return Number(valor);
-
-        if (valor === null || valor === undefined) return NaN;
-
-        let texto = String(valor).trim()
-            .replace(/[R$\s]/gi, "");
-
-        if (texto.includes(",") && texto.includes(".")) {
-            texto = texto.replace(/\./g, "").replace(",", ".");
-        } else if (texto.includes(",")) {
-            texto = texto.replace(",", ".");
-        }
-
-        texto = texto.replace(/[^\d.-]/g, "");
-        return Number(texto);
-    }
-
-    function similaridadeDescricaoIA(a, b) {
-        const x = normalizarTexto(a);
-        const y = normalizarTexto(b);
-
-        if (!x || !y) return 0;
-        if (x === y) return 1;
-        if (x.includes(y) || y.includes(x)) return 0.93;
-
-        const ax = x.split(" ").filter(Boolean);
-        const by = new Set(y.split(" ").filter(Boolean));
-        const inter = ax.filter(t => by.has(t)).length;
-        const uniao = new Set([...ax, ...by]).size;
-        const jaccard = uniao ? inter / uniao : 0;
-
-        const m = x.length;
-        const n = y.length;
-        const row = Array.from({ length: n + 1 }, (_, i) => i);
-
-        for (let i = 1; i <= m; i++) {
-            let prev = row[0];
-            row[0] = i;
-
-            for (let j = 1; j <= n; j++) {
-                const atual = row[j];
-                row[j] = x[i - 1] === y[j - 1]
-                    ? prev
-                    : Math.min(prev + 1, row[j] + 1, row[j - 1] + 1);
-                prev = atual;
-            }
-        }
-
-        const maxLen = Math.max(m, n) || 1;
-        const levenshteinSimilarity = 1 - row[n] / maxLen;
-
-        return Math.max(jaccard, levenshteinSimilarity);
-    }
-
-    function descricaoTransacaoExistente(t) {
-        return t?.freeDescription || t?.descricaoLimpa || t?.description || "";
-    }
-
-    function checarDuplicadosExtrato(itensIA, transacoesAtuais = transactions) {
-        const listaExistente = Array.isArray(transacoesAtuais) ? transacoesAtuais : [];
-
-        return itensIA.map(item => {
-            const data = normalizarDataIA(item.date || item.data);
-            const valor = normalizarValorIA(item.amount ?? item.valor);
-            const descricao = item.rawDescription || item.descricaoLimpa || "";
-
-            let melhor = null;
-
-            for (const existente of listaExistente) {
-                const dataExistente = normalizarDataIA(existente.date || existente.data);
-                const valorExistente = normalizarValorIA(existente.amount ?? existente.valor);
-
-                if (!data || !dataExistente || data !== dataExistente) continue;
-                if (!Number.isFinite(valor) || !Number.isFinite(valorExistente)) continue;
-                if (Math.abs(valor - valorExistente) > 0.009) continue;
-
-                const sim = similaridadeDescricaoIA(
-                    descricao,
-                    descricaoTransacaoExistente(existente)
-                );
-
-                if (sim >= 0.78 && (!melhor || sim > melhor.score)) {
-                    melhor = {
-                        id: existente.id || "",
-                        score: sim
-                    };
-                }
-            }
-
-            if (melhor) {
-                return {
-                    ...item,
-                    duplicado: true,
-                    duplicateOfId: melhor.id,
-                    duplicateScore: Number(melhor.score.toFixed(3)),
-                    ignored: true
-                };
-            }
-
-            return {
-                ...item,
-                duplicado: false,
-                duplicateOfId: "",
-                duplicateScore: 0
-            };
-        });
-    }
-
-    function aplicarMemoriaLocalAntesDaIA(itens) {
-        const mapa = getMapaMemoriaIA();
-
-        return itens.map(item => {
-            const desc = normalizarTexto(item.rawDescription || item.descricaoLimpa || "");
-            let melhorTermo = "";
-            let melhorCategoria = "";
-
-            Object.keys(mapa)
-                .sort((a, b) => b.length - a.length)
-                .some(termo => {
-                    const termoNorm = normalizarTexto(termo);
-                    if (termoNorm && desc.includes(termoNorm)) {
-                        const cat = categories.find(c => c.id === mapa[termo]);
-                        if (cat) {
-                            melhorTermo = termo;
-                            melhorCategoria = cat.id;
-                            return true;
-                        }
-                    }
-                    return false;
-                });
-
-            if (!melhorCategoria) return item;
-
-            return {
-                ...item,
-                categoryId: melhorCategoria,
-                isLearned: true,
-                matchedRule: melhorTermo
-            };
-        });
-    }
-
-    function prepararTextoExtratoParaIA(rawText) {
-        const texto = String(rawText || "");
-        const linhas = texto.split(/\r?\n/);
-        const moneyRe = /(?:R\$\s*)?[-+]?\d{1,3}(?:\.\d{3})*,\d{2}(?:\s*[CD])?|(?:R\$\s*)?[-+]?\d+,\d{2}(?:\s*[CD])?/gi;
-
-        return linhas.map(linha => {
-            const original = String(linha || "");
-            const matches = original.match(moneyRe) || [];
-
-            // Em tabelas bancárias, quando a mesma linha contém Valor e Saldo,
-            // o primeiro valor monetário é o LANÇAMENTO e o segundo é o SALDO.
-            // Criamos marcadores explícitos para a IA não precisar adivinhar a coluna.
-            if (matches.length >= 2 && !/saldo(?:\s+do\s+dia|\s+final|\s+anterior)?/i.test(original)) {
-                return original + " [REGRA_COLUNA: PRIMEIRO_VALOR=VALOR_DA_TRANSACAO; SEGUNDO_VALOR=SALDO; IGNORAR_SALDO]";
-            }
-
-            if (/^\s*(?:saldo(?:\s+do\s+dia|\s+final|\s+anterior)?|saldo)\b/i.test(original)) {
-                return "[LINHA_SALDO_IGNORAR] " + original;
-            }
-
-            return original;
-        }).join("\n");
-    }
-
-    function construirPromptExtratoIA(rawText) {
-        const titular = getExtratoTitularConfig();
-        const mapa = getMapaMemoriaIA();
-
-        const categoriasPrompt = categories.map(c => ({
-            id: c.id,
-            nome: c.name,
-            tipo: c.type
-        }));
-
-        const memoriaPrompt = Object.entries(mapa)
-            .map(([termo, categoryId]) => ({
-                termo,
-                categoryId
-            }));
-
-        const textoPreparado = prepararTextoExtratoParaIA(rawText);
-
-        return `
-Você é um motor de conciliação financeira especializado em extratos bancários brasileiros.
-
-OBJETIVO:
-Ler o texto bruto de um extrato e retornar SOMENTE um JSON ARRAY válido, sem Markdown, sem comentários e sem texto antes/depois.
-
-CAMPOS OBRIGATÓRIOS DE CADA ITEM:
-{
-  "data": "YYYY-MM-DD",
-  "descricaoLimpa": "nome curto do estabelecimento, pessoa ou origem",
-  "valor": 0.00,
-  "tipo": "expense",
-  "isTransfer": false,
-  "ignored": false,
-  "categoryId": "ID_DA_CATEGORIA"
-}
-
-REGRAS CRÍTICAS:
-1. Cada lançamento deve virar exatamente um item.
-2. Nunca invente lançamento, valor, data ou categoria.
-3. "valor" é SEMPRE positivo. O campo "tipo" define o fluxo:
-   - "expense" = saída/débito
-   - "income" = entrada/crédito
-4. Preserve centavos exatamente. Não arredonde para inteiro.
-5. Datas devem ser YYYY-MM-DD. Se o texto trouxer DD/MM ou DD-MM sem ano, use o ano coerente com o extrato/contexto; não invente um ano incompatível.
-6. Ignore linhas de saldo, saldo do dia, saldo anterior, limites, cabeçalhos, rodapés e totais que não sejam lançamentos.
-7. Não transforme número de documento, ID da operação, CPF/CNPJ ou código bancário em valor.
-8. Limpe a descrição: retire códigos, identificadores, agência/conta, textos bancários repetitivos e marcadores técnicos. Preserve o nome real da pessoa/empresa quando ele estiver disponível.
-9. Não confunda saldo final da conta com valor da transação.
-10. Transferência própria:
-    - Se o lançamento for entre contas do mesmo titular, marque "isTransfer": true e "ignored": true.
-    - Considere nomes/documentos cadastrados e marcadores como "mesmo titular", "mesm tit", "c msm tit", "transferência própria".
-    - Não marque como própria apenas por semelhança fraca.
-11. Categoria:
-    - Use SOMENTE um categoryId existente na lista fornecida.
-    - Para despesas, escolha categoria de tipo "expense".
-    - Para receitas, escolha categoria de tipo "income" quando houver uma adequada.
-    - A memória de mapeamento tem prioridade quando houver correspondência clara.
-12. Se não houver categoria realmente adequada, use a categoria do mesmo tipo mais genérica disponível, sem criar ID.
-13. "ignored" deve ser true para transferência própria.
-14. Não crie duplicados artificiais quando uma mesma operação estiver quebrada em várias linhas.
-15. Se houver coluna "Saldo", ela NÃO é o valor da transação.
-16. REGRA ABSOLUTA PARA TABELAS COM COLUNAS "Valor" E "Saldo":
-    - O campo "valor" deve vir EXCLUSIVAMENTE da coluna "Valor".
-    - A coluna "Saldo" é somente o saldo acumulado depois do lançamento e DEVE ser ignorada.
-    - NUNCA copie o saldo para o campo "valor", mesmo que ele seja o último número da linha.
-    - Quando uma linha tiver dois valores monetários, o PRIMEIRO pertence à coluna "Valor" e o SEGUNDO pertence à coluna "Saldo", salvo se o texto identificar explicitamente outra estrutura.
-    - Exemplo: "R$ -86,26 | R$ 300,00" => valor=86.26, tipo=expense. O 300,00 é SALDO e deve ser descartado.
-    - Exemplo: "R$ 0,12 | R$ 300,12" => valor=0.12, tipo=income. O 300,12 é SALDO e deve ser descartado.
-    - Exemplo: "R$ -129,00 | R$ 171,12" => valor=129.00, tipo=expense. O 171,12 é SALDO e deve ser descartado.
-    - Exemplo: "R$ 750,00 | R$ 921,12" => valor=750.00, tipo=income. O 921,12 é SALDO e deve ser descartado.
-17. Marcadores [REGRA_COLUNA...] e [LINHA_SALDO_IGNORAR] são instruções técnicas do sistema, não fazem parte da descrição.
-
-DADOS DO TITULAR:
-Nome: ${JSON.stringify(titular.name || "")}
-Documento: ${JSON.stringify(titular.document || "")}
-Outros nomes/entidades cadastrados para ignorar: ${JSON.stringify(getTitularNames())}
-
-CATEGORIAS DISPONÍVEIS:
-${JSON.stringify(categoriasPrompt)}
-
-MEMÓRIA DE MAPEAMENTO:
-${JSON.stringify(memoriaPrompt)}
-
-TEXTO DO EXTRATO COM MARCADORES DE COLUNA:
-${textoPreparado}
-        `.trim();
-    }
-
-    async function chamarIAExtrato(rawText) {
-        const config = getExtratoIAConfig();
-        const apiKey = config.apiKey;
-        const model = (config.model || "gemini-2.5-flash").replace(/^models\//, "").trim();
-
-        if (!apiKey) {
-            throw new Error("Chave da API Gemini não configurada.");
-        }
-
-        if (!rawText || !String(rawText).trim()) {
-            throw new Error("O texto do extrato está vazio.");
-        }
-
-        saveExtratoIAConfig();
-
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-        const payload = {
-            contents: [{
-                role: "user",
-                parts: [{
-                    text: construirPromptExtratoIA(String(rawText))
-                }]
-            }],
-            generationConfig: {
-                temperature: 0.05,
-                responseMimeType: "application/json"
-            }
-        };
-
-        const response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-            const mensagem = data?.error?.message || `HTTP ${response.status}`;
-            throw new Error(`Gemini: ${mensagem}`);
-        }
-
-        const respostaTexto = data?.candidates?.[0]?.content?.parts
-            ?.map(part => part?.text || "")
-            .join("")
-            .trim();
-
-        if (!respostaTexto) {
-            throw new Error("A IA não retornou conteúdo.");
-        }
-
-        let itens;
-        try {
-            itens = JSON.parse(limparJsonDeRespostaIA(respostaTexto));
-        } catch (err) {
-            throw new Error("A IA retornou um JSON inválido.");
-        }
-
-        if (!Array.isArray(itens)) {
-            throw new Error("A IA não retornou uma lista de lançamentos.");
-        }
-
-        return itens;
-    }
-
-    function normalizarItensIA(itensIA, rawText) {
-        const mapa = getMapaMemoriaIA();
-        const categoriasValidas = new Set(categories.map(c => c.id));
-
-        const resultado = [];
-
-        itensIA.forEach((item, index) => {
-            if (!item || typeof item !== "object") return;
-
-            const data = normalizarDataIA(item.data);
-            const descricaoLimpa = String(item.descricaoLimpa || "").trim();
-            const valor = normalizarValorIA(item.valor);
-
-            if (!data || !descricaoLimpa || !Number.isFinite(valor) || valor <= 0) return;
-
-            let tipo = String(item.tipo || "").toLowerCase().trim();
-            if (tipo !== "income" && tipo !== "expense") return;
-
-            const isTransfer = item.isTransfer === true;
-            const categoryMemory = Object.keys(mapa)
-                .sort((a, b) => b.length - a.length)
-                .find(termo => normalizarTexto(descricaoLimpa).includes(normalizarTexto(termo)));
-
-            let categoryId = categoriasValidas.has(item.categoryId)
-                ? item.categoryId
-                : "";
-
-            if (categoryMemory && categoriasValidas.has(mapa[categoryMemory])) {
-                categoryId = mapa[categoryMemory];
-            }
-
-            const categoria = categories.find(c => c.id === categoryId);
-            if (!categoria || (tipo === "expense" && categoria.type === "income")) {
-                const fallback = categories.find(c =>
-                    c.type === tipo
-                ) || categories.find(c => c.type === "expense");
-
-                categoryId = fallback ? fallback.id : "";
-            }
-
-            resultado.push({
-                id: gerarIDUnico(),
-                date: data,
-                rawDescription: descricaoLimpa,
-                descricaoLimpa,
-                fullBlockText: "",
-                normalizedDescription: normalizarTexto(descricaoLimpa),
-                normalizedBlockText: normalizarTexto(descricaoLimpa),
-                amount: Number(valor.toFixed(2)),
-                flowType: tipo,
-                bankSuffix: "",
-                transactionValueText: String(valor),
-                categoryId,
-                isOwnTransfer: isTransfer,
-                isTransfer,
-                ignored: isTransfer || item.ignored === true,
-                matchedEntity: isTransfer ? "Transferência própria identificada pela IA" : "",
-                isLearned: Boolean(categoryMemory),
-                matchedRule: categoryMemory || "",
-                duplicado: false,
-                duplicateOfId: "",
-                duplicateScore: 0,
-                aiSource: true
-            });
-        });
-
-        return aplicarMemoriaLocalAntesDaIA(resultado);
-    }
-
-    async function processExtratoRawText(rawText) {
-        const texto = String(rawText || "").trim();
-
-        if (!texto) {
-            return alert("⚠️ O texto do extrato está vazio.");
-        }
-
-        try {
-            const config = getExtratoIAConfig();
-
-            if (!config.apiKey) {
-                const usarLocal = confirm(
-                    "A chave da API Gemini ainda não foi configurada.\n\n" +
-                    "OK = usar o leitor local atual do aplicativo.\n" +
-                    "Cancelar = voltar para configurar a chave."
-                );
-
-                if (usarLocal) {
-                    processExtratoRawTextLocalFallback(texto);
-                }
-                return;
-            }
-
-            const botao = document.querySelector('#extratoModal button[onclick="processExtratoTextManual()"]');
-            const textoOriginalBotao = botao ? botao.innerText : "";
-
-            if (botao) {
-                botao.disabled = true;
-                botao.innerText = "🤖 IA analisando extrato...";
-            }
-
-            const respostaIA = await chamarIAExtrato(texto);
-            let parsed = normalizarItensIA(respostaIA, texto);
-
-            if (!parsed.length) {
-                throw new Error("A IA não identificou lançamentos válidos.");
-            }
-
-            parsed = checarDuplicadosExtrato(parsed, transactions);
-
-            // Transferências próprias e duplicados entram no modal já desmarcados.
-            parsed.forEach(item => {
-                if (item.isOwnTransfer || item.isTransfer || item.duplicado) {
-                    item.ignored = true;
-                }
-            });
-
-            parsedExtratoItems = parsed;
-            closeExtratoModal();
-            renderExtratoReviewModal();
-        } catch (err) {
-            console.error("Erro na análise IA do extrato:", err);
-
-            const fallback = confirm(
-                `⚠️ Não foi possível concluir a análise pela IA.\n\n${err.message}\n\n` +
-                "OK = usar o leitor local existente como fallback.\n" +
-                "Cancelar = voltar sem importar."
-            );
-
-            if (fallback) {
-                processExtratoRawTextLocalFallback(texto);
-            }
-        } finally {
-            const botao = document.querySelector('#extratoModal button[onclick="processExtratoTextManual()"]');
-            if (botao) {
-                botao.disabled = false;
-                botao.innerText = "🔍 Analisar e Mapear Lançamentos";
-            }
-        }
-    }
-
     function renderExtratoReviewModal() {
         const summary = document.getElementById('extratoReviewSummary');
         const container = document.getElementById('extratoReviewList');
@@ -4671,16 +3908,14 @@ ${textoPreparado}
         container.innerHTML = '';
 
         const totalItems = parsedExtratoItems.length;
-        const transferCount = parsedExtratoItems.filter(i => i.isOwnTransfer || i.isTransfer).length;
-        const duplicateCount = parsedExtratoItems.filter(i => i.duplicado).length;
-        const learnedCount = parsedExtratoItems.filter(i => i.isLearned && !i.isOwnTransfer && !i.duplicado).length;
-        const unknownCount = parsedExtratoItems.filter(i => !i.isOwnTransfer && !i.isTransfer && !i.isLearned && !i.duplicado).length;
+        const transferCount = parsedExtratoItems.filter(i => i.isOwnTransfer).length;
+        const learnedCount = parsedExtratoItems.filter(i => i.isLearned && !i.isOwnTransfer).length;
+        const unknownCount = parsedExtratoItems.filter(i => !i.isOwnTransfer && !i.isLearned).length;
 
         summary.innerHTML = `
             Encontrados <strong>${totalItems}</strong> lançamentos válidos.<br>
-            <span style="color:var(--success);">✓ ${learnedCount} memorizados</span> |
+            <span style="color:var(--success);">✓ ${learnedCount} já conhecidos</span> |
             <span style="color:var(--accent);">🚫 ${transferCount} transf. próprias</span> |
-            <span style="color:#ff9800;">🟠 ${duplicateCount} duplicados</span> |
             <span style="color:var(--warning);">❓ ${unknownCount} para classificar</span>
         `;
 
@@ -4696,9 +3931,7 @@ ${textoPreparado}
 
             let badgeHtml = '';
 
-            if (item.duplicado) {
-                badgeHtml = `<span class="extrato-badge-duplicate">🟠 Duplicado${item.duplicateScore ? ` (${Math.round(item.duplicateScore * 100)}%)` : ''}</span>`;
-            } else if (item.isOwnTransfer || item.isTransfer) {
+            if (item.isOwnTransfer) {
                 badgeHtml = `<span class="extrato-badge-transfer">🚫 Transferência própria${item.matchedEntity ? ` (${escaparHtml(item.matchedEntity)})` : ''}</span>`;
             } else if (item.isLearned) {
                 badgeHtml = `<span class="extrato-badge-learned">✓ Categoria Memorizada</span>`;
@@ -4730,7 +3963,7 @@ ${textoPreparado}
                         <span style="font-weight:700; font-size:14px; color:${colorVal};">${signVal} ${formatCurrency(item.amount)}</span>
                         <div style="margin-top:4px;">
                             <label style="font-size:11px; cursor:pointer; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px;">
-                                <input type="checkbox" ${!item.ignored ? 'checked' : ''} ${item.isOwnTransfer || item.isTransfer || item.duplicado ? 'disabled' : ''} onchange="toggleIgnoreExtratoItem(${index}, this.checked)">
+                                <input type="checkbox" ${!item.ignored ? 'checked' : ''} ${item.isOwnTransfer ? 'disabled' : ''} onchange="toggleIgnoreExtratoItem(${index}, this.checked)">
                                 Lançar
                             </label>
                         </div>
@@ -4757,7 +3990,7 @@ ${textoPreparado}
     function toggleIgnoreExtratoItem(index, isChecked) {
         if (!parsedExtratoItems[index]) return;
 
-        if (parsedExtratoItems[index].isOwnTransfer || parsedExtratoItems[index].isTransfer || parsedExtratoItems[index].duplicado) {
+        if (parsedExtratoItems[index].isOwnTransfer) {
             parsedExtratoItems[index].ignored = true;
             return;
         }
@@ -4782,7 +4015,6 @@ ${textoPreparado}
 
         parsedExtratoItems[index].categoryId = catId;
         parsedExtratoItems[index].isLearned = false;
-        parsedExtratoItems[index].matchedRule = "";
     }
 
     function buildLearningTerm(normalizedDescription) {
@@ -4793,22 +4025,17 @@ ${textoPreparado}
     }
 
     function confirmExtratoImport() {
-        const itemsToImport = parsedExtratoItems.filter(i =>
-            !i.ignored &&
-            !i.isOwnTransfer &&
-            !i.isTransfer &&
-            !i.duplicado
-        );
+        const itemsToImport = parsedExtratoItems.filter(i => !i.ignored && !i.isOwnTransfer);
 
         if (itemsToImport.length === 0) {
-            return alert("Nenhum item novo selecionado para lançamento.");
+            return alert("Nenhum item selecionado para lançamento.");
         }
 
         let newRulesLearnedCount = 0;
-        let importedCount = 0;
 
         itemsToImport.forEach(item => {
             const catObj = categories.find(c => c.id === item.categoryId);
+
             if (!catObj) return;
 
             const isInc = item.flowType === 'income';
@@ -4816,31 +4043,23 @@ ${textoPreparado}
             transactions.push({
                 id: gerarIDUnico(),
                 categoryId: item.categoryId,
-                amount: Number(item.amount),
+                amount: item.amount,
                 type: isInc ? 'income' : 'expense_cash',
                 paymentMethod: 'dinheiro',
                 description: catObj.name,
                 freeDescription: item.rawDescription,
                 date: item.date,
                 source: 'extrato',
-                extratoBlock: item.fullBlockText || item.rawDescription,
-                isTransfer: false,
-                ignored: false
+                extratoBlock: item.fullBlockText
             });
 
-            const antes = getMapaMemoriaIA();
-            const termo = buildLearningTerm(item.normalizedDescription || item.rawDescription);
+            const cleanTerm = buildLearningTerm(item.normalizedDescription);
 
-            if (termo.length >= 3 && antes[termo] !== item.categoryId) {
-                salvarAprendizadoIA(item.rawDescription, item.categoryId);
+            if (cleanTerm.length >= 3 && extratoLearningRules[cleanTerm] !== item.categoryId) {
+                extratoLearningRules[cleanTerm] = item.categoryId;
                 newRulesLearnedCount++;
             }
-
-            importedCount++;
         });
-
-        // Também registra explicitamente correções feitas pelo usuário no modal.
-        itemsToImport.forEach(atualizarMemoriaComItemExtrato);
 
         safeLocalStorageSave();
         closeExtratoReviewModal();
@@ -4848,17 +4067,8 @@ ${textoPreparado}
         renderLearningRulesList();
         showBanner();
 
-        const duplicados = parsedExtratoItems.filter(i => i.duplicado).length;
-        const transferencias = parsedExtratoItems.filter(i => i.isOwnTransfer || i.isTransfer).length;
-
-        alert(
-            `🎉 ${importedCount} lançamento(s) importado(s).` +
-            (newRulesLearnedCount > 0 ? `\n🧠 ${newRulesLearnedCount} novo(s) padrão(ões) memorizado(s).` : "") +
-            (duplicados > 0 ? `\n🟠 ${duplicados} duplicado(s) ficaram fora da importação.` : "") +
-            (transferencias > 0 ? `\n🔄 ${transferencias} transferência(s) própria(s) foram ignoradas.` : "")
-        );
+        alert(`🎉 Sucesso! ${itemsToImport.length} lançamentos adicionados nas caixas correspondentes.${newRulesLearnedCount > 0 ? ` O sistema memorizou ${newRulesLearnedCount} novo(s) estabelecimento(s) para os próximos extratos.` : ''}`);
     }
-
 
 </script>
     </html>
